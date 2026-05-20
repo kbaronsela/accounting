@@ -39,16 +39,31 @@
 
 **מטרה**: קיים משתמש `role=admin` אחד לפחות ללא הזמנה.
 
-**אפשרויות יישום** (לבחור אחת):
+**בפרויקט (מקומי / שרת):** אחרי `DATABASE_URL` תקין וטבלאות (`db:push`), מגדירים ב־`.env.local`:
 
-1. **סקריפט חד-פעמי** בפריסה: קורא `BOOTSTRAP_ADMIN_*`, יוצר משתמש אם לא קיים, מדפיס “bootstrap complete”.
-2. **מיגרציית DB** עם hook (פחות מומלץ — סיסמאות ב-repo).
-3. **ממשק CLI פנימי** (`pnpm ops bootstrap-admin`) — זמין רק למחזיקי סודות.
+- `BOOTSTRAP_ADMIN_EMAIL`
+- `BOOTSTRAP_ADMIN_PASSWORD` (מינימום 12 תווים)
+
+ואז מריצים:
+
+```bash
+npm run db:bootstrap-admin
+```
+
+אם **למייל ב־`BOOTSTRAP_ADMIN_EMAIL` כבר יש תפקיד admin וסיסמה ב־DB**, הסקריפט לא משנה כלום. אחרת הוא משלים: **מגדיר `passwordHash`** אם חסר (למשל משתמש מ־OAuth), **מוסיף תפקיד `admin`** אם חסר, או יוצר משתמש חדש — בלי לצאת מוקדם רק בגלל שקיים admin אחר.
+
+**אלטרנטיבות** (אופציונלי): מיגרציית DB עם סוד ב-repo (לא מומלץ), או CLI פנימי נפרד.
 
 **מדיניות**
 
 - אחרי כניסה ראשונה: **חובת החלפת סיסמה** או מחיקת סיסמת bootstrap לאחר הגדרת MFA (עתידי).
 - רישום `audit_events` ל-`bootstrap` הראשון.
+
+**מיגרציות Drizzle**
+
+- `npm run db:migrate` מריץ את ה-SQL מתיקיית `lib/db/migrations` ומעדכן את `drizzle.__drizzle_migrations`.
+- אם `npm run db:migrate` נכשל עם **relation already exists** אחרי שימוש ב־`db:push`: `npm run db:baseline` ואז שוב `npm run db:migrate`.
+- אם נראה שהמסד לא משתנה: `npm run db:status` — `current_database`, עמודות `invitation`, והיסטוריית מיגרציות. ודאי ש־`DATABASE_URL` זהה לזה של `next dev`.
 
 ---
 

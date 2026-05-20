@@ -30,6 +30,8 @@
 | `accountant` | מנהל לקוחות (תיקים), מזמין משתמשים לתיק, צופה במסמכים ומסנן |
 | `client` | חבר ב-`client_members`; מעלה מסמכים לתיק אליו הוא משויך |
 
+משתמש אחד יכול לקבל **מספר תפקידים במקביל** (רשומות בטבלת `user_role`), למשל `admin` + `accountant`.
+
 **אין** רישום עצמאי ללקוח או לרואה חשבון — רק דרך `Invitation`.
 
 ## 4. זרימות Onboarding
@@ -54,13 +56,15 @@
 
 ## 5. מודל נתונים (PostgreSQL) — גרסת MVP
 
-### 5.1 `users`
+### 5.1 `user` (משתמש — Auth.js + אפליקציה)
 
-- `id`, `email` (ייחודי), `role` (`admin` | `accountant` | `client`)
-- `password_hash` (nullable אם רק OAuth)
-- `locale` / העדפות שפה (אופציונלי)
-- `last_documents_seen_at` (רלוונטי ל-`accountant` — “חדש מאז”, ראו סעיף 8)
-- חותמות זמן
+- `id`, `email` (ייחודי), `passwordHash` (nullable אם רק OAuth), `locale`, `lastDocumentsSeenAt` (לרואה חשבון — “חדש מאז”)
+- **אין** עמודת `role` בודדת — ראו `user_role`.
+
+### 5.1.1 `user_role` (תפקידים — כמה לכל משתמש)
+
+- `(userId, role)` מורכב כ-primary key; `role` ∈ `admin` | `accountant` | `client`
+- משתמש אחד יכול להחזיק **מספר תפקידים** (למשל גם אדמין וגם רואה חשבון).
 
 ### 5.2 `clients` (תיק לקוח אצל רואה חשבון)
 

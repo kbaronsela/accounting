@@ -1,0 +1,10 @@
+{
+  "name": "שיתוף קבלות",
+  "short_name": "קבלות",
+  "description": "פלטפורמה לשיתוף קבלות וחשבוניות",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#fafafa",
+  "theme_color": "#18181b",
+  "lang": "he"
+}
