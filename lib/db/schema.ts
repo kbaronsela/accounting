@@ -154,6 +154,8 @@ export const invitations = pgTable("invitation", {
   clientId: text("clientId").references(() => clients.id, {
     onDelete: "cascade",
   }),
+  /** תפקיד ב-client_member אחרי קבלת ההזמנה (primary / member) */
+  clientMemberRole: text("clientMemberRole"),
   createdAt: timestamp("createdAt", { mode: "date" }).notNull().defaultNow(),
 });
 

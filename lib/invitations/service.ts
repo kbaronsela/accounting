@@ -137,10 +137,12 @@ export async function acceptInvitation(input: AcceptInvitationInput) {
     });
 
     if (inv.role === "client" && inv.clientId) {
+      const memberRole =
+        inv.clientMemberRole === "primary" ? "primary" : "member";
       await tx.insert(clientMembers).values({
         clientId: inv.clientId,
         userId,
-        memberRole: "member",
+        memberRole,
       });
       await tx
         .update(clients)
@@ -246,6 +248,188 @@ export async function createAccountantInvitation(
   return {
     ok: true as const,
     invitationId: id,
+    email,
+    expiresAt: expiresAt.toISOString(),
+    rawToken,
+  };
+}
+
+export type CreateClientWithInvitationInput = {
+  accountantUserId: string;
+  displayName: string;
+  inviteEmail: string;
+  inviteeDisplayName?: string | null;
+  memberRole: "primary" | "member";
+};
+
+/**
+ * טרנזקציה: יצירת תיק לקוח + הזמנת חבר ראשון (role: client).
+ */
+export async function createClientWithInvitation(
+  input: CreateClientWithInvitationInput,
+) {
+  await ensureInvitationSchema(pool);
+  const email = input.inviteEmail.trim().toLowerCase();
+  const rawToken = generateInvitationRawToken();
+  const tokenHash = hashInvitationToken(rawToken);
+  const clientId = crypto.randomUUID();
+  const invId = crypto.randomUUID();
+  const expiresAt = new Date(
+    Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000,
+  );
+  const clientMemberRole = input.memberRole === "primary" ? "primary" : "member";
+  const displayName = input.displayName.trim();
+
+  const [existing] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+  if (existing) {
+    return { ok: false as const, reason: "email_taken" as const };
+  }
+
+  const [pending] = await db
+    .select({ id: invitations.id })
+    .from(invitations)
+    .where(
+      and(
+        eq(invitations.email, email),
+        eq(invitations.role, "client"),
+        isNull(invitations.consumedAt),
+      ),
+    )
+    .limit(1);
+  if (pending) {
+    return { ok: false as const, reason: "pending_invitation" as const };
+  }
+
+  return db.transaction(async (tx) => {
+    await tx.insert(clients).values({
+      id: clientId,
+      accountantId: input.accountantUserId,
+      displayName,
+      status: "pending_invite",
+      invitedEmail: email,
+      updatedAt: new Date(),
+    });
+
+    await tx.insert(invitations).values({
+      id: invId,
+      email,
+      role: "client",
+      tokenHash,
+      expiresAt,
+      createdByUserId: input.accountantUserId,
+      inviteeDisplayName: input.inviteeDisplayName?.trim() || null,
+      clientId,
+      clientMemberRole,
+    });
+
+    await tx.insert(auditEvents).values({
+      id: crypto.randomUUID(),
+      actorUserId: input.accountantUserId,
+      action: "client_created_with_invitation",
+      entityType: "client",
+      entityId: clientId,
+      payloadJson: { invitationId: invId, email },
+    });
+
+    return {
+      ok: true as const,
+      client: {
+        id: clientId,
+        displayName,
+        status: "pending_invite" as const,
+      },
+      invitationId: invId,
+      expiresAt: expiresAt.toISOString(),
+      rawToken,
+    };
+  });
+}
+
+export type InviteClientMemberInput = {
+  accountantUserId: string;
+  clientId: string;
+  email: string;
+  inviteeDisplayName?: string | null;
+  memberRole: "primary" | "member";
+};
+
+/**
+ * הזמנת משתמש נוסף לתיק לקוח קיים (רק אם clients.accountantId תואם).
+ */
+export async function inviteAdditionalClientMember(
+  input: InviteClientMemberInput,
+) {
+  await ensureInvitationSchema(pool);
+  const email = input.email.trim().toLowerCase();
+  const rawToken = generateInvitationRawToken();
+  const tokenHash = hashInvitationToken(rawToken);
+  const invId = crypto.randomUUID();
+  const expiresAt = new Date(
+    Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000,
+  );
+  const clientMemberRole = input.memberRole === "primary" ? "primary" : "member";
+
+  const [clientRow] = await db
+    .select()
+    .from(clients)
+    .where(eq(clients.id, input.clientId))
+    .limit(1);
+  if (!clientRow || clientRow.accountantId !== input.accountantUserId) {
+    return { ok: false as const, reason: "forbidden" as const };
+  }
+
+  const [existing] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+  if (existing) {
+    return { ok: false as const, reason: "email_taken" as const };
+  }
+
+  const [pendingAny] = await db
+    .select({ id: invitations.id })
+    .from(invitations)
+    .where(
+      and(
+        eq(invitations.email, email),
+        eq(invitations.role, "client"),
+        isNull(invitations.consumedAt),
+      ),
+    )
+    .limit(1);
+  if (pendingAny) {
+    return { ok: false as const, reason: "pending_invitation" as const };
+  }
+
+  await db.insert(invitations).values({
+    id: invId,
+    email,
+    role: "client",
+    tokenHash,
+    expiresAt,
+    createdByUserId: input.accountantUserId,
+    inviteeDisplayName: input.inviteeDisplayName?.trim() || null,
+    clientId: input.clientId,
+    clientMemberRole,
+  });
+
+  await db.insert(auditEvents).values({
+    id: crypto.randomUUID(),
+    actorUserId: input.accountantUserId,
+    action: "client_member_invited",
+    entityType: "invitation",
+    entityId: invId,
+    payloadJson: { clientId: input.clientId, email },
+  });
+
+  return {
+    ok: true as const,
+    invitationId: invId,
     email,
     expiresAt: expiresAt.toISOString(),
     rawToken,

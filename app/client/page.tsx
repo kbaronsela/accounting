@@ -1,15 +1,35 @@
-import Link from "next/link";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
+import { ClientDashboard } from "./client-dashboard";
+import { getClientMe, listDocumentsForClientUser } from "@/lib/client/queries";
 
-export default function ClientHomePage() {
+export default async function ClientHomePage() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    redirect("/login?callbackUrl=/client");
+  }
+
+  const me = await getClientMe(session.user.id);
+  if (!me) {
+    redirect("/login?callbackUrl=/client");
+  }
+
+  const docsResult = await listDocumentsForClientUser(session.user.id, {
+    limit: 25,
+  });
+  const documents = docsResult.ok ? docsResult.items : [];
+
+  const greetingName =
+    me.user.name?.trim() ||
+    me.user.email?.split("@")[0] ||
+    "משתמשת";
+
   return (
-    <div className="flex min-h-full flex-col items-center justify-center gap-6 px-4 py-16">
-      <h1 className="text-xl font-semibold text-zinc-900">אזור לקוח</h1>
-      <p className="max-w-md text-center text-sm text-zinc-600">
-        כאן יופיע העלאת מסמכים לפי התכנון — בקרוב.
-      </p>
-      <Link href="/" className="text-sm text-blue-700 underline-offset-4 hover:underline">
-        דף הבית
-      </Link>
-    </div>
+    <ClientDashboard
+      greetingName={greetingName}
+      email={me.user.email}
+      clients={me.clients}
+      documents={documents}
+    />
   );
 }

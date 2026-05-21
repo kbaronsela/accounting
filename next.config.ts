@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  /** מכשירים ברשת המקומית שפותחים את dev (למשל טלפון ב־LAN) — IP של המחשב או מה שמופיע בלוג ההתרעה */
+  allowedDevOrigins: ["192.168.50.249"],
 };
 
 export default nextConfig;

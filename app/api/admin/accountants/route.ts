@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { hasRole } from "@/lib/auth/roles";
 import { jsonError } from "@/lib/api/errors";
+import { getPublicInviteUrl } from "@/lib/invitations/public-invite-url";
 import { createAccountantInvitation } from "@/lib/invitations/service";
 import { db } from "@/lib/db";
 import { userRoles, users } from "@/lib/db/schema";
@@ -11,16 +12,6 @@ const postBodySchema = z.object({
   email: z.string().email(),
   displayName: z.string().min(1).max(200).optional(),
 });
-
-function publicInviteUrl(rawToken: string) {
-  const base =
-    process.env.AUTH_URL ??
-    process.env.NEXTAUTH_URL ??
-    "http://localhost:3000";
-  const u = new URL("/invite", base.replace(/\/$/, ""));
-  u.searchParams.set("token", rawToken);
-  return u.toString();
-}
 
 export async function GET() {
   const session = await auth();
@@ -96,7 +87,7 @@ export async function POST(request: Request) {
     return jsonError(400, "INVITATION_FAILED", "לא ניתן ליצור הזמנה.");
   }
 
-  const inviteUrl = publicInviteUrl(created.rawToken);
+  const inviteUrl = getPublicInviteUrl(created.rawToken);
   console.info(
     "[invite] הזמנת רואה חשבון (מייל לא נשלח עדיין — קישור לפיתוח):",
     inviteUrl,

@@ -39,7 +39,7 @@ npm run db:bootstrap-admin
 אם השגיאה היא **`relation "…" already exists`** — בדרך כלל המסד נוצר עם `db:push` וטבלת `drizzle.__drizzle_migrations` ריקה. אז:
 
 1. `npm run db:baseline` — מסמן את `0000` ו־`0001` כהוחלות (לפי hash כמו Drizzle).
-2. `npm run db:migrate` — מחילה רק את מה שנשאר (למשל `0002`).
+2. `npm run db:migrate` — מחילה רק את מה שנשאר (למשל `0002`, `0003`).
 
 אם נראה שאין שינוי ב-DB: הריצי **`npm run db:status`** — תראי לאיזה מסד את מחוברת ואילו עמודות קיימות ב־`invitation`.  
 מעקב Drizzle אחרי מיגרציות נמצא ב־**`drizzle.__drizzle_migrations`** (סכמה `drizzle`, לא `public`).  
@@ -48,7 +48,9 @@ npm run db:bootstrap-admin
 **הזמנות (פיתוח):**
 
 - אדמין: בעמוד `/admin` — טופס «הזמנת רואה חשבון». הקישור מוחזר ב־JSON ובממשק + מודפס ללוג השרת (מייל עתידי).
+- רואה חשבון: בעמוד `/accountant` — מסמכים לפי תיק (סינון), תיקים ולקוחות; API `GET /api/accountants/me/documents`, `GET .../documents/:id`, הורדה `GET .../documents/:id/file`, בנוסף `GET/POST /api/accountants/me/clients`, `POST .../clients/:clientId/members`.
 - מוזמן: `/invite?token=...` — הגדרת סיסמה והתחברות.
+- לקוח: דשבורד ב־`/client`, עריכת מסמך ב־`/client/documents/:id` (**שמירה + הגשה לרואה החשבון**); העלאות מקומיות בפיתוח תחת `.data/uploads`. API לדוגמה: `GET/PATCH /api/client/documents/:id`, `GET .../file`, `POST .../submit`, `POST .../uploads`, `PUT .../upload`.
 - API: `GET /api/invitations/lookup?token=`, `POST /api/invitations/accept`, `POST /api/admin/accountants` (אדמין בלבד), `GET /api/admin/accountants`.
 
 הרצה מקומית:

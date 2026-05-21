@@ -23,8 +23,9 @@
 | `FACEBOOK_CLIENT_ID` / `FACEBOOK_CLIENT_SECRET` | לפי OAuth | Auth.js — Facebook |
 | `EMAIL_PROVIDER_API_KEY` | כן (MVP) | מפתח ספק מייל (Resend / Postmark / וכו׳) |
 | `EMAIL_FROM` | כן | כתובת שולח (למשל `noreply@domain`) |
-| `STORAGE_*` | כן | מפתחות S3/R2 — אזור, bucket, endpoint, credentials |
+| `STORAGE_*` | בפרוד (או S3) | מפתחות S3/R2 — אזור, bucket, endpoint, credentials |
 | `STORAGE_PUBLIC_READ` | לא | ברירת מחדל **false** — גישה דרך presigned בלבד |
+| `LOCAL_UPLOAD_DIR` | לא (פיתוח) | תיקיית יעד לקבצים מקומיים ביחס ל־cwd; ברירת מחדל **`.data/uploads`** |
 | `OCR_*` | לפי ספק | מפתחות/פרויקט Document AI / Textract וכו׳ |
 | `REDIS_URL` / `QUEUE_*` | אופציונלי | לתור עיבוד OCR אם לא serverless מובנה |
 | `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | לפוש | Web Push — `subject` בד״כ `mailto:…` |
@@ -32,6 +33,21 @@
 | `BOOTSTRAP_ADMIN_PASSWORD` | פריסה ראשונה בלבד | סיסמה זמנית; **לסובב מיד** אחרי כניסה ראשונה |
 
 > שמות המשתנים המדויקים ייתאמו לקוד בפועל; הרשימה היא **חוזה לוגי**.
+
+### Google OAuth והתחברות
+
+- הגדרה: `GOOGLE_CLIENT_ID` ו־`GOOGLE_CLIENT_SECRET` ב־`.env.local` (ראו גם `.env.example` ל־redirect URIs מומלצים).
+- ב־Google Cloud חייב להופיע redirect: `https://<האתר>/api/auth/callback/google` (ובמקומי: `http://localhost:3000/api/auth/callback/google`; לבדיקה מרשת LAN — גם עם `http://<IP-המחשב>:3000/...`).
+- `AUTH_URL` צריך להתאים לכתובת שבה משתמש המשתמש (במיוחד בבדיקה מנייד).
+- Google מותר **רק למייל שכבר קיים עם תפקיד** (השלמת הזמנה או bootstrap אדמין). אחרי מכן אפשר לקשר את אותה כתובת ב־Google למשתמש הקיים.
+- מסך **שינוי/הגדרת סיסמה** (אחרי התחברות): `/settings/password` (גם למי שנכנס עם Google ומעדיף גם סיסמה).
+
+### Progressive Web App (הוספה למסך הבית)
+
+- בפרודקשן עם **HTTPS** האתר משתמש ב־`/manifest.json` (איקונים 192/512) וב־`public/sw.js` — כדי שכרום יוכל להתקין/לפתוח ב־**standalone** במקום «קיצור דרך שפותח בכרום».
+- **`http://<IP בתוך ה-LAN>`** (לא localhost ולא HTTPS) אינו *secure context*: **רישום Service Worker לא יעבוד**, וברוב המקרים מה שתראי הוא **קיצור דרך עם סמל קטן של כרום** — התנהגות צפויה. לבדיקה מהטלפון: **Tunnel עם HTTPS** (למשל ngrok / Cloudflare Tunnel) או אירוח על דומיין עם TLS.
+- איקונים: `npm run icons:pwa` יוצר `public/icons/icon-*.png` (Placeholder עם «R»; ניתן להחליף בעיצוב אמיתי).
+- אחרי שינוי איקון/manifest כדאי **למחוק את הקיצור הישן ממסך הבית ולהוסיף מחדש**.
 
 ---
 

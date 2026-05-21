@@ -29,15 +29,21 @@ export default async function AdminLayout({
 
   return (
     <div className="flex min-h-full flex-col bg-zinc-50">
-      <header className="border-b border-zinc-200 bg-white px-4 py-3">
-        <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-3">
+      <header className="border-b border-zinc-200 bg-white px-3 py-2 sm:px-4 sm:py-3">
+        <div className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-x-3 gap-y-2">
           <Link
             href="/admin"
             className="text-sm font-semibold text-zinc-900 hover:text-zinc-700"
           >
             אזור אדמין
           </Link>
-          <nav className="flex flex-wrap items-center gap-3 text-sm text-zinc-600">
+          <nav className="flex min-w-0 flex-1 flex-wrap items-center gap-x-3 gap-y-1 text-sm text-zinc-600 sm:justify-end">
+            <Link
+              href="/settings/password"
+              className="text-blue-700 underline-offset-2 hover:underline"
+            >
+              סיסמה
+            </Link>
             {hasRole(roles, "accountant") ? (
               <Link
                 href="/accountant"
@@ -60,7 +66,7 @@ export default async function AdminLayout({
           </nav>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">{children}</main>
+      <main className="mx-auto w-full max-w-4xl flex-1 px-3 py-4 sm:px-4 sm:py-8">{children}</main>
     </div>
   );
 }

@@ -3,8 +3,8 @@ import type pg from "pg";
 let invitationSchemaInflight: Promise<void> | null = null;
 
 /**
- * מבטיח שעמודת invitation.inviteeDisplayName ואינדקס ייחודי ל-tokenHash קיימים (מקביל ל־0002).
- * בפרודקשן: שגיאה עם הוראה להריץ db:migrate.
+ * מבטיח עמודות הזמנה ואינדקס tokenHash (מקביל למיגרציות 0002+).
+ * בפרודקשן: חוסר עמודה → שגיאה עם הוראה להריץ db:migrate.
  */
 export async function ensureInvitationSchema(pool: pg.Pool): Promise<void> {
   if (!invitationSchemaInflight) {
@@ -15,36 +15,62 @@ export async function ensureInvitationSchema(pool: pg.Pool): Promise<void> {
   await invitationSchemaInflight;
 }
 
-async function runEnsure(pool: pg.Pool): Promise<void> {
-  const col = await pool.query(`
+async function columnExists(
+  pool: pg.Pool,
+  columnName: string,
+): Promise<boolean> {
+  const r = await pool.query(
+    `
     SELECT 1 AS x FROM information_schema.columns
     WHERE table_schema = 'public'
       AND table_name = 'invitation'
-      AND column_name = 'inviteeDisplayName'
+      AND column_name = $1
     LIMIT 1
-  `);
+  `,
+    [columnName],
+  );
+  return (r.rowCount ?? 0) > 0;
+}
 
-  if ((col.rowCount ?? 0) > 0) {
-    await ensureTokenHashUniqueIndex(pool);
-    return;
+async function runEnsure(pool: pg.Pool): Promise<void> {
+  const hasInviteeName = await columnExists(pool, "inviteeDisplayName");
+  if (!hasInviteeName) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        'חסרה עמודה "inviteeDisplayName" בטבלת invitation. הריצי: npm run db:migrate',
+      );
+    }
+    const client = await pool.connect();
+    try {
+      console.warn(
+        '[db] חסרה עמודה invitation.inviteeDisplayName — נוצרת אוטומטית (פיתוח).',
+      );
+      await client.query(`
+        ALTER TABLE "invitation" ADD COLUMN IF NOT EXISTS "inviteeDisplayName" text
+      `);
+    } finally {
+      client.release();
+    }
   }
 
-  if (process.env.NODE_ENV === "production") {
-    throw new Error(
-      'חסרה עמודה "inviteeDisplayName" בטבלת invitation. הריצי: npm run db:migrate',
-    );
-  }
-
-  const client = await pool.connect();
-  try {
-    console.warn(
-      '[db] חסרה עמודה invitation.inviteeDisplayName — נוצרת אוטומטית (פיתוח). בפרודקשן: npm run db:migrate',
-    );
-    await client.query(`
-      ALTER TABLE "invitation" ADD COLUMN IF NOT EXISTS "inviteeDisplayName" text
-    `);
-  } finally {
-    client.release();
+  const hasMemberRole = await columnExists(pool, "clientMemberRole");
+  if (!hasMemberRole) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error(
+        'חסרה עמודה "clientMemberRole" בטבלת invitation. הריצי: npm run db:migrate',
+      );
+    }
+    const client = await pool.connect();
+    try {
+      console.warn(
+        '[db] חסרה עמודה invitation.clientMemberRole — נוצרת אוטומטית (פיתוח).',
+      );
+      await client.query(`
+        ALTER TABLE "invitation" ADD COLUMN IF NOT EXISTS "clientMemberRole" text
+      `);
+    } finally {
+      client.release();
+    }
   }
 
   await ensureTokenHashUniqueIndex(pool);

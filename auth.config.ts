@@ -33,6 +33,7 @@ export const authConfig = {
           Google({
             clientId: process.env.GOOGLE_CLIENT_ID,
             clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+            allowDangerousEmailAccountLinking: true,
           }),
         ]
       : []),
@@ -41,19 +42,42 @@ export const authConfig = {
           Facebook({
             clientId: process.env.FACEBOOK_CLIENT_ID,
             clientSecret: process.env.FACEBOOK_CLIENT_SECRET,
+            allowDangerousEmailAccountLinking: true,
           }),
         ]
       : []),
   ],
   session: { strategy: "jwt", maxAge: 30 * 24 * 60 * 60 },
   callbacks: {
-    async signIn({ user, account }) {
-      if (account?.provider !== "credentials" && user.email) {
-        console.warn(
-          "[auth] OAuth sign-in should validate invitation email before MVP release:",
-          user.email,
-        );
+    async signIn({ user, account, profile }) {
+      if (account?.provider === "credentials") {
+        return true;
       }
+
+      const email = user.email?.trim().toLowerCase();
+      if (!email) {
+        return "/login?error=OAuthMissingEmail";
+      }
+
+      if (account?.provider === "google") {
+        const verified =
+          typeof (profile as { email_verified?: boolean }).email_verified ===
+          "undefined"
+            ? true
+            : Boolean((profile as { email_verified?: boolean }).email_verified);
+        if (!verified) {
+          return "/login?error=OAuthEmailUnverified";
+        }
+      }
+
+      const { userHasOAuthAppAccess } = await import(
+        "@/lib/auth/oauth-user-access"
+      );
+      const ok = await userHasOAuthAppAccess(email);
+      if (!ok) {
+        return `/login?error=OAuthInviteRequired`;
+      }
+
       return true;
     },
     async jwt({ token, user, trigger }) {

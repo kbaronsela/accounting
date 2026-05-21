@@ -14,7 +14,8 @@
     "db:migrate": "node scripts/run-drizzle-migrate.cjs",
     "db:status": "node scripts/db-migration-status.cjs",
     "db:push": "drizzle-kit push",
-    "db:studio": "drizzle-kit studio"
+    "db:studio": "drizzle-kit studio",
+    "icons:pwa": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/generate-pwa-icons.ps1"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.2",

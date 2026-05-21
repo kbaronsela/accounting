@@ -3,6 +3,7 @@
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { PasswordField } from "@/components/password-field";
 
 type LookupOk = {
   email: string;
@@ -25,14 +26,15 @@ function InviteFlowInner() {
   const [formError, setFormError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!token) {
-      setLookupError("חסר קישור הזמנה (פרמטר token).");
-      setLoadingLookup(false);
-      return;
-    }
-
     let cancelled = false;
     (async () => {
+      if (!token) {
+        if (!cancelled) {
+          setLookupError("חסר קישור הזמנה (פרמטר token).");
+          setLoadingLookup(false);
+        }
+        return;
+      }
       try {
         const res = await fetch(
           `/api/invitations/lookup?${new URLSearchParams({ token })}`,
@@ -134,7 +136,7 @@ function InviteFlowInner() {
   return (
     <form
       onSubmit={onSubmit}
-      className="flex w-full max-w-md flex-col gap-4 rounded-lg border border-zinc-200 bg-white p-8 shadow-sm"
+      className="flex w-full max-w-md flex-col gap-4 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:p-8"
       dir="rtl"
     >
       <h1 className="text-lg font-semibold text-zinc-900">השלמת הרשמה</h1>
@@ -155,15 +157,13 @@ function InviteFlowInner() {
         <label htmlFor="password" className="mb-1 block text-sm text-zinc-700">
           סיסמה (לפחות 12 תווים)
         </label>
-        <input
+        <PasswordField
           id="password"
-          type="password"
           autoComplete="new-password"
           required
           minLength={12}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
-          className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
         />
       </div>
       <div>
@@ -173,15 +173,13 @@ function InviteFlowInner() {
         >
           אימות סיסמה
         </label>
-        <input
+        <PasswordField
           id="password2"
-          type="password"
           autoComplete="new-password"
           required
           minLength={12}
           value={password2}
           onChange={(e) => setPassword2(e.target.value)}
-          className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
         />
       </div>
       {formError ? (

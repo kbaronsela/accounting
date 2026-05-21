@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function InvitePage() {
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-zinc-100 px-4 py-12">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-zinc-100 px-3 py-8 sm:min-h-screen sm:px-4 sm:py-12">
       <InviteFlow />
       <Link
         href="/login"

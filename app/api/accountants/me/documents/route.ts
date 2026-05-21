@@ -1,0 +1,74 @@
+import { auth } from "@/auth";
+import { jsonError } from "@/lib/api/errors";
+import { hasRole } from "@/lib/auth/roles";
+import { listDocumentsForAccountant } from "@/lib/accountant/documents-queries";
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+    value,
+  );
+}
+
+function parsePositiveInt(s: string | null, fallback: number): number {
+  if (!s?.trim()) return fallback;
+  const n = Number.parseInt(s, 10);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+export async function GET(request: Request) {
+  const session = await auth();
+  if (!session?.user?.id || !hasRole(session.user.roles, "accountant")) {
+    return jsonError(403, "FORBIDDEN", "נדרשת הרשאת רואה חשבון.");
+  }
+
+  const { searchParams } = new URL(request.url);
+  const clientId = searchParams.get("clientId")?.trim();
+  if (clientId && !isUuid(clientId)) {
+    return jsonError(400, "VALIDATION_ERROR", "פרמטר clientId אינו UUID תקין.");
+  }
+
+  const status = searchParams.get("status")?.trim() ?? null;
+  const from = searchParams.get("from")?.trim() ?? null;
+  const to = searchParams.get("to")?.trim() ?? null;
+  const currency = searchParams.get("currency")?.trim() ?? null;
+  const limit = parsePositiveInt(searchParams.get("limit"), 50);
+
+  let minAmount: number | null = null;
+  let maxAmount: number | null = null;
+  const minRaw = searchParams.get("minAmount");
+  const maxRaw = searchParams.get("maxAmount");
+  if (minRaw) {
+    const n = Number.parseFloat(minRaw);
+    if (!Number.isFinite(n)) {
+      return jsonError(400, "VALIDATION_ERROR", "minAmount אינו מספר תקין.");
+    }
+    minAmount = n;
+  }
+  if (maxRaw) {
+    const n = Number.parseFloat(maxRaw);
+    if (!Number.isFinite(n)) {
+      return jsonError(400, "VALIDATION_ERROR", "maxAmount אינו מספר תקין.");
+    }
+    maxAmount = n;
+  }
+
+  const onlyNew =
+    searchParams.get("onlyNew") === "true" || searchParams.get("onlyNew") === "1";
+
+  const items = await listDocumentsForAccountant(session.user.id, {
+    clientId: clientId || null,
+    status,
+    fromSubmittedDate: from || null,
+    toSubmittedDate: to || null,
+    currency: currency || null,
+    minAmount,
+    maxAmount,
+    onlyNew,
+    limit,
+  });
+
+  return Response.json({
+    items,
+    nextCursor: null,
+  });
+}
