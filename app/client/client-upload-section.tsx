@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import type { ClientMeClientRow } from "@/lib/client/queries";
+import { assessImagePreUploadQuality } from "@/lib/client/image-pre-upload-quality";
 import { completeUploadRobust } from "@/lib/client/upload-complete-robust";
 import { isAllowedUploadMime } from "@/lib/uploads/config";
 
@@ -21,15 +22,22 @@ function guessMime(file: File): string | null {
   return null;
 }
 
+function fileFingerprint(file: File): string {
+  return `${file.name}-${file.size}-${file.lastModified}`;
+}
+
 type Props = {
   clients: ClientMeClientRow[];
 };
 
 export function ClientUploadSection({ clients }: Props) {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
   const desktopFileInputRef = useRef<HTMLInputElement>(null);
   const mobilePickInputRef = useRef<HTMLInputElement>(null);
   const mobileCameraInputRef = useRef<HTMLInputElement>(null);
+  /** אישור להעלאה למרות בדיקת איכות (טשטוש / חשיכה) */
+  const qualityBypassRef = useRef(new Set<string>());
   const [clientId, setClientId] = useState(
     clients.length === 1 ? clients[0].id : "",
   );
@@ -37,6 +45,11 @@ export function ClientUploadSection({ clients }: Props) {
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
+  const [qualityChecking, setQualityChecking] = useState(false);
+  const [qualityHold, setQualityHold] = useState<{
+    blur: boolean;
+    dark: boolean;
+  } | null>(null);
 
   if (clients.length === 0) {
     return (
@@ -66,6 +79,27 @@ export function ClientUploadSection({ clients }: Props) {
     if (!mimeType) {
       setError("סוג הקובץ לא נתמך. מותר: PDF, JPEG, PNG, WebP.");
       return;
+    }
+
+    if (
+      mimeType.startsWith("image/") &&
+      !qualityBypassRef.current.has(fileFingerprint(file))
+    ) {
+      setQualityChecking(true);
+      try {
+        const ass = await assessImagePreUploadQuality(file);
+        if (ass.ok && (ass.likelyBlurry || ass.likelyTooDark)) {
+          setQualityHold({
+            blur: ass.likelyBlurry,
+            dark: ass.likelyTooDark,
+          });
+          return;
+        }
+      } catch {
+        /* אם לא ניתן לנתח בדפדפן — ממשיכים להעלאה */
+      } finally {
+        setQualityChecking(false);
+      }
     }
 
     setPending(true);
@@ -140,6 +174,19 @@ export function ClientUploadSection({ clients }: Props) {
     setPending(false);
   }
 
+  function onQualityChooseAnother() {
+    setQualityHold(null);
+    setFile(null);
+    resetAllFileInputs();
+  }
+
+  function onQualityUploadAnyway() {
+    if (!file) return;
+    qualityBypassRef.current.add(fileFingerprint(file));
+    setQualityHold(null);
+    formRef.current?.requestSubmit();
+  }
+
   function clearTwinMobileInputs(picked: "pick" | "camera") {
     if (picked === "pick" && mobileCameraInputRef.current) {
       mobileCameraInputRef.current.value = "";
@@ -157,11 +204,15 @@ export function ClientUploadSection({ clients }: Props) {
 
   function onMobilePickChange(e: React.ChangeEvent<HTMLInputElement>) {
     clearTwinMobileInputs("pick");
+    qualityBypassRef.current.clear();
+    setQualityHold(null);
     setFile(e.target.files?.[0] ?? null);
   }
 
   function onMobileCameraChange(e: React.ChangeEvent<HTMLInputElement>) {
     clearTwinMobileInputs("camera");
+    qualityBypassRef.current.clear();
+    setQualityHold(null);
     setFile(e.target.files?.[0] ?? null);
   }
 
@@ -175,6 +226,7 @@ export function ClientUploadSection({ clients }: Props) {
         ).
       </p>
       <form
+        ref={formRef}
         className="mt-4 flex flex-col gap-3"
         dir="rtl"
         onSubmit={onSubmit}
@@ -217,7 +269,11 @@ export function ClientUploadSection({ clients }: Props) {
             type="file"
             accept={FILE_ACCEPT_HINT}
             className="block w-full text-sm text-zinc-600 file:me-3 file:rounded-md file:border-0 file:bg-zinc-100 file:px-3 file:py-2 file:font-medium file:text-zinc-800"
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            onChange={(e) => {
+              qualityBypassRef.current.clear();
+              setQualityHold(null);
+              setFile(e.target.files?.[0] ?? null);
+            }}
           />
         </div>
 
@@ -280,12 +336,59 @@ export function ClientUploadSection({ clients }: Props) {
             {message}
           </p>
         ) : null}
+        {qualityHold ? (
+          <div
+            className="rounded-md border border-amber-400 bg-amber-50 p-3 text-sm text-amber-950 shadow-sm"
+            role="alert"
+          >
+            <p className="font-medium">
+              {qualityHold.blur && qualityHold.dark
+                ? "נראה שהתמונה פחות מתאימה לזיהוי (חשוכה ו/או לא חדה)"
+                : qualityHold.blur
+                  ? "נראה שהתמונה מטושטשת או לא חדה מספיק"
+                  : "התמונה נראית חשוכה מדי"}
+            </p>
+            <ul className="mt-2 list-disc space-y-1 pe-4 text-xs text-amber-900/95">
+              {qualityHold.blur ? (
+                <li>
+                  לצילום חד: ייצוב המכשיר, מסמך במוקד, תאורה אחידה — משפרים OCR.
+                </li>
+              ) : null}
+              {qualityHold.dark ? (
+                <li>
+                  לתאורה טובה יותר: נסי להדליק אור, להניח את הקבלה על רקע בהיר,
+                  או להשתמש במבזק/פנס במצלמה.
+                </li>
+              ) : null}
+            </ul>
+            <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+              <button
+                type="button"
+                onClick={() => onQualityChooseAnother()}
+                className="rounded-md border border-amber-800 bg-white px-3 py-2 text-sm font-medium text-amber-950 hover:bg-amber-100"
+              >
+                אבחר / אצלם תמונה חדשה
+              </button>
+              <button
+                type="button"
+                onClick={() => onQualityUploadAnyway()}
+                className="rounded-md border border-transparent bg-zinc-800 px-3 py-2 text-sm font-medium text-white hover:bg-zinc-900"
+              >
+                העלאה בכל זאת
+              </button>
+            </div>
+          </div>
+        ) : null}
         <button
           type="submit"
-          disabled={pending}
+          disabled={pending || qualityChecking || qualityHold !== null}
           className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
         >
-          {pending ? "מעלים…" : "העלאה"}
+          {qualityChecking
+            ? "בודקים איכות תמונה…"
+            : pending
+              ? "מעלים…"
+              : "העלאה"}
         </button>
       </form>
     </section>

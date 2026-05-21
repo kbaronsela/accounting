@@ -63,10 +63,13 @@ export type ClientDocumentListItem = {
   clientId: string;
   clientDisplayName: string;
   status: string;
+  mimeType: string;
   finalAmount: string | null;
   finalCurrency: string | null;
   finalDate: string | null;
   finalVendor: string | null;
+  extractedVendor: string | null;
+  extractedDate: string | null;
   clientNote: string | null;
   submittedAt: string | null;
   createdAt: string;
@@ -124,10 +127,13 @@ export async function listDocumentsForClientUser(
       clientId: documents.clientId,
       clientDisplayName: clients.displayName,
       status: documents.status,
+      mimeType: documents.mimeType,
       finalAmount: documents.finalAmount,
       finalCurrency: documents.finalCurrency,
       finalDate: documents.finalDate,
       finalVendor: documents.finalVendor,
+      extractedVendor: documents.extractedVendor,
+      extractedDate: documents.extractedDate,
       clientNote: documents.clientNote,
       submittedAt: documents.submittedAt,
       createdAt: documents.createdAt,
@@ -146,10 +152,13 @@ export async function listDocumentsForClientUser(
       clientId: r.clientId,
       clientDisplayName: r.clientDisplayName,
       status: r.status,
+      mimeType: r.mimeType,
       finalAmount: r.finalAmount,
       finalCurrency: r.finalCurrency,
       finalDate: r.finalDate,
       finalVendor: r.finalVendor,
+      extractedVendor: r.extractedVendor,
+      extractedDate: r.extractedDate,
       clientNote: r.clientNote,
       submittedAt: r.submittedAt?.toISOString() ?? null,
       createdAt: r.createdAt.toISOString(),

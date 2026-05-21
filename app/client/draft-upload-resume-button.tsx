@@ -59,7 +59,12 @@ export function DraftUploadResumeButton({ documentId }: { documentId: string }) 
   }
 
   return (
-    <div className="space-y-2">
+    <div
+      role="presentation"
+      className="space-y-2"
+      onClick={(e) => e.stopPropagation()}
+      onKeyDown={(e) => e.stopPropagation()}
+    >
       <button
         type="button"
         disabled={busy}
