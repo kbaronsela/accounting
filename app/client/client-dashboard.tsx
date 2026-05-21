@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { DraftUploadResumeButton } from "./draft-upload-resume-button";
 import { ClientUploadSection } from "./client-upload-section";
 import type { ClientDocumentListItem, ClientMeClientRow } from "@/lib/client/queries";
 
@@ -7,6 +8,7 @@ const STATUS_LABELS: Record<string, string> = {
   uploaded: "הועלה",
   ocr_processing: "עיבוד OCR",
   needs_review: "דורש בדיקה",
+  ocr_failed: "כשל ב־OCR",
   ready_to_submit: "מוכן לשליחה",
   submitted: "נשלח לרואה החשבון",
   rejected_quality: "נדחה (איכות)",
@@ -122,6 +124,11 @@ export function ClientDashboard({
                   >
                     פרטים / הגשה
                   </Link>
+                  {d.status === "draft_uploading" ? (
+                    <div className="mt-3">
+                      <DraftUploadResumeButton documentId={d.id} />
+                    </div>
+                  ) : null}
                 </li>
               ))}
             </ul>
@@ -157,12 +164,17 @@ export function ClientDashboard({
                       })}
                     </td>
                     <td className="py-2.5">
-                      <Link
-                        href={`/client/documents/${d.id}`}
-                        className="text-sm text-blue-700 underline-offset-4 hover:underline"
-                      >
-                        פרטים / הגשה
-                      </Link>
+                      <div className="flex flex-col gap-2">
+                        <Link
+                          href={`/client/documents/${d.id}`}
+                          className="text-sm text-blue-700 underline-offset-4 hover:underline"
+                        >
+                          פרטים / הגשה
+                        </Link>
+                        {d.status === "draft_uploading" ? (
+                          <DraftUploadResumeButton documentId={d.id} />
+                        ) : null}
+                      </div>
                     </td>
                   </tr>
                 ))}

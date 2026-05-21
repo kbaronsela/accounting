@@ -407,7 +407,12 @@
 
 **מטרה**: לאשר שהקובץ נכח; להתחיל בדיקת איכות + OCR.
 
-**Response 202** — `{ "status": "uploaded" }` או `ocr_processing`.
+**Response 202** — `{ "status": "ocr_processing" }`. עיבוד OCR רץ ברקע; בסיום מצב המסמך יועדכן ל־`needs_review` (או `ocr_failed`). אם `OCR_DISABLED=1`, הממשק משאיר `uploaded` ללא OCR.
+
+**שגיאות `400` (אם עדיין `draft_uploading`)**
+
+- `UPLOAD_MISSING_FILE` — אין קובץ בשרת (לרוב ה־PUT לא הושלם).
+- `UPLOAD_SIZE_MISMATCH` — יש קובץ אבל אורכו שונה מ־`byteSize` ברשומה.
 
 ---
 
@@ -423,7 +428,17 @@
 
 ---
 
-### 5.6 `PATCH /client/documents/:documentId`
+### 5.6 `DELETE /client/documents/:documentId`
+
+**מטרה**: מחיקת מסמך במצב `draft_uploading` בלבד (טיוטת העלאה תקועה); מוחק גם קובץ מקומי אם קיים.
+
+**Response 204** — ללא גוף.
+
+**שגיאות**: `409` אם הסטטוס כבר לא `draft_uploading`.
+
+---
+
+### 5.7 `PATCH /client/documents/:documentId`
 
 **מטרה**: עריכת שדות לפני submit; רק כש־`status` מאפשר (למשל `needs_review`).
 
@@ -443,7 +458,7 @@
 
 ---
 
-### 5.7 `POST /client/documents/:documentId/submit`
+### 5.8 `POST /client/documents/:documentId/submit`
 
 **ולידציה**: שדות חובה מלאים (ראו `architecture.md` §7).
 

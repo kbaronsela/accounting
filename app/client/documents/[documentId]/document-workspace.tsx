@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { DraftUploadResumeButton } from "@/app/client/draft-upload-resume-button";
 import {
   isoDateToDisplay,
   parseFlexibleInvoiceDate,
@@ -41,6 +42,7 @@ const STATUS_LABELS: Record<string, string> = {
   uploaded: "הועלה",
   ocr_processing: "עיבוד OCR",
   needs_review: "דורש בדיקה",
+  ocr_failed: "כשל ב־OCR",
   ready_to_submit: "מוכן לשליחה לרו״ח",
   submitted: "נשלח לרואה החשבון",
 };
@@ -254,6 +256,22 @@ export function ClientDocumentWorkspace({
           </p>
         ) : null}
       </div>
+
+      {status === "draft_uploading" ? (
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 shadow-sm">
+          <p className="text-sm font-medium text-amber-950">
+            ההעלאה לא הושלמה אצל השרת
+          </p>
+          <p className="mt-1 text-xs text-amber-900/90">
+            אם קובץ בכלל לא נשמר בשרת, «להשלים» לא יעזור — מחקי את הטיוטה
+            והעלי מחדש מהטופס בדשבורד. אם הקובץ כבר בשרת ורק שלב האישור
+            האחרון נקטע, השתמשי ב«להשלים».
+          </p>
+          <div className="mt-3">
+            <DraftUploadResumeButton documentId={initial.id} />
+          </div>
+        </div>
+      ) : null}
 
       {showFileLink ? (
         <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">

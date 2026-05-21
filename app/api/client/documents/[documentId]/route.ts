@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { getDocumentForClientMember } from "@/lib/client/document-access";
 import { isClientDocumentEditable } from "@/lib/client/document-edit-policy";
 import { getPublicAppOrigin } from "@/lib/invitations/public-invite-url";
+import { deleteLocalDocumentFile } from "@/lib/uploads/local-store";
 import { z } from "zod";
 
 type RouteContext = { params: Promise<{ documentId: string }> };
@@ -161,4 +162,30 @@ export async function PATCH(request: Request, context: RouteContext) {
     file: fileBlock(updated.id, updated.mimeType, updated.status),
     editable: isClientDocumentEditable(updated.status),
   });
+}
+
+/** טיוטת העלאה בלבד — מוחק את הקובץ המקומי אם קיים ואת רשומת המסמך */
+export async function DELETE(_request: Request, context: RouteContext) {
+  const session = await auth();
+  if (!session?.user?.id || !hasRole(session.user.roles, "client")) {
+    return jsonError(403, "FORBIDDEN", "נדרשת הרשאת לקוח.");
+  }
+
+  const { documentId } = await context.params;
+  const doc = await getDocumentForClientMember(session.user.id, documentId);
+  if (!doc) {
+    return jsonError(404, "NOT_FOUND", "מסמך לא נמצא.");
+  }
+  if (doc.status !== "draft_uploading") {
+    return jsonError(
+      409,
+      "CONFLICT",
+      "לא ניתן למחוק מסמך שכבר לא ב«טעינת קובץ».",
+    );
+  }
+
+  await deleteLocalDocumentFile(documentId);
+  await db.delete(documents).where(eq(documents.id, documentId));
+
+  return new Response(null, { status: 204 });
 }

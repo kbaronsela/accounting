@@ -25,6 +25,7 @@ const STATUS_LABELS: Record<string, string> = {
   uploaded: "הועלה",
   ocr_processing: "עיבוד OCR",
   needs_review: "דורש בדיקה",
+  ocr_failed: "כשל ב־OCR",
   ready_to_submit: "מוכן לשליחה לרו״ח",
   submitted: "נשלח לרואה החשבון",
   rejected_quality: "נדחה (איכות)",
@@ -165,6 +166,8 @@ export function AccountantDocumentsPanel() {
             <option value="uploaded">הועלה</option>
             <option value="submitted">נשלח לרואה החשבון</option>
             <option value="needs_review">דורש בדיקה</option>
+            <option value="ocr_processing">עיבוד OCR</option>
+            <option value="ocr_failed">כשל OCR</option>
           </select>
         </div>
         <label className="flex cursor-pointer flex-wrap items-start gap-2 py-1 text-sm text-zinc-700 md:items-center">

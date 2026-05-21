@@ -1,9 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import type { ClientMeClientRow } from "@/lib/client/queries";
+import { completeUploadRobust } from "@/lib/client/upload-complete-robust";
 import { isAllowedUploadMime } from "@/lib/uploads/config";
+
+/** כל סוגי הקבצים המותרים בבורר קבצים (ללא מאפיין capture) */
+const FILE_ACCEPT_HINT =
+  ".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp";
 
 function guessMime(file: File): string | null {
   const t = file.type?.trim();
@@ -22,6 +27,9 @@ type Props = {
 
 export function ClientUploadSection({ clients }: Props) {
   const router = useRouter();
+  const desktopFileInputRef = useRef<HTMLInputElement>(null);
+  const mobilePickInputRef = useRef<HTMLInputElement>(null);
+  const mobileCameraInputRef = useRef<HTMLInputElement>(null);
   const [clientId, setClientId] = useState(
     clients.length === 1 ? clients[0].id : "",
   );
@@ -65,6 +73,7 @@ export function ClientUploadSection({ clients }: Props) {
       const createRes = await fetch("/api/client/documents/uploads", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify({
           clientId,
           mimeType,
@@ -87,14 +96,21 @@ export function ClientUploadSection({ clients }: Props) {
       }
       const upload = createData.upload;
       const documentId = createData.documentId;
-      if (!upload?.url || !documentId) {
+      if (!upload || !documentId) {
         setError("תגובת שרת לא צפויה.");
         setPending(false);
         return;
       }
 
-      const putRes = await fetch(upload.url, {
+      /**
+       * URL יחסי — תמיד אותה מקור כמו העמוד. אם משתמשים ב־`upload.url`
+       * המוחזק מגוף `AUTH_URL` (למשל localhost), מהטלפון בפריסת LAN
+       * ה־PUT היה נשלח ל־localhost של המכשיר ונופל בשגיאת רשת.
+       */
+      const putPath = `/api/client/documents/${documentId}/upload`;
+      const putRes = await fetch(putPath, {
         method: upload.method || "PUT",
+        credentials: "same-origin",
         headers: upload.headers || { "Content-Type": mimeType },
         body: file,
       });
@@ -104,22 +120,19 @@ export function ClientUploadSection({ clients }: Props) {
         return;
       }
 
-      const doneRes = await fetch(
-        `/api/client/documents/${documentId}/complete-upload`,
-        { method: "POST" },
-      );
-      const doneData = (await doneRes.json()) as {
-        status?: string;
-        error?: { message?: string };
-      };
-      if (!doneRes.ok) {
-        setError(doneData.error?.message ?? "השלמת ההעלאה נכשלה.");
+      const done = await completeUploadRobust(documentId);
+      if (!done.ok) {
+        setError(
+          done.errorMessage ??
+            "השלמת ההעלאה נכשלה. אפשר לנסות «להשלים העלאה» מהדשבורד אם הקובץ כבר בשרת.",
+        );
         setPending(false);
         return;
       }
 
       setMessage("הקובץ הועלה בהצלחה.");
       setFile(null);
+      resetAllFileInputs();
       router.refresh();
     } catch {
       setError("שגיאת רשת.");
@@ -127,12 +140,39 @@ export function ClientUploadSection({ clients }: Props) {
     setPending(false);
   }
 
+  function clearTwinMobileInputs(picked: "pick" | "camera") {
+    if (picked === "pick" && mobileCameraInputRef.current) {
+      mobileCameraInputRef.current.value = "";
+    }
+    if (picked === "camera" && mobilePickInputRef.current) {
+      mobilePickInputRef.current.value = "";
+    }
+  }
+
+  function resetAllFileInputs() {
+    if (desktopFileInputRef.current) desktopFileInputRef.current.value = "";
+    if (mobilePickInputRef.current) mobilePickInputRef.current.value = "";
+    if (mobileCameraInputRef.current) mobileCameraInputRef.current.value = "";
+  }
+
+  function onMobilePickChange(e: React.ChangeEvent<HTMLInputElement>) {
+    clearTwinMobileInputs("pick");
+    setFile(e.target.files?.[0] ?? null);
+  }
+
+  function onMobileCameraChange(e: React.ChangeEvent<HTMLInputElement>) {
+    clearTwinMobileInputs("camera");
+    setFile(e.target.files?.[0] ?? null);
+  }
+
   return (
     <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
       <h2 className="text-base font-semibold text-zinc-900">העלאת מסמך</h2>
       <p className="mt-1 text-sm text-zinc-600">
-        קבלות ומסמכים (PDF או תמונה), עד 20 מ״ב. בפיתוח הקבצים נשמרים בתיקייה
-        מקומית (<code className="rounded bg-zinc-100 px-1 text-xs">.data/uploads</code>).
+        קבלות ומסמכים (PDF או תמונה), עד 20 מ״ב. במסכים צרים אפשר לצלם או לבחור קובץ;
+        במחשב — העלאת קובץ בלבד. בפיתוח הקבצים נשמרים בתיקייה מקומית (
+        <code className="rounded bg-zinc-100 px-1 text-xs">.data/uploads</code>
+        ).
       </p>
       <form
         className="mt-4 flex flex-col gap-3"
@@ -163,20 +203,72 @@ export function ClientUploadSection({ clients }: Props) {
             </select>
           </div>
         ) : null}
-        <div>
+        {/* דסקטופ (מ־640px ומעלה): בורר קבצים בלבד, בלי מאפיין capture */}
+        <div className="hidden sm:block">
           <label
-            htmlFor="upload-file"
+            htmlFor="upload-file-desktop"
             className="mb-1 block text-sm text-zinc-700"
           >
             קובץ
           </label>
           <input
-            id="upload-file"
+            ref={desktopFileInputRef}
+            id="upload-file-desktop"
             type="file"
-            accept=".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/*"
+            accept={FILE_ACCEPT_HINT}
             className="block w-full text-sm text-zinc-600 file:me-3 file:rounded-md file:border-0 file:bg-zinc-100 file:px-3 file:py-2 file:font-medium file:text-zinc-800"
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           />
+        </div>
+
+        {/* מובייל (מתחת ל־640px): צילום או בחירת קובץ */}
+        <div className="space-y-2 sm:hidden">
+          <span className="block text-sm text-zinc-700">קבלה / מסמך</span>
+          <input
+            ref={mobileCameraInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            capture="environment"
+            className="sr-only"
+            tabIndex={-1}
+            onChange={onMobileCameraChange}
+          />
+          <input
+            ref={mobilePickInputRef}
+            id="upload-file-mobile-pick"
+            type="file"
+            accept={FILE_ACCEPT_HINT}
+            className="sr-only"
+            onChange={onMobilePickChange}
+          />
+          <div className="flex flex-col gap-2">
+            <button
+              type="button"
+              aria-label="צילום קבלה במצלמה"
+              className="w-full rounded-md border border-emerald-800 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-900 hover:bg-emerald-100"
+              onClick={() => mobileCameraInputRef.current?.click()}
+            >
+              צילום קבלה
+            </button>
+            <button
+              type="button"
+              aria-label="בחירת קובץ: PDF או תמונה מהגלריה"
+              className="w-full rounded-md border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+              onClick={() => mobilePickInputRef.current?.click()}
+            >
+              בחירת קובץ (PDF או תמונה מהגלריה)
+            </button>
+          </div>
+          {file ? (
+            <p className="text-xs text-zinc-600">
+              נבחר:{" "}
+              <span className="font-medium text-zinc-800">{file.name}</span>
+            </p>
+          ) : (
+            <p className="text-xs text-zinc-500">
+              טרם נבחר קובץ — השתמשי באחד מהכפתורים למעלה.
+            </p>
+          )}
         </div>
         {error ? (
           <p className="text-sm text-red-700" role="alert">
