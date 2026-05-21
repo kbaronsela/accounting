@@ -88,6 +88,9 @@ export async function listDocumentsForAccountant(
     status?: string | null;
     fromSubmittedDate?: string | null;
     toSubmittedDate?: string | null;
+    /** YYYY-MM-DD — לפי `finalDate` ואם ריק אז `extractedDate` */
+    fromInvoiceDate?: string | null;
+    toInvoiceDate?: string | null;
     currency?: string | null;
     minAmount?: number | null;
     maxAmount?: number | null;
@@ -133,6 +136,19 @@ export async function listDocumentsForAccountant(
     if (toExcl) {
       conditions.push(isNotNull(documents.submittedAt));
       conditions.push(sql`${documents.submittedAt} < ${toExcl}`);
+    }
+  }
+
+  const fromInv = options.fromInvoiceDate?.trim() ?? "";
+  const toInv = options.toInvoiceDate?.trim() ?? "";
+  const isoDay = /^\d{4}-\d{2}-\d{2}$/;
+  if (fromInv || toInv) {
+    const invoiceDay = sql`COALESCE(NULLIF(TRIM(${documents.finalDate}), ''), NULLIF(TRIM(${documents.extractedDate}), ''))`;
+    if (fromInv && isoDay.test(fromInv)) {
+      conditions.push(sql`${invoiceDay} >= ${fromInv}`);
+    }
+    if (toInv && isoDay.test(toInv)) {
+      conditions.push(sql`${invoiceDay} <= ${toInv}`);
     }
   }
 

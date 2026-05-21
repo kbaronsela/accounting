@@ -30,7 +30,25 @@ export async function GET(request: Request) {
   const status = searchParams.get("status")?.trim() ?? null;
   const from = searchParams.get("from")?.trim() ?? null;
   const to = searchParams.get("to")?.trim() ?? null;
+  const invoiceFrom = searchParams.get("invoiceFrom")?.trim() ?? null;
+  const invoiceTo = searchParams.get("invoiceTo")?.trim() ?? null;
   const currency = searchParams.get("currency")?.trim() ?? null;
+
+  const isoDay = /^\d{4}-\d{2}-\d{2}$/;
+  if (invoiceFrom && !isoDay.test(invoiceFrom)) {
+    return jsonError(
+      400,
+      "VALIDATION_ERROR",
+      "invoiceFrom חייב להיות בתבנית YYYY-MM-DD.",
+    );
+  }
+  if (invoiceTo && !isoDay.test(invoiceTo)) {
+    return jsonError(
+      400,
+      "VALIDATION_ERROR",
+      "invoiceTo חייב להיות בתבנית YYYY-MM-DD.",
+    );
+  }
   const limit = parsePositiveInt(searchParams.get("limit"), 50);
 
   let minAmount: number | null = null;
@@ -60,6 +78,8 @@ export async function GET(request: Request) {
     status,
     fromSubmittedDate: from || null,
     toSubmittedDate: to || null,
+    fromInvoiceDate: invoiceFrom || null,
+    toInvoiceDate: invoiceTo || null,
     currency: currency || null,
     minAmount,
     maxAmount,

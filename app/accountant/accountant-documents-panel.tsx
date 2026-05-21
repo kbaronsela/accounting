@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
 
 type ClientOption = {
   id: string;
@@ -60,11 +60,19 @@ function buildDocsQuery(params: Record<string, string>): string {
 export function AccountantDocumentsPanel() {
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [clientIdFilter, setClientIdFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("submitted");
   const [onlyNew, setOnlyNew] = useState(false);
+  const [submittedFrom, setSubmittedFrom] = useState("");
+  const [submittedTo, setSubmittedTo] = useState("");
+  const [invoiceFrom, setInvoiceFrom] = useState("");
+  const [invoiceTo, setInvoiceTo] = useState("");
+  const [minAmount, setMinAmount] = useState("");
+  const [maxAmount, setMaxAmount] = useState("");
   const [items, setItems] = useState<DocRow[]>([]);
   const [listError, setListError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const filterPanelId = useId();
 
   useEffect(() => {
     let cancelled = false;
@@ -79,10 +87,70 @@ export function AccountantDocumentsPanel() {
 
   const loadDocs = useCallback(async () => {
     setListError(null);
+
+    const fromD = submittedFrom.trim();
+    const toD = submittedTo.trim();
+    if (fromD && toD && fromD > toD) {
+      setItems([]);
+      setListError(
+        "תאריך הגשה — «מתאריך» חייב להיות לפני או שווה ל־«עד תאריך».",
+      );
+      setLoading(false);
+      return;
+    }
+
+    const invFrom = invoiceFrom.trim();
+    const invTo = invoiceTo.trim();
+    if (invFrom && invTo && invFrom > invTo) {
+      setItems([]);
+      setListError(
+        "תאריך חשבונית — «מתאריך» חייב להיות לפני או שווה ל־«עד תאריך».",
+      );
+      setLoading(false);
+      return;
+    }
+
+    const minRaw = minAmount.trim();
+    const maxRaw = maxAmount.trim();
+    if (minRaw) {
+      const n = Number.parseFloat(minRaw.replace(",", "."));
+      if (!Number.isFinite(n)) {
+        setItems([]);
+        setListError("סכום מינימום אינו מספר תקין.");
+        setLoading(false);
+        return;
+      }
+    }
+    if (maxRaw) {
+      const n = Number.parseFloat(maxRaw.replace(",", "."));
+      if (!Number.isFinite(n)) {
+        setItems([]);
+        setListError("סכום מקסימום אינו מספר תקין.");
+        setLoading(false);
+        return;
+      }
+    }
+    if (minRaw && maxRaw) {
+      const lo = Number.parseFloat(minRaw.replace(",", "."));
+      const hi = Number.parseFloat(maxRaw.replace(",", "."));
+      if (lo > hi) {
+        setItems([]);
+        setListError("סכום מינימום חייב להיות קטן או שווה לסכום המקסימום.");
+        setLoading(false);
+        return;
+      }
+    }
+
     const params: Record<string, string> = { limit: "50" };
     if (clientIdFilter.trim()) params.clientId = clientIdFilter.trim();
     if (statusFilter.trim()) params.status = statusFilter.trim();
     if (onlyNew) params.onlyNew = "true";
+    if (fromD) params.from = fromD;
+    if (toD) params.to = toD;
+    if (invFrom) params.invoiceFrom = invFrom;
+    if (invTo) params.invoiceTo = invTo;
+    if (minRaw) params.minAmount = minRaw.replace(",", ".");
+    if (maxRaw) params.maxAmount = maxRaw.replace(",", ".");
     const qs = buildDocsQuery(params);
     try {
       const res = await fetch(`/api/accountants/me/documents${qs}`);
@@ -102,7 +170,17 @@ export function AccountantDocumentsPanel() {
       setListError("שגיאת רשת.");
     }
     setLoading(false);
-  }, [clientIdFilter, statusFilter, onlyNew]);
+  }, [
+    clientIdFilter,
+    statusFilter,
+    onlyNew,
+    submittedFrom,
+    submittedTo,
+    invoiceFrom,
+    invoiceTo,
+    minAmount,
+    maxAmount,
+  ]);
 
   useEffect(() => {
     let cancelled = false;
@@ -117,69 +195,210 @@ export function AccountantDocumentsPanel() {
 
   return (
     <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
-      <h2 className="text-base font-semibold text-zinc-900">מסמכים מהלקוחות</h2>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <h2 className="text-base font-semibold text-zinc-900">מסמכים מהלקוחות</h2>
+        <button
+          type="button"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-800 shadow-sm hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2"
+          aria-expanded={filterPanelOpen}
+          aria-controls={filterPanelId}
+          onClick={() => setFilterPanelOpen((open) => !open)}
+        >
+          סינון
+          <span className="text-zinc-500" aria-hidden>
+            {filterPanelOpen ? "▲" : "▼"}
+          </span>
+        </button>
+      </div>
       <p className="mt-1 text-sm text-zinc-600">
-        מסננים לפי תיק וסטטוס. ברירת המחדל מוצגות רק רשומות שאינן בשלב טעינת
-        קובץ; בחרו «הכל» כדי לכלול גם טיוטות בעלאה.
+        מסננים לפי תיק, סטטוס, <span className="font-medium text-zinc-800">תאריך הגשה</span>
+        ו/או <span className="font-medium text-zinc-800">תאריך חשבונית</span> (ערך סופי או מתוצאות
+        חילוץ), ו־<span className="font-medium text-zinc-800">סכום סופי</span> במסמך (מספר בלבד;
+        מטבעות שונים — לפרש בזהירות). ברירת המחדל: «נשלח לרואה החשבון». לחצו על «סינון» לפתיחת
+        המסננים.
       </p>
 
-      <div
-        className="mt-4 flex flex-col gap-3 rounded-md border border-zinc-100 bg-zinc-50 p-4 sm:flex-row sm:flex-wrap sm:items-end"
+      {filterPanelOpen ? (
+        <div
+        id={filterPanelId}
+        className="mt-4 space-y-3 rounded-md border border-zinc-100 bg-zinc-50 p-4"
         dir="rtl"
       >
-        <div className="min-w-[11rem] flex-1">
-          <label
-            htmlFor="acct-docs-client"
-            className="mb-1 block text-xs font-medium text-zinc-700"
-          >
-            תיק
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+          <div className="min-w-[11rem] flex-1">
+            <label
+              htmlFor="acct-docs-client"
+              className="mb-1 block text-xs font-medium text-zinc-700"
+            >
+              תיק
+            </label>
+            <select
+              id="acct-docs-client"
+              value={clientIdFilter}
+              onChange={(e) => setClientIdFilter(e.target.value)}
+              className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+            >
+              <option value="">כל התיקים</option>
+              {clients.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.displayName}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="min-w-[11rem]">
+            <label
+              htmlFor="acct-docs-status"
+              className="mb-1 block text-xs font-medium text-zinc-700"
+            >
+              סטטוס
+            </label>
+            <select
+              id="acct-docs-status"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+            >
+              <option value="submitted">נשלח לרואה החשבון (ברירת מחדל)</option>
+              <option value="">כל הסטטוסים (למעט טעינת קובץ)</option>
+              <option value="all">הכל כולל טיוטות</option>
+              <option value="uploaded">הועלה</option>
+              <option value="ready_to_submit">מוכן לשליחה לרו״ח</option>
+              <option value="needs_review">דורש בדיקה</option>
+              <option value="ocr_processing">עיבוד OCR</option>
+              <option value="ocr_failed">כשל OCR</option>
+            </select>
+          </div>
+          <label className="flex cursor-pointer flex-wrap items-start gap-2 py-1 text-sm text-zinc-700 md:items-center">
+            <input
+              type="checkbox"
+              checked={onlyNew}
+              onChange={(e) => setOnlyNew(e.target.checked)}
+              className="rounded border-zinc-400"
+            />
+            רק חדשים (אחרי «נראה לאחרונה» במסך)
           </label>
-          <select
-            id="acct-docs-client"
-            value={clientIdFilter}
-            onChange={(e) => setClientIdFilter(e.target.value)}
-            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
-          >
-            <option value="">כל התיקים</option>
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.displayName}
-              </option>
-            ))}
-          </select>
         </div>
-        <div className="min-w-[11rem]">
-          <label
-            htmlFor="acct-docs-status"
-            className="mb-1 block text-xs font-medium text-zinc-700"
-          >
-            סטטוס
-          </label>
-          <select
-            id="acct-docs-status"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
-          >
-            <option value="">ברירת מחדל (ללא טיוטות)</option>
-            <option value="all">הכל כולל טיוטות</option>
-            <option value="uploaded">הועלה</option>
-            <option value="submitted">נשלח לרואה החשבון</option>
-            <option value="needs_review">דורש בדיקה</option>
-            <option value="ocr_processing">עיבוד OCR</option>
-            <option value="ocr_failed">כשל OCR</option>
-          </select>
+
+        <div className="border-t border-zinc-200 pt-3">
+          <p className="mb-2 text-xs font-medium text-zinc-600">תאריך הגשה לרואה החשבון</p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:items-end">
+            <div>
+              <label
+                htmlFor="acct-docs-from"
+                className="mb-1 block text-xs font-medium text-zinc-700"
+              >
+                הגשה מתאריך
+              </label>
+              <input
+                id="acct-docs-from"
+                type="date"
+                value={submittedFrom}
+                onChange={(e) => setSubmittedFrom(e.target.value)}
+                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="acct-docs-to"
+                className="mb-1 block text-xs font-medium text-zinc-700"
+              >
+                הגשה עד תאריך
+              </label>
+              <input
+                id="acct-docs-to"
+                type="date"
+                value={submittedTo}
+                onChange={(e) => setSubmittedTo(e.target.value)}
+                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
         </div>
-        <label className="flex cursor-pointer flex-wrap items-start gap-2 py-1 text-sm text-zinc-700 md:items-center">
-          <input
-            type="checkbox"
-            checked={onlyNew}
-            onChange={(e) => setOnlyNew(e.target.checked)}
-            className="rounded border-zinc-400"
-          />
-          רק חדשים (אחרי «נראה לאחרונה» במסך)
-        </label>
-      </div>
+
+        <div className="border-t border-zinc-200 pt-3">
+          <p className="mb-2 text-xs font-medium text-zinc-600">תאריך חשבונית</p>
+          <p className="mb-2 text-xs text-zinc-500">
+            לפי תאריך סופי במסמך; אם אין — לפי תאריך שחולץ אוטומטית. מסמכים בלי תאריך חשבונית לא
+            ייכללו בטווח.
+          </p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:items-end">
+            <div>
+              <label
+                htmlFor="acct-docs-inv-from"
+                className="mb-1 block text-xs font-medium text-zinc-700"
+              >
+                חשבונית מתאריך
+              </label>
+              <input
+                id="acct-docs-inv-from"
+                type="date"
+                value={invoiceFrom}
+                onChange={(e) => setInvoiceFrom(e.target.value)}
+                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="acct-docs-inv-to"
+                className="mb-1 block text-xs font-medium text-zinc-700"
+              >
+                חשבונית עד תאריך
+              </label>
+              <input
+                id="acct-docs-inv-to"
+                type="date"
+                value={invoiceTo}
+                onChange={(e) => setInvoiceTo(e.target.value)}
+                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="border-t border-zinc-200 pt-3">
+          <p className="mb-2 text-xs font-medium text-zinc-600">טווח סכומים (סכום סופי במסמך)</p>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <div>
+              <label
+                htmlFor="acct-docs-min-amt"
+                className="mb-1 block text-xs font-medium text-zinc-700"
+              >
+                סכום מינימום
+              </label>
+              <input
+                id="acct-docs-min-amt"
+                type="text"
+                inputMode="decimal"
+                placeholder="למשל 100"
+                autoComplete="off"
+                value={minAmount}
+                onChange={(e) => setMinAmount(e.target.value)}
+                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="acct-docs-max-amt"
+                className="mb-1 block text-xs font-medium text-zinc-700"
+              >
+                סכום מקסימום
+              </label>
+              <input
+                id="acct-docs-max-amt"
+                type="text"
+                inputMode="decimal"
+                placeholder="למשל 5000"
+                autoComplete="off"
+                value={maxAmount}
+                onChange={(e) => setMaxAmount(e.target.value)}
+                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+              />
+            </div>
+          </div>
+        </div>
+        </div>
+        ) : null}
 
       {loading ? (
         <p className="mt-4 text-sm text-zinc-600">טוענים…</p>

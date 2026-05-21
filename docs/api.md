@@ -289,8 +289,9 @@
 | פרמטר | תיאור |
 |--------|--------|
 | `clientId` | UUID |
-| `from` / `to` | על `submitted_at` (ISO date) |
-| `minAmount` / `maxAmount` | עשרוני |
+| `from` / `to` | טווח **תאריך הגשה** — על `submitted_at` (YYYY-MM-DD) |
+| `invoiceFrom` / `invoiceTo` | טווח **תאריך חשבונית** — `COALESCE(finalDate, extractedDate)` (YYYY-MM-DD) |
+| `minAmount` / `maxAmount` | עשרוני — על `finalAmount` |
 | `currency` | למשל `ILS` |
 | `status` | ברירת מחדל: `submitted` לרשימת “שליחות”; אפשר להרחיץ לטיפול פנימי |
 | `onlyNew` | `true` — מסנן לפי `submitted_at > last_documents_seen_at` |
