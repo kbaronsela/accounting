@@ -3,6 +3,7 @@ import { jsonError } from "@/lib/api/errors";
 import { hasRole } from "@/lib/auth/roles";
 import { getDocumentDetailForAccountant } from "@/lib/accountant/documents-queries";
 import { getPublicAppOrigin } from "@/lib/invitations/public-invite-url";
+import { canonicalizeCurrency } from "@/lib/client/currency-canonical";
 
 type RouteContext = { params: Promise<{ documentId: string }> };
 
@@ -29,7 +30,7 @@ export async function GET(_request: Request, context: RouteContext) {
     clientDisplayName: row.clientDisplayName,
     status: row.status,
     finalAmount: row.finalAmount,
-    finalCurrency: row.finalCurrency,
+    finalCurrency: canonicalizeCurrency(row.finalCurrency),
     finalDate: row.finalDate,
     finalVendor: row.finalVendor,
     clientNote: row.clientNote,

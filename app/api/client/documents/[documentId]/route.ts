@@ -4,6 +4,7 @@ import { hasRole } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { clients, documents } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { canonicalizeCurrency } from "@/lib/client/currency-canonical";
 import { getDocumentForClientMember } from "@/lib/client/document-access";
 import { isClientDocumentEditable } from "@/lib/client/document-edit-policy";
 import { getPublicAppOrigin } from "@/lib/invitations/public-invite-url";
@@ -62,7 +63,7 @@ export async function GET(_request: Request, context: RouteContext) {
     clientDisplayName: cname,
     status: doc.status,
     finalAmount: doc.finalAmount,
-    finalCurrency: doc.finalCurrency,
+    finalCurrency: canonicalizeCurrency(doc.finalCurrency),
     finalDate: doc.finalDate,
     finalVendor: doc.finalVendor,
     clientNote: doc.clientNote,
@@ -119,7 +120,9 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
   if (p.finalCurrency !== undefined) {
     patch.finalCurrency =
-      p.finalCurrency.trim().length > 0 ? p.finalCurrency.trim().toUpperCase() : null;
+      p.finalCurrency.trim().length > 0
+        ? canonicalizeCurrency(p.finalCurrency.trim())
+        : null;
   }
   if (p.finalDate !== undefined) {
     patch.finalDate =
@@ -151,7 +154,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     clientDisplayName: cname,
     status: updated.status,
     finalAmount: updated.finalAmount,
-    finalCurrency: updated.finalCurrency,
+    finalCurrency: canonicalizeCurrency(updated.finalCurrency),
     finalDate: updated.finalDate,
     finalVendor: updated.finalVendor,
     clientNote: updated.clientNote,

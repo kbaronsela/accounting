@@ -1,3 +1,4 @@
+import { SHEKEL_DISPLAY } from "@/lib/client/currency-canonical";
 import { parseFlexibleInvoiceDate } from "@/lib/client/date-input-helpers";
 
 export type HeuristicExtraction = {
@@ -43,7 +44,8 @@ function decimalToStoredAmount(n: number): string | null {
 }
 
 function detectCurrency(text: string): string | null {
-  if (/₪|ש[\"״']?ח|שקל|NIS\b|ILS\b|NEW\s*Sheqel/i.test(text)) return "ILS";
+  if (/₪|ש[\"״']?ח|שקל|NIS\b|ILS\b|NEW\s*Sheqel/i.test(text))
+    return SHEKEL_DISPLAY;
   if (/\$/u.test(text) || /\bUSD\b/i.test(text)) return "USD";
   if (/€|\bEUR\b/i.test(text)) return "EUR";
   return null;
@@ -170,7 +172,7 @@ export function extractHeuristicInvoiceFields(raw: string): HeuristicExtraction 
   const extractedDate = scanDate(text);
   const extractedAmount = scanAmount(text);
   if (!extractedCurrency && (extractedAmount || /₪|ש[\"״']?ח|ILS\b|NIS\b/i.test(text))) {
-    extractedCurrency = "ILS";
+    extractedCurrency = SHEKEL_DISPLAY;
   }
   const extractedVendor = guessVendor(text);
   return {

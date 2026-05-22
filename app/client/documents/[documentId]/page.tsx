@@ -31,6 +31,7 @@ export default async function ClientDocumentPage(props: PageProps) {
     id: doc.id,
     clientId: doc.clientId,
     clientDisplayName: clRow?.displayName ?? null,
+    mimeType: doc.mimeType,
     status: doc.status,
     finalAmount: doc.finalAmount,
     finalCurrency: doc.finalCurrency,

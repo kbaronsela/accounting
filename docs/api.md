@@ -400,7 +400,7 @@
 | `from` / `to` | טווח **תאריך הגשה** — על `submitted_at` (YYYY-MM-DD) |
 | `invoiceFrom` / `invoiceTo` | טווח **תאריך חשבונית** — `COALESCE(finalDate, extractedDate)` (YYYY-MM-DD) |
 | `minAmount` / `maxAmount` | עשרוני — על `finalAmount` |
-| `currency` | למשל `ILS` |
+| `currency` | למשל `ש״ח` (פרמטרים כמו `ILS`/`NIS` מתקבלים ומנורמלים) |
 | `status` | ברירת מחדל: `submitted` לרשימת “שליחות”; אפשר להרחיץ לטיפול פנימי |
 | `onlyNew` | `true` — מסנן לפי `submitted_at > last_documents_seen_at` |
 | `cursor` / `limit` | עימוד |
@@ -416,7 +416,7 @@
       "clientDisplayName": "משפחת כהן",
       "status": "submitted",
       "finalAmount": "123.45",
-      "finalCurrency": "ILS",
+      "finalCurrency": "ש״ח",
       "finalDate": "2026-01-10",
       "finalVendor": "ספק לדוגמה",
       "submittedAt": "2026-01-12T10:00:00.000Z",
@@ -441,7 +441,7 @@
   "clientId": "uuid",
   "status": "submitted",
   "finalAmount": "123.45",
-  "finalCurrency": "ILS",
+  "finalCurrency": "ש״ח",
   "finalDate": "2026-01-10",
   "finalVendor": "ספק לדוגמה",
   "clientNote": "טקסט",
@@ -558,7 +558,7 @@
 ```json
 {
   "finalAmount": "123.45",
-  "finalCurrency": "ILS",
+  "finalCurrency": "ש״ח",
   "finalDate": "2026-01-10",
   "finalVendor": "ספק",
   "clientNote": "הערה"

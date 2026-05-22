@@ -10,6 +10,10 @@ import {
   ne,
   sql,
 } from "drizzle-orm";
+import {
+  SHEKEL_DISPLAY,
+  canonicalizeCurrency,
+} from "@/lib/client/currency-canonical";
 
 export type AccountantDocumentListItem = {
   id: string;
@@ -173,9 +177,13 @@ export async function listDocumentsForAccountant(
     // אם עדיין אין last_documents_seen_at — כל הגשות ייחשבו חדשות (אין הגבלה על ישן יותר)
   }
 
-  const currency = options.currency?.trim().toUpperCase();
-  if (currency) {
-    conditions.push(eq(documents.finalCurrency, currency));
+  const currencyCanon = canonicalizeCurrency(options.currency);
+  if (currencyCanon === SHEKEL_DISPLAY) {
+    conditions.push(
+      sql`${eq(documents.finalCurrency, SHEKEL_DISPLAY)} OR upper(trim(coalesce(${documents.finalCurrency}, ''))) IN ('ILS', 'NIS')`,
+    );
+  } else if (currencyCanon) {
+    conditions.push(eq(documents.finalCurrency, currencyCanon));
   }
 
   if (options.minAmount != null) {
@@ -216,7 +224,7 @@ export async function listDocumentsForAccountant(
     clientDisplayName: r.clientDisplayName,
     status: r.status,
     finalAmount: r.finalAmount,
-    finalCurrency: r.finalCurrency,
+    finalCurrency: canonicalizeCurrency(r.finalCurrency),
     finalDate: r.finalDate,
     finalVendor: r.finalVendor,
     submittedAt: r.submittedAt?.toISOString() ?? null,
@@ -261,7 +269,7 @@ export async function getDocumentDetailForAccountant(
     clientDisplayName: row.clientDisplayName,
     status: row.status,
     finalAmount: row.finalAmount,
-    finalCurrency: row.finalCurrency,
+    finalCurrency: canonicalizeCurrency(row.finalCurrency),
     finalDate: row.finalDate,
     finalVendor: row.finalVendor,
     clientNote: row.clientNote,

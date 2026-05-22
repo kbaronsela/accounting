@@ -2,8 +2,13 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { DraftUploadResumeButton } from "@/app/client/draft-upload-resume-button";
+import {
+  SHEKEL_DISPLAY,
+  canonicalizeCurrency,
+} from "@/lib/client/currency-canonical";
 import {
   isoDateToDisplay,
   parseFlexibleInvoiceDate,
@@ -11,10 +16,13 @@ import {
   todayIsoLocal,
 } from "@/lib/client/date-input-helpers";
 
+type ClientCurrencyCode = typeof SHEKEL_DISPLAY | "USD" | "EUR";
+
 export type ClientDocumentDetailInitial = {
   id: string;
   clientId: string;
   clientDisplayName: string | null;
+  mimeType: string;
   status: string;
   finalAmount: string | null;
   finalCurrency: string | null;
@@ -25,16 +33,16 @@ export type ClientDocumentDetailInitial = {
   editable: boolean;
 };
 
-const CURRENCY_OPTIONS = [
-  { code: "ILS" as const, label: "\u05E9\u05F4\u05D7" },
-  { code: "USD" as const, label: "\u05D3\u05D5\u05DC\u05E8" },
-  { code: "EUR" as const, label: "\u05D9\u05D5\u05E8\u05D5" },
+const CURRENCY_OPTIONS: { code: ClientCurrencyCode; label: string }[] = [
+  { code: SHEKEL_DISPLAY, label: SHEKEL_DISPLAY },
+  { code: "USD", label: "\u05D3\u05D5\u05DC\u05E8" },
+  { code: "EUR", label: "\u05D9\u05D5\u05E8\u05D5" },
 ];
 
-function coerceSelectableCurrency(raw: string | null | undefined): "ILS" | "USD" | "EUR" {
-  const u = (raw ?? "").trim().toUpperCase();
-  if (u === "USD" || u === "EUR") return u;
-  return "ILS";
+function coerceSelectableCurrency(raw: string | null | undefined): ClientCurrencyCode {
+  const c = canonicalizeCurrency(raw);
+  if (c === "USD" || c === "EUR") return c;
+  return SHEKEL_DISPLAY;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -66,6 +74,71 @@ function CalendarIcon({ className }: { className?: string }) {
       <line x1="8" y1="2" x2="8" y2="6" />
       <line x1="3" y1="10" x2="21" y2="10" />
     </svg>
+  );
+}
+
+type ClientDocumentFileViewerProps = {
+  mimeType: string;
+  fileUrl: string;
+  onClose: () => void;
+  closeRef: React.RefObject<HTMLButtonElement | null>;
+};
+
+/** תצוגה פנימית — ב־PWA במובייל `target=_blank` מחליף את האפליקציה וב־ESC נסגרת כולה במקום הלשונית */
+function ClientDocumentFileViewerOverlay({
+  mimeType,
+  fileUrl,
+  onClose,
+  closeRef,
+}: ClientDocumentFileViewerProps) {
+  const preferImageViewer = mimeType.trim().toLowerCase().startsWith("image/");
+
+  return (
+    <div
+      className="fixed inset-0 z-[200] flex items-end justify-center sm:items-center sm:p-3"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="client-doc-viewer-title"
+    >
+      <button
+        type="button"
+        className="absolute inset-0 bg-black/70"
+        aria-label="סגירת תצוגת הקובץ"
+        onClick={onClose}
+      />
+      <div
+        dir="rtl"
+        className="relative z-10 flex h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-t-2xl border border-zinc-200 bg-zinc-50 shadow-2xl sm:h-[min(90dvh,920px)] sm:rounded-xl"
+      >
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-zinc-200 bg-white px-3 py-2.5 sm:px-4">
+          <h2 id="client-doc-viewer-title" className="text-sm font-semibold text-zinc-900">
+            תצוגת המסמך
+          </h2>
+          <button
+            ref={closeRef}
+            type="button"
+            onClick={onClose}
+            className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+          >
+            סגירה
+          </button>
+        </div>
+        <div className="relative min-h-0 flex-1 bg-zinc-100">
+          {preferImageViewer ? (
+            <div className="size-full overflow-auto p-2 sm:p-4">
+              {/* eslint-disable-next-line @next/next/no-img-element -- הצגת מסמך מאות origin עם קוקי הסשן (לא מתאים ל־next/image) */}
+              <img
+                src={fileUrl}
+                alt=""
+                className="mx-auto block max-h-full max-w-full object-contain"
+              />
+            </div>
+          ) : (
+            <iframe title="תוכן המסמך" src={fileUrl} className="absolute inset-0 size-full bg-white" />
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -104,6 +177,62 @@ export function ClientDocumentWorkspace({
   const [error, setError] = useState<string | null>(null);
   const [pendingSave, setPendingSave] = useState(false);
   const [pendingSubmit, setPendingSubmit] = useState(false);
+
+  const viewerCloseBtnRef = useRef<HTMLButtonElement>(null);
+  const [fileViewerOpen, setFileViewerOpen] = useState(false);
+  const [showNewTabFileLink, setShowNewTabFileLink] = useState(false);
+
+  useEffect(() => {
+    const sync = () => {
+      try {
+        const standaloneLike =
+          window.matchMedia("(display-mode: standalone)").matches ||
+          Boolean(
+            (window.navigator as Navigator & { standalone?: boolean }).standalone,
+          );
+        const wideEnough = window.matchMedia("(min-width: 640px)").matches;
+        setShowNewTabFileLink(wideEnough && !standaloneLike);
+      } catch {
+        setShowNewTabFileLink(false);
+      }
+    };
+    sync();
+    const mqStandalone = window.matchMedia("(display-mode: standalone)");
+    const mqWide = window.matchMedia("(min-width: 640px)");
+    mqStandalone.addEventListener("change", sync);
+    mqWide.addEventListener("change", sync);
+    window.addEventListener("orientationchange", sync);
+    return () => {
+      mqStandalone.removeEventListener("change", sync);
+      mqWide.removeEventListener("change", sync);
+      window.removeEventListener("orientationchange", sync);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!fileViewerOpen) return undefined;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const id = window.setTimeout(() => {
+      viewerCloseBtnRef.current?.focus();
+    }, 0);
+    return () => {
+      window.clearTimeout(id);
+      document.body.style.overflow = prevOverflow;
+    };
+  }, [fileViewerOpen]);
+
+  useEffect(() => {
+    if (!fileViewerOpen) return undefined;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setFileViewerOpen(false);
+      }
+    };
+    window.addEventListener("keydown", onKeyDown, true);
+    return () => window.removeEventListener("keydown", onKeyDown, true);
+  }, [fileViewerOpen]);
 
   function flushInvoiceDateFromDisplay(): boolean {
     const parsed = parseFlexibleInvoiceDate(invoiceDate.display);
@@ -276,14 +405,44 @@ export function ClientDocumentWorkspace({
       {showFileLink ? (
         <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
           <p className="text-sm font-medium text-zinc-800">קבצים</p>
-          <a
-            href={`/api/client/documents/${initial.id}/file`}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="mt-2 inline-block text-sm text-blue-700 underline-offset-4 hover:underline"
-          >
-            פתיחת הקובץ בלשונית חדשה
-          </a>
+          <div className="mt-2 space-y-2">
+            <button
+              type="button"
+              onClick={() => setFileViewerOpen(true)}
+              className="block text-sm font-medium text-blue-700 underline-offset-4 hover:underline"
+            >
+              הצגת הקובץ
+            </button>
+            {showNewTabFileLink ? (
+              <p className="text-xs text-zinc-600">
+                <a
+                  href={`/api/client/documents/${initial.id}/file`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-700 underline-offset-4 hover:underline"
+                >
+                  פתיחה בלשונית חדשה
+                </a>{" "}
+                — נוח בעיקר במחשב
+              </p>
+            ) : (
+              <p className="text-xs text-zinc-600">
+                בתצוגת אפליקציה במובייל ההצגה היא בתוך המסך; לסיום התצוגה יש להשתמש
+                ב־«סגירה» (ולא בהקשה על Esc שעלול לסגור את האפליקציה).
+              </p>
+            )}
+          </div>
+          {fileViewerOpen
+            ? createPortal(
+                <ClientDocumentFileViewerOverlay
+                  mimeType={initial.mimeType}
+                  fileUrl={`/api/client/documents/${initial.id}/file`}
+                  onClose={() => setFileViewerOpen(false)}
+                  closeRef={viewerCloseBtnRef}
+                />,
+                document.body,
+              )
+            : null}
         </div>
       ) : null}
 
@@ -328,13 +487,13 @@ export function ClientDocumentWorkspace({
             value={finalCurrencyCode}
             disabled={!finalEditable}
             onChange={(e) =>
-              setFinalCurrencyCode(e.target.value as "ILS" | "USD" | "EUR")
+              setFinalCurrencyCode(e.target.value as ClientCurrencyCode)
             }
             className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm disabled:bg-zinc-100"
           >
             {CURRENCY_OPTIONS.map((o) => (
               <option key={o.code} value={o.code}>
-                {o.label} ({o.code})
+                {o.code === SHEKEL_DISPLAY ? o.label : `${o.label} (${o.code})`}
               </option>
             ))}
           </select>

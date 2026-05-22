@@ -1,4 +1,5 @@
 import { db } from "@/lib/db";
+import { canonicalizeCurrency } from "@/lib/client/currency-canonical";
 import { clientMembers, clients, documents, users } from "@/lib/db/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";
 
@@ -154,7 +155,7 @@ export async function listDocumentsForClientUser(
       status: r.status,
       mimeType: r.mimeType,
       finalAmount: r.finalAmount,
-      finalCurrency: r.finalCurrency,
+      finalCurrency: canonicalizeCurrency(r.finalCurrency),
       finalDate: r.finalDate,
       finalVendor: r.finalVendor,
       extractedVendor: r.extractedVendor,
