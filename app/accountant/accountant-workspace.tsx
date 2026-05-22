@@ -11,7 +11,7 @@ type Section = "documents" | "clients" | "users";
 
 const NAV: { section: Section; label: string }[] = [
   { section: "documents", label: "מסמכים" },
-  { section: "clients", label: "ניהול תיקים" },
+  { section: "clients", label: "ניהול לקוחות" },
   { section: "users", label: "ניהול משתמשים" },
 ];
 

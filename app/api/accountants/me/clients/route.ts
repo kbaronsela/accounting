@@ -3,19 +3,32 @@ import { jsonError } from "@/lib/api/errors";
 import { hasRole } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { clientMembers, clients } from "@/lib/db/schema";
+import { createClientWithInvitations } from "@/lib/invitations/service";
 import { getPublicInviteUrl } from "@/lib/invitations/public-invite-url";
-import {
-  createClientWithInvitation,
-} from "@/lib/invitations/service";
 import { and, count, eq, ilike } from "drizzle-orm";
 import { z } from "zod";
 
-const postBodySchema = z.object({
-  displayName: z.string().min(1).max(300),
-  inviteEmail: z.string().email(),
-  inviteeDisplayName: z.string().min(1).max(200).optional(),
-  memberRole: z.enum(["primary", "member"]).optional().default("primary"),
+const invitedUserSchema = z.object({
+  email: z.string().email(),
+  inviteeDisplayName: z.string().max(300).optional(),
 });
+
+const postBodySchema = z
+  .object({
+    clientName: z.string().min(1).max(300),
+    users: z.array(invitedUserSchema).min(1).max(4),
+  })
+  .superRefine((d, ctx) => {
+    const keys = d.users.map((u) => u.email.trim().toLowerCase());
+    const unique = new Set(keys);
+    if (unique.size !== keys.length) {
+      ctx.addIssue({
+        path: ["users"],
+        code: z.ZodIssueCode.custom,
+        message: "כתובות האימייל של המוזמנים חייבות להיות שונות.",
+      });
+    }
+  });
 
 export async function GET(request: Request) {
   const session = await auth();
@@ -47,12 +60,7 @@ export async function GET(request: Request) {
     .from(clients)
     .leftJoin(clientMembers, eq(clientMembers.clientId, clients.id))
     .where(and(...conditions))
-    .groupBy(
-      clients.id,
-      clients.displayName,
-      clients.status,
-      clients.createdAt,
-    );
+    .groupBy(clients.id, clients.displayName, clients.status, clients.createdAt);
 
   return Response.json({
     items: rows.map((r) => ({
@@ -88,12 +96,17 @@ export async function POST(request: Request) {
     );
   }
 
-  const created = await createClientWithInvitation({
+  const invitationsIn = parsed.data.users.map((u) => ({
+    email: u.email,
+    inviteeDisplayName: u.inviteeDisplayName?.trim()
+      ? u.inviteeDisplayName.trim()
+      : null,
+  }));
+
+  const created = await createClientWithInvitations({
     accountantUserId: session.user.id,
-    displayName: parsed.data.displayName,
-    inviteEmail: parsed.data.inviteEmail,
-    inviteeDisplayName: parsed.data.inviteeDisplayName ?? null,
-    memberRole: parsed.data.memberRole,
+    clientDisplayName: parsed.data.clientName.trim(),
+    invitations: invitationsIn,
   });
 
   if (!created.ok) {
@@ -108,24 +121,36 @@ export async function POST(request: Request) {
       return jsonError(
         409,
         "PENDING_INVITATION",
-        "כבר קיימת הזמנה פעילה ללקוח עם כתובת המייל הזו.",
+        "כבר קיימת הזמנה פעילה עם אחד מכתובות האימייל.",
       );
     }
-    return jsonError(400, "INVITATION_FAILED", "לא ניתן ליצור תיק והזמנה.");
+    if (created.reason === "duplicate_emails_in_request") {
+      return jsonError(400, "VALIDATION_ERROR", "כפילות באימיילים.");
+    }
+    if (created.reason === "invite_count") {
+      return jsonError(
+        400,
+        "VALIDATION_ERROR",
+        "נדרש בין משתמש אחד לארבעה.",
+      );
+    }
+    return jsonError(400, "INVITATION_FAILED", "לא ניתן ליצור את הלקוח והזמנות.");
   }
 
-  const inviteUrl = getPublicInviteUrl(created.rawToken);
-  console.info(
-    "[invite] תיק לקוח + הזמנה (מייל לא נשלח עדיין — קישור לפיתוח):",
-    inviteUrl,
-  );
+  for (const inv of created.invites) {
+    const inviteUrl = getPublicInviteUrl(inv.rawToken);
+    console.info("[invite] לקוח חדש + הזמנה (בפיתוח — קישור):", inviteUrl);
+  }
 
   return Response.json(
     {
       client: created.client,
-      invitationId: created.invitationId,
-      expiresAt: created.expiresAt,
-      inviteUrl,
+      invitations: created.invites.map((i) => ({
+        invitationId: i.invitationId,
+        email: i.email,
+        expiresAt: i.expiresAt,
+        inviteUrl: getPublicInviteUrl(i.rawToken),
+      })),
     },
     { status: 201 },
   );

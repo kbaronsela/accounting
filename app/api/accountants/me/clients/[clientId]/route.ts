@@ -1,11 +1,18 @@
 import { randomUUID } from "node:crypto";
 import { auth } from "@/auth";
 import { deleteClientOwnedByAccountant } from "@/lib/accountant/delete-client-owned-by-accountant";
+import { getClientOwnedByAccountant } from "@/lib/accountant/assert-accountant-client-access";
 import { jsonError } from "@/lib/api/errors";
 import { hasRole } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
-import { auditEvents, clients } from "@/lib/db/schema";
-import { and, eq } from "drizzle-orm";
+import {
+  auditEvents,
+  clientMembers,
+  clients,
+  invitations,
+  users,
+} from "@/lib/db/schema";
+import { and, eq, isNull } from "drizzle-orm";
 import { z } from "zod";
 
 type RouteContext = { params: Promise<{ clientId: string }> };
@@ -13,6 +20,76 @@ type RouteContext = { params: Promise<{ clientId: string }> };
 const patchBodySchema = z.object({
   displayName: z.string().min(1).max(300),
 });
+
+export async function GET(_request: Request, context: RouteContext) {
+  const session = await auth();
+  if (!session?.user?.id || !hasRole(session.user.roles, "accountant")) {
+    return jsonError(403, "FORBIDDEN", "נדרשת הרשאת רואה חשבון.");
+  }
+
+  const { clientId } = await context.params;
+  if (!z.string().uuid().safeParse(clientId).success) {
+    return jsonError(400, "VALIDATION_ERROR", "מזהה לקוח לא תקין.");
+  }
+
+  const owned = await getClientOwnedByAccountant(session.user.id, clientId);
+  if (!owned) {
+    return jsonError(404, "NOT_FOUND", "הלקוח לא נמצא או שאין הרשאה.");
+  }
+
+  const memberRows = await db
+    .select({
+      userId: clientMembers.userId,
+      email: users.email,
+      displayName: users.name,
+      memberRole: clientMembers.memberRole,
+    })
+    .from(clientMembers)
+    .innerJoin(users, eq(clientMembers.userId, users.id))
+    .where(eq(clientMembers.clientId, clientId));
+
+  const pendingRows = await db
+    .select({
+      id: invitations.id,
+      email: invitations.email,
+      inviteeDisplayName: invitations.inviteeDisplayName,
+      expiresAt: invitations.expiresAt,
+    })
+    .from(invitations)
+    .where(
+      and(
+        eq(invitations.clientId, clientId),
+        isNull(invitations.consumedAt),
+        eq(invitations.role, "client"),
+      ),
+    );
+
+  return Response.json({
+    client: {
+      id: owned.id,
+      displayName: owned.displayName,
+      status: owned.status,
+    },
+    members: memberRows.map((m) => {
+      const displayNameTrimmed = (m.displayName ?? "").trim();
+      return {
+      userId: m.userId,
+      email: m.email ?? "",
+      displayName:
+        displayNameTrimmed.length > 0
+          ? displayNameTrimmed
+          : (m.email?.split("@")[0] ?? ""),
+      memberRole: m.memberRole,
+      };
+    }),
+    pendingInvitations: pendingRows.map((p) => ({
+      invitationId: p.id,
+      email: p.email,
+      inviteeDisplayName: p.inviteeDisplayName ?? null,
+      expiresAt: p.expiresAt.toISOString(),
+    })),
+  });
+}
 
 export async function PATCH(request: Request, context: RouteContext) {
   const session = await auth();
@@ -22,7 +99,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const { clientId } = await context.params;
   if (!z.string().uuid().safeParse(clientId).success) {
-    return jsonError(400, "VALIDATION_ERROR", "מזהה תיק לא תקין.");
+    return jsonError(400, "VALIDATION_ERROR", "מזהה לקוח לא תקין.");
   }
 
   let body: unknown;
@@ -58,7 +135,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     });
 
   if (updated.length === 0) {
-    return jsonError(404, "NOT_FOUND", "התיק לא נמצא או שאין הרשאה.");
+    return jsonError(404, "NOT_FOUND", "הלקוח לא נמצא או שאין הרשאה.");
   }
 
   await db.insert(auditEvents).values({
@@ -83,7 +160,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
 
   const { clientId } = await context.params;
   if (!z.string().uuid().safeParse(clientId).success) {
-    return jsonError(400, "VALIDATION_ERROR", "מזהה תיק לא תקין.");
+    return jsonError(400, "VALIDATION_ERROR", "מזהה לקוח לא תקין.");
   }
 
   const result = await deleteClientOwnedByAccountant({

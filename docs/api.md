@@ -221,17 +221,26 @@
 
 ### 4.5 `POST /accountants/me/clients`
 
-**מטרה**: פתיחת תיק + הזמנת חבר ראשון.
+**מטרה**: פתיחת לקוח + עד ארבע הזמנות למשתמשים (ראשון primary, ההמשך member בברירת מחדל).
 
 **Body**
 
 ```json
 {
-  "displayName": "משפחת כהן",
-  "inviteEmail": "client@example.com",
-  "memberRole": "primary"
+  "clientName": "משפחת כהן",
+  "users": [
+    {
+      "email": "primary@example.com",
+      "inviteeDisplayName": "אורז אופציונלי"
+    },
+    {
+      "email": "member@example.com"
+    }
+  ]
 }
 ```
+
+`inviteeDisplayName` אופציונלי; כל המיילים ייחודיים בגוף; `users.length` חייב להיות בין 1 ל־4.
 
 **Response 201**
 
@@ -242,16 +251,30 @@
     "displayName": "משפחת כהן",
     "status": "pending_invite"
   },
-  "invitationId": "uuid",
-  "expiresAt": "2026-01-01T00:00:00.000Z"
+  "invitations": [
+    {
+      "invitationId": "uuid",
+      "email": "primary@example.com",
+      "expiresAt": "…",
+      "inviteUrl": "https://…"
+    }
+  ]
 }
 ```
 
 ---
 
+### `GET /accountants/me/clients/:clientId`
+
+**מטרה**: פרטי לקוח, חברים פעילים, והזמנות פתוחות.
+
+**Response 200**: `{ client, members, pendingInvitations }`
+
+---
+
 ### `PATCH /accountants/me/clients/:clientId`
 
-**מטרה**: עדכון שם תצוגה של תיק שנפתח על ידי רואה החשבון המחובר — רק כשהתיק שייך אליו.
+**מטרה**: עדכון שם התצוגה של הלקוח (רק ברשות רואה החשבון שהוא הבעלים).
 
 **Body**
 
@@ -259,9 +282,9 @@
 { "displayName": "שם חדש" }
 ```
 
-**Response 204** — אין גוף.
+**Response 200** — `{ "client": { … } }`
 
-**שגיאות**: `400` ולידציה, `403`/`404` אין גישה.
+**שגיאות**: `400`, `403`, `404`
 
 **Audit**: `accountant_rename_client`.
 
@@ -269,13 +292,49 @@
 
 ### `DELETE /accountants/me/clients/:clientId`
 
-**מטרה**: מחיקת התיק ובמסגרת DB גם רשומות מסמכים (cascade); קבצי העלאה מקומיים נמחקים אחרי מחיקת הרשומות.
+**מטרה**: מחיקת הלקוח ומסמכיו במסד; בהמשך גם קבצי העלאה מקומיים.
 
-**Response 204** — אין גוף.
+**Response 204** — ללא גוף.
 
-**שגיאות**: `403`/`404` אין גישה.
+**שגיאות**: `403`, `404`
 
 **Audit**: `accountant_delete_client`.
+
+---
+
+### `PATCH /accountants/me/clients/:clientId/members/:userId`
+
+עדכון שם תצוגה ו/או אימייל למשתמש שנרשם. שינוי אימייל אסור אם למשתמש יש OAuth (Google/Facebook).
+
+**Body**: `{ "displayName"?: string, "email"?: string }` — לפחות אחד.
+
+**Response 200** — `{ "member": { "userId", "email", "displayName" } }`
+
+---
+
+### `DELETE /accountants/me/clients/:clientId/members/:userId`
+
+הסרת משתמש מהלקוח. אם אחרי המחיקה אין למשתמש עוד הרשאות השתייכות (`client_member`) אל אף לקוח — מוסר גם התפקיד הגלובלי `client`.
+
+**Response 204**
+
+---
+
+### `PATCH /accountants/me/clients/:clientId/invitations/:invitationId`
+
+עריכת הזמנה ממתינה: שם מוזמן או כתובת אימייל.
+
+**Body**: `{ "inviteeDisplayName"?: string, "email"?: string }`
+
+**Response 200** — `{ "pendingInvitation": { … } }`
+
+---
+
+### `DELETE /accountants/me/clients/:clientId/invitations/:invitationId`
+
+ביטול ההזמנה (מסומנת עם `consumed_at` והקישור נחסם).
+
+**Response 204**
 
 ---
 
@@ -294,7 +353,7 @@
 
 **Response 201** — כמו הזמנה + פירוט.
 
-**שגיאות**: `403` אם התיק לא שייך לרואה החשבון.
+**שגיאות**: `403` אם הלקוח לא שייך לרואה החשבון.
 
 ---
 

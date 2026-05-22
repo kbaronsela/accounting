@@ -9,8 +9,7 @@ import { and, eq } from "drizzle-orm";
 const notFoundSentinel = "__delete_client_not_found__";
 
 /**
- * קורא למחוק תיק שלקוח מאומת עם רואה החשבון;
- * במסך DB מסיר מסמכים וחברי התיק דרך cascade; אחר כך גם קבצי upload מקומיים.
+ * קורא למחוק את הלקוח ואת מסמכיו (DB + קבצי upload מקומיים).
  */
 export async function deleteClientOwnedByAccountant(params: {
   clientId: string;
@@ -70,7 +69,7 @@ export async function deleteClientOwnedByAccountant(params: {
       return {
         ok: false as const,
         code: "NOT_FOUND" as const,
-        message: "התיק לא נמצא או שאין הרשאה.",
+        message: "הלקוח לא נמצא או שאין הרשאה.",
       };
     }
     throw e;

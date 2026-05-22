@@ -211,7 +211,7 @@ export function AccountantDocumentsPanel() {
         </button>
       </div>
       <p className="mt-1 text-sm text-zinc-600">
-        מסננים לפי תיק, סטטוס, <span className="font-medium text-zinc-800">תאריך הגשה</span>
+        מסננים לפי לקוח, סטטוס, <span className="font-medium text-zinc-800">תאריך הגשה</span>
         ו/או <span className="font-medium text-zinc-800">תאריך חשבונית</span> (ערך סופי או מתוצאות
         חילוץ), ו־<span className="font-medium text-zinc-800">סכום סופי</span> במסמך (מספר בלבד;
         מטבעות שונים — לפרש בזהירות). ברירת המחדל: «נשלח לרואה החשבון». לחצו על «סינון» לפתיחת
@@ -230,7 +230,7 @@ export function AccountantDocumentsPanel() {
               htmlFor="acct-docs-client"
               className="mb-1 block text-xs font-medium text-zinc-700"
             >
-              תיק
+              לקוח
             </label>
             <select
               id="acct-docs-client"
@@ -238,7 +238,7 @@ export function AccountantDocumentsPanel() {
               onChange={(e) => setClientIdFilter(e.target.value)}
               className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
             >
-              <option value="">כל התיקים</option>
+              <option value="">כל הלקוחות</option>
               {clients.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.displayName}
@@ -468,7 +468,7 @@ export function AccountantDocumentsPanel() {
             <table className="w-full min-w-[44rem] text-right text-sm">
               <thead>
                 <tr className="border-b border-zinc-200 text-xs text-zinc-500">
-                  <th className="pb-2 font-medium">תיק</th>
+                  <th className="pb-2 font-medium">לקוח</th>
                   <th className="pb-2 font-medium">סטטוס</th>
                   <th className="pb-2 font-medium">סכום</th>
                   <th className="pb-2 font-medium">ספק</th>

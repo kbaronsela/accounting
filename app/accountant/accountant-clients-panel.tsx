@@ -2,222 +2,116 @@
 
 import { useCallback, useEffect, useId, useState } from "react";
 
-type ClientRow = {
+type ClientListRow = {
   id: string;
   displayName: string;
-  status: string;
-  memberCount: number;
-  createdAt: string;
 };
 
-async function fetchClientsList(): Promise<
-  | { ok: true; items: ClientRow[] }
+type DetailMember = {
+  userId: string;
+  email: string;
+  displayName: string;
+  memberRole: string;
+};
+
+type DetailInvite = {
+  invitationId: string;
+  email: string;
+  inviteeDisplayName: string | null;
+  expiresAt: string;
+};
+
+type ClientDetailPayload = {
+  client: {
+    id: string;
+    displayName: string;
+    status: string;
+  };
+  members: DetailMember[];
+  pendingInvitations: DetailInvite[];
+};
+
+function initialUserRows() {
+  return [{ displayName: "", email: "" }];
+}
+
+async function fetchClientList(): Promise<
+  | { ok: true; items: ClientListRow[] }
   | { ok: false; message: string }
 > {
   const res = await fetch("/api/accountants/me/clients");
   const data = (await res.json()) as {
-    items?: ClientRow[];
+    items?: ClientListRow[];
     error?: { message?: string };
   };
   if (!res.ok) {
     return {
       ok: false,
-      message: data.error?.message ?? "לא ניתן לטעון את רשימת התיקים.",
+      message: data.error?.message ?? "לא ניתן לטעון את רשימת הלקוחות.",
     };
   }
-  return { ok: true, items: data.items ?? [] };
-}
-
-function AccountantClientRow({
-  client,
-  onRemoved,
-  onRenamed,
-}: {
-  client: ClientRow;
-  onRemoved: () => void | Promise<void>;
-  onRenamed: (displayName: string) => void;
-}) {
-  const [renameOpen, setRenameOpen] = useState(false);
-  const [renameValue, setRenameValue] = useState(client.displayName);
-  const [busy, setBusy] = useState(false);
-  const [rowErr, setRowErr] = useState<string | null>(null);
-
-  useEffect(() => {
-    setRenameValue(client.displayName);
-  }, [client.displayName, client.id]);
-
-  async function handleSaveRename() {
-    const trimmed = renameValue.trim();
-    if (!trimmed) {
-      setRowErr("שם התיק לא יכול להיות ריק.");
-      return;
-    }
-    setBusy(true);
-    setRowErr(null);
-    try {
-      const res = await fetch(`/api/accountants/me/clients/${client.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ displayName: trimmed }),
-      });
-      const data = (await res.json().catch(() => ({}))) as {
-        client?: { displayName?: string };
-        error?: { message?: string };
-      };
-      if (!res.ok) {
-        setRowErr(data.error?.message ?? `שגיאה (${String(res.status)}).`);
-        return;
-      }
-      const next = data.client?.displayName ?? trimmed;
-      onRenamed(next);
-      setRenameOpen(false);
-      setRenameValue(next);
-    } catch {
-      setRowErr("שגיאת רשת.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function handleDelete() {
-    const okConfirm = window.confirm(
-      `למחוק את התיק «${client.displayName}» ואת כל המסמכים המצורפים? הפעולה בלתי הפיכית.`,
-    );
-    if (!okConfirm) return;
-    setBusy(true);
-    setRowErr(null);
-    try {
-      const res = await fetch(`/api/accountants/me/clients/${client.id}`, {
-        method: "DELETE",
-      });
-      if (res.status === 204) {
-        await Promise.resolve(onRemoved());
-      } else {
-        const data = (await res.json().catch(() => ({}))) as {
-          error?: { message?: string };
-        };
-        setRowErr(data.error?.message ?? `המחיקה נכשלה (${String(res.status)}).`);
-      }
-    } catch {
-      setRowErr("שגיאת רשת.");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <li className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3">
-      {!renameOpen ? (
-        <span className="font-medium text-zinc-900">{client.displayName}</span>
-      ) : (
-        <input
-          type="text"
-          value={renameValue}
-          onChange={(e) => setRenameValue(e.target.value)}
-          className="min-w-[10rem] max-w-[20rem] flex-1 rounded-md border border-zinc-400 px-2 py-1 text-sm text-zinc-900"
-          aria-label="שם התיק לעריכה"
-        />
-      )}
-      <span className="text-xs text-zinc-500">{client.status}</span>
-      <span className="text-xs text-zinc-500">
-        {client.memberCount} משתמשים במערכת
-      </span>
-
-      {!renameOpen ? (
-        <>
-          <button
-            type="button"
-            onClick={() => {
-              setRenameValue(client.displayName);
-              setRenameOpen(true);
-              setRowErr(null);
-            }}
-            className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
-          >
-            שינוי שם תיק
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={handleDelete}
-            className="rounded-md border border-red-200 bg-white px-2 py-1 text-xs font-medium text-red-800 hover:bg-red-50 disabled:opacity-60"
-          >
-            מחק תיק
-          </button>
-        </>
-      ) : (
-        <>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={handleSaveRename}
-            className="rounded-md bg-zinc-900 px-2 py-1 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
-          >
-            {busy ? "שומרים…" : "שמירה"}
-          </button>
-          <button
-            type="button"
-            disabled={busy}
-            onClick={() => {
-              setRenameOpen(false);
-              setRenameValue(client.displayName);
-              setRowErr(null);
-            }}
-            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
-          >
-            ביטול
-          </button>
-        </>
-      )}
-
-      {rowErr ? (
-        <p className="w-full basis-full text-start text-xs text-red-700" role="alert">
-          {rowErr}
-        </p>
-      ) : null}
-    </li>
-  );
+  return { ok: true, items: (data.items ?? []).map(({ id, displayName }) => ({ id, displayName })) };
 }
 
 export function AccountantClientsPanel() {
-  const [items, setItems] = useState<ClientRow[]>([]);
+  const [items, setItems] = useState<ClientListRow[]>([]);
   const [listError, setListError] = useState<string | null>(null);
   const [loadingList, setLoadingList] = useState(true);
 
-  const [displayName, setDisplayName] = useState("");
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteeDisplayName, setInviteeDisplayName] = useState("");
-  const [memberRole, setMemberRole] = useState<"primary" | "member">("primary");
-  const [message, setMessage] = useState<string | null>(null);
-  const [inviteUrl, setInviteUrl] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-  const [newClientModalOpen, setNewClientModalOpen] = useState(false);
-  const newClientModalTitleId = useId();
-  const newClientModalDescId = useId();
+  const [newModalOpen, setNewModalOpen] = useState(false);
+  const [clientNameInput, setClientNameInput] = useState("");
+  const [newUsers, setNewUsers] = useState(() => initialUserRows());
+  const [submitBusy, setSubmitBusy] = useState(false);
+  const [newModalErr, setNewModalErr] = useState<string | null>(null);
+  const newModalTitleId = useId();
 
-  const refreshClients = useCallback(async () => {
-    const result = await fetchClientsList();
+  const [detailOpen, setDetailOpen] = useState(false);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailId, setDetailId] = useState<string | null>(null);
+  const [detail, setDetail] = useState<ClientDetailPayload | null>(null);
+  const [detailErr, setDetailErr] = useState<string | null>(null);
+
+  /** מפתח: `m:userId` או `i:invitationId` */
+  const [expandedRow, setExpandedRow] = useState<string | null>(null);
+
+  /** טיוטות עריכה לפי מפתח שורת משתמש/הזמנה */
+  const [drafts, setDrafts] = useState<
+    Record<string, { name: string; email: string }>
+  >({});
+
+  const [sectionBusyKey, setSectionBusyKey] = useState<string | null>(null);
+  const [editFlags, setEditFlags] = useState<
+    Record<string, { name: boolean; email: boolean }>
+  >({});
+
+  const resetNewModal = useCallback(() => {
+    setClientNameInput("");
+    setNewUsers(initialUserRows());
+    setNewModalErr(null);
+    setSubmitBusy(false);
+  }, []);
+
+  const refreshList = useCallback(async () => {
+    const result = await fetchClientList();
     if (result.ok) {
       setItems(result.items);
       setListError(null);
     } else {
-      setListError(result.message);
       setItems([]);
+      setListError(result.message);
     }
   }, []);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const result = await fetchClientsList();
+      const result = await fetchClientList();
       if (cancelled) return;
       setLoadingList(false);
       if (result.ok) {
         setItems(result.items);
-        setListError(null);
       } else {
         setListError(result.message);
-        setItems([]);
       }
     })();
     return () => {
@@ -225,80 +119,350 @@ export function AccountantClientsPanel() {
     };
   }, []);
 
-  async function onSubmit(e: React.FormEvent) {
+  useEffect(() => {
+    if (!newModalOpen) return;
+    function onEsc(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        resetNewModal();
+        setNewModalOpen(false);
+      }
+    }
+    window.addEventListener("keydown", onEsc);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onEsc);
+      document.body.style.overflow = prev;
+    };
+  }, [newModalOpen, resetNewModal]);
+
+  useEffect(() => {
+    if (!detailOpen) return;
+    function onEsc(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setDetailOpen(false);
+      }
+    }
+    window.addEventListener("keydown", onEsc);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onEsc);
+      document.body.style.overflow = prev;
+    };
+  }, [detailOpen]);
+
+  async function openDetail(clientId: string) {
+    setDetailId(clientId);
+    setDetailOpen(true);
+    setDetail(null);
+    setDetailErr(null);
+    setDetailLoading(true);
+    setExpandedRow(null);
+    setDrafts({});
+    setEditFlags({});
+
+    try {
+      const res = await fetch(`/api/accountants/me/clients/${clientId}`);
+      const data = (await res.json()) as ClientDetailPayload & {
+        error?: { message?: string };
+      };
+      if (!res.ok) {
+        setDetailErr(data.error?.message ?? "לא ניתן לטעון את פרטי הלקוח.");
+        setDetailLoading(false);
+        return;
+      }
+      setDetail(data);
+    } catch {
+      setDetailErr("שגיאת רשת.");
+    }
+    setDetailLoading(false);
+  }
+
+  function displayLabelForInvite(inv: DetailInvite) {
+    const n = inv.inviteeDisplayName?.trim();
+    if (n) return n;
+    return inv.email.split("@")[0] ?? inv.email;
+  }
+
+  function toggleRow(key: string, name: string, email: string) {
+    setDrafts((prev) => ({
+      ...prev,
+      [key]: prev[key] ?? { name, email },
+    }));
+    setEditFlags((prev) => ({
+      ...prev,
+      [key]: prev[key] ?? { name: false, email: false },
+    }));
+    setExpandedRow((prev) => (prev === key ? null : key));
+  }
+
+  async function submitNewClient(e: React.FormEvent) {
     e.preventDefault();
-    setMessage(null);
-    setInviteUrl(null);
-    setPending(true);
+    setNewModalErr(null);
+    const name = clientNameInput.trim();
+    if (!name) {
+      setNewModalErr('נדרש "שם הלקוח".');
+      return;
+    }
+    for (const u of newUsers) {
+      if (!u.email.trim()) {
+        setNewModalErr("נדרשת כתובת אימייל לכל משתמש.");
+        return;
+      }
+    }
+
+    const usersPayload = newUsers.map((u) => ({
+      email: u.email.trim().toLowerCase(),
+      inviteeDisplayName: u.displayName.trim() || undefined,
+    }));
+
+    setSubmitBusy(true);
     try {
       const res = await fetch("/api/accountants/me/clients", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          displayName: displayName.trim(),
-          inviteEmail: inviteEmail.trim().toLowerCase(),
-          inviteeDisplayName: inviteeDisplayName.trim() || undefined,
-          memberRole,
+          clientName: name,
+          users: usersPayload,
         }),
       });
-      const data = (await res.json()) as {
-        inviteUrl?: string;
+      const data = (await res.json().catch(() => ({}))) as {
         error?: { message?: string };
       };
       if (!res.ok) {
-        setMessage(data.error?.message ?? "הבקשה נכשלה.");
-        setPending(false);
+        setNewModalErr(data.error?.message ?? "הבקשה נכשלה.");
+        setSubmitBusy(false);
         return;
       }
-      setMessage(
-        "נוצר תיק לקוח והזמנה. בשלב הפיתוח ניתן להעתיק את הקישור; הוא מופיע גם בלוג השרת.",
-      );
-      setInviteUrl(data.inviteUrl ?? null);
-      setDisplayName("");
-      setInviteEmail("");
-      setInviteeDisplayName("");
-      setMemberRole("primary");
-      await refreshClients();
+      await refreshList();
+      resetNewModal();
+      setNewModalOpen(false);
     } catch {
-      setMessage("שגיאת רשת.");
+      setNewModalErr("שגיאת רשת.");
     }
-    setPending(false);
+    setSubmitBusy(false);
   }
 
-  useEffect(() => {
-    if (!newClientModalOpen) return;
-    function onKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        setNewClientModalOpen(false);
-      }
+  async function patchMember(clientId: string, userKey: string, userId: string) {
+    const draft = drafts[userKey];
+    if (!draft) return;
+    setDetailErr(null);
+    const nm = draft.name.trim();
+    const em = draft.email.trim().toLowerCase();
+    if (!nm || !em) {
+      setDetailErr("חובה שם תצוגה ואימייל לפני שמירה.");
+      return;
     }
-    window.addEventListener("keydown", onKeyDown);
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [newClientModalOpen]);
+    setSectionBusyKey(userKey);
+    try {
+      const body: Record<string, string> = {};
+      body.displayName = nm;
+      body.email = em;
+      const res = await fetch(`/api/accountants/me/clients/${clientId}/members/${userId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        member?: { displayName?: string; email?: string };
+        error?: { message?: string };
+      };
+      if (!res.ok) {
+        setDetailErr(data.error?.message ?? "שגיאה בשמירה.");
+        return;
+      }
+      if (detail) {
+        const nextName = data.member?.displayName ?? draft.name.trim();
+        const nextEmail = data.member?.email ?? draft.email.trim();
+        setDetail({
+          ...detail,
+          members: detail.members.map((m) =>
+            m.userId === userId
+              ? {
+                  ...m,
+                  displayName: nextName,
+                  email: nextEmail,
+                }
+              : m,
+          ),
+        });
+        setDrafts((p) => ({
+          ...p,
+          [userKey]: { name: nextName, email: nextEmail },
+        }));
+      }
+      setEditFlags((p) => ({ ...p, [userKey]: { name: false, email: false } }));
+    } catch {
+      setDetailErr("שגיאת רשת.");
+    } finally {
+      setSectionBusyKey(null);
+    }
+  }
+
+  async function deleteMember(clientId: string, userKey: string, userId: string) {
+    if (!window.confirm("להסיר את המשתמש מהלקוח?")) return;
+    setSectionBusyKey(userKey);
+    setDetailErr(null);
+    try {
+      const res = await fetch(`/api/accountants/me/clients/${clientId}/members/${userId}`, {
+        method: "DELETE",
+      });
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: { message?: string };
+        };
+        setDetailErr(data.error?.message ?? "המחיקה נכשלה.");
+      } else if (detail) {
+        setDetail({
+          ...detail,
+          members: detail.members.filter((m) => m.userId !== userId),
+        });
+        setExpandedRow((k) => (k === userKey ? null : k));
+      }
+    } catch {
+      setDetailErr("שגיאת רשת.");
+    } finally {
+      setSectionBusyKey(null);
+    }
+  }
+
+  async function patchInvite(
+    clientId: string,
+    inviteKey: string,
+    invitationId: string,
+  ) {
+    const draft = drafts[inviteKey];
+    if (!draft) return;
+    setDetailErr(null);
+    const emailNorm = draft.email.trim().toLowerCase();
+    if (!emailNorm) {
+      setDetailErr("חובה כתובת אימייל לפני שמירה.");
+      return;
+    }
+    setSectionBusyKey(inviteKey);
+    try {
+      const res = await fetch(
+        `/api/accountants/me/clients/${clientId}/invitations/${invitationId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            inviteeDisplayName: draft.name.trim() || undefined,
+            email: emailNorm,
+          }),
+        },
+      );
+      const data = (await res.json().catch(() => ({}))) as {
+        pendingInvitation?: DetailInvite;
+        error?: { message?: string };
+      };
+      if (!res.ok) {
+        setDetailErr(data.error?.message ?? "שגיאה בשמירה.");
+        return;
+      }
+      if (detail && data.pendingInvitation) {
+        const pi = data.pendingInvitation;
+        const invName = pi.inviteeDisplayName?.trim() ?? "";
+        const nameDraft =
+          invName.length > 0 ? invName : (pi.email.split("@")[0] ?? pi.email);
+        setDetail({
+          ...detail,
+          pendingInvitations: detail.pendingInvitations.map((p) =>
+            p.invitationId === invitationId ? pi : p,
+          ),
+        });
+        setDrafts((p) => ({
+          ...p,
+          [inviteKey]: { name: nameDraft, email: pi.email },
+        }));
+      }
+      setEditFlags((p) => ({ ...p, [inviteKey]: { name: false, email: false } }));
+    } catch {
+      setDetailErr("שגיאת רשת.");
+    } finally {
+      setSectionBusyKey(null);
+    }
+  }
+
+  async function deleteInvite(
+    clientId: string,
+    inviteKey: string,
+    invitationId: string,
+  ) {
+    if (!window.confirm("לבטל את ההזמנה למשתמש זה?")) return;
+    setSectionBusyKey(inviteKey);
+    setDetailErr(null);
+    try {
+      const res = await fetch(
+        `/api/accountants/me/clients/${clientId}/invitations/${invitationId}`,
+        { method: "DELETE" },
+      );
+      if (!res.ok) {
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: { message?: string };
+        };
+        setDetailErr(data.error?.message ?? "המחיקה נכשלה.");
+      } else if (detail) {
+        setDetail({
+          ...detail,
+          pendingInvitations: detail.pendingInvitations.filter(
+            (p) => p.invitationId !== invitationId,
+          ),
+        });
+        setExpandedRow((k) => (k === inviteKey ? null : k));
+      }
+    } catch {
+      setDetailErr("שגיאת רשת.");
+    } finally {
+      setSectionBusyKey(null);
+    }
+  }
+
+  async function deleteClient(clientId: string) {
+    if (
+      !window.confirm(
+        `למחוק את הלקוח «${detail?.client.displayName ?? ""}» ואת כל המסמכים שלו? הפעולה בלתי הפיכית.`,
+      )
+    ) {
+      return;
+    }
+    setDetailErr(null);
+    try {
+      const res = await fetch(`/api/accountants/me/clients/${clientId}`, {
+        method: "DELETE",
+      });
+      if (res.status === 204) {
+        setDetailOpen(false);
+        await refreshList();
+      } else {
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: { message?: string };
+        };
+        setDetailErr(data.error?.message ?? "המחיקה נכשלה.");
+      }
+    } catch {
+      setDetailErr("שגיאת רשת.");
+    }
+  }
 
   return (
     <div className="w-full max-w-3xl space-y-6 sm:space-y-8">
       <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-base font-semibold text-zinc-900">ניהול תיקים</h2>
+          <h2 className="text-base font-semibold text-zinc-900">ניהול לקוחות</h2>
           <button
             type="button"
             onClick={() => {
-              setMessage(null);
-              setInviteUrl(null);
-              setNewClientModalOpen(true);
+              resetNewModal();
+              setNewModalOpen(true);
             }}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-900 shadow-sm hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2"
+            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-900 shadow-sm hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
           >
             לקוח חדש
           </button>
         </div>
+
         {loadingList ? (
           <p className="mt-3 text-sm text-zinc-600">טוענים…</p>
         ) : listError ? (
@@ -306,171 +470,461 @@ export function AccountantClientsPanel() {
             {listError}
           </p>
         ) : items.length === 0 ? (
-          <p className="mt-3 text-sm text-zinc-600">אין תיקים עדיין.</p>
+          <p className="mt-3 text-sm text-zinc-600">אין לקוחות עדיין.</p>
         ) : (
           <ul className="mt-4 divide-y divide-zinc-100 border-t border-zinc-100">
             {items.map((c) => (
-              <AccountantClientRow
-                key={c.id}
-                client={c}
-                onRemoved={() => refreshClients()}
-                onRenamed={(nextDisplayName) =>
-                  setItems((prev) =>
-                    prev.map((row) =>
-                      row.id === c.id ? { ...row, displayName: nextDisplayName } : row,
-                    ),
-                  )
-                }
-              />
+              <li key={c.id} className="py-3">
+                <button
+                  type="button"
+                  className="w-full rounded-md px-1 py-2 text-start text-sm font-medium text-zinc-900 hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+                  onClick={() => openDetail(c.id)}
+                >
+                  {c.displayName}
+                </button>
+              </li>
             ))}
           </ul>
         )}
       </div>
 
-      {newClientModalOpen ? (
-        <div
-          className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto px-4 pb-10 pt-4 sm:pt-10"
-          dir="rtl"
-        >
+      {newModalOpen ? (
+        <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto px-4 pb-10 pt-4 sm:pt-10" dir="rtl">
           <button
             type="button"
             className="absolute inset-0 bg-zinc-900/50"
-            aria-label="סגירת חלון"
-            onClick={() => setNewClientModalOpen(false)}
+            aria-label="סגירה"
+            onClick={() => {
+              resetNewModal();
+              setNewModalOpen(false);
+            }}
           />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby={newClientModalTitleId}
-            aria-describedby={newClientModalDescId}
-            className="relative z-10 my-4 flex max-h-[min(100vh-2rem,42rem)] w-full max-w-lg flex-col rounded-xl border border-zinc-200 bg-white shadow-xl sm:my-6 sm:max-h-[min(100vh-5rem,42rem)]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex shrink-0 items-start justify-between gap-3 border-b border-zinc-100 px-4 py-3 sm:px-5">
-              <div className="min-w-0 ps-8 sm:ps-0">
-                <h2
-                  id={newClientModalTitleId}
-                  className="text-base font-semibold text-zinc-900"
-                >
-                  לקוח חדש
-                </h2>
-                <p
-                  id={newClientModalDescId}
-                  className="mt-1 text-sm text-zinc-600"
-                >
-                  יצירת תיק ללקוח ושליחת קישור להשלמת הרשמה (בהמשך: מייל אוטומטי).
-                </p>
-              </div>
+          <div className="relative z-10 my-4 flex w-full max-w-lg flex-col rounded-xl border border-zinc-200 bg-white shadow-xl sm:my-6">
+            <div className="flex items-start justify-between border-b border-zinc-100 px-4 py-3 sm:px-5">
+              <h2 id={newModalTitleId} className="text-base font-semibold text-zinc-900 ps-10">
+                לקוח חדש
+              </h2>
               <button
                 type="button"
-                className="absolute start-3 top-3 rounded-md p-1.5 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
-                onClick={() => setNewClientModalOpen(false)}
+                className="absolute start-3 top-3 rounded-md p-1.5 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800"
                 aria-label="סגירה"
+                onClick={() => {
+                  resetNewModal();
+                  setNewModalOpen(false);
+                }}
               >
                 <span aria-hidden className="text-lg leading-none">
                   ×
                 </span>
               </button>
             </div>
-            <form
-              onSubmit={onSubmit}
-              className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-4 sm:px-5"
-            >
-              <div className="flex flex-col gap-3">
-                <div>
-                  <label
-                    htmlFor="cpa-client-name"
-                    className="mb-1 block text-sm text-zinc-700"
-                  >
-                    שם התיק / הלקוח
-                  </label>
-                  <input
-                    id="cpa-client-name"
-                    type="text"
-                    required
-                    value={displayName}
-                    onChange={(e) => setDisplayName(e.target.value)}
-                    className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="cpa-invite-email"
-                    className="mb-1 block text-sm text-zinc-700"
-                  >
-                    אימייל של המוזמן
-                  </label>
-                  <input
-                    id="cpa-invite-email"
-                    type="email"
-                    required
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                    className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="cpa-invitee-display"
-                    className="mb-1 block text-sm text-zinc-700"
-                  >
-                    שם תצוגה של המוזמן (אופציונלי)
-                  </label>
-                  <input
-                    id="cpa-invitee-display"
-                    type="text"
-                    value={inviteeDisplayName}
-                    onChange={(e) => setInviteeDisplayName(e.target.value)}
-                    className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="cpa-member-role"
-                    className="mb-1 block text-sm text-zinc-700"
-                  >
-                    תפקיד במערכת לאחר קבלת ההזמנה
-                  </label>
-                  <select
-                    id="cpa-member-role"
-                    value={memberRole}
-                    onChange={(e) =>
-                      setMemberRole(e.target.value as "primary" | "member")
-                    }
-                    className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
-                  >
-                    <option value="primary">ראשי תיק (primary)</option>
-                    <option value="member">חבר נוסף (member)</option>
-                  </select>
-                </div>
-                {message ? (
-                  <p className="text-sm text-zinc-700" role="status">
-                    {message}
-                  </p>
-                ) : null}
-                {inviteUrl ? (
-                  <p className="break-all rounded-md bg-zinc-100 p-3 text-xs text-zinc-800">
-                    {inviteUrl}
-                  </p>
-                ) : null}
+
+            <form onSubmit={submitNewClient} className="flex flex-col gap-4 px-4 py-4 sm:px-5">
+              <div>
+                <label htmlFor="cpa-new-client-display" className="mb-1 block text-sm font-medium text-zinc-700">
+                  שם הלקוח
+                </label>
+                <input
+                  id="cpa-new-client-display"
+                  type="text"
+                  autoComplete="off"
+                  value={clientNameInput}
+                  onChange={(e) => setClientNameInput(e.target.value)}
+                  className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                  required
+                />
               </div>
-              <div className="mt-4 flex shrink-0 flex-wrap gap-2 border-t border-zinc-100 pt-4">
+
+              <p className="text-sm font-semibold text-zinc-900 border-t border-zinc-100 pt-2">
+                משתמשים
+              </p>
+
+              <div className="flex flex-col gap-5">
+                {newUsers.map((row, idx) => (
+                  <div key={`nu-${idx}`} className="rounded-lg border border-zinc-100 bg-zinc-50/70 p-3">
+                    <div className="mb-3">
+                      <label className="mb-1 block text-xs text-zinc-600">
+                        שם תצוגה למשתמש
+                      </label>
+                      <input
+                        type="text"
+                        value={row.displayName}
+                        autoComplete="off"
+                        onChange={(e) => {
+                          setNewUsers((rows) =>
+                            rows.map((r, i) =>
+                              i === idx ? { ...r, displayName: e.target.value } : r,
+                            ),
+                          );
+                        }}
+                        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs text-zinc-600">
+                        כתובת אימייל
+                      </label>
+                      <input
+                        type="email"
+                        required={idx === 0}
+                        value={row.email}
+                        onChange={(e) => {
+                          setNewUsers((rows) =>
+                            rows.map((r, i) =>
+                              i === idx ? { ...r, email: e.target.value } : r,
+                            ),
+                          );
+                        }}
+                        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {newUsers.length < 4 ? (
                 <button
                   type="button"
-                  onClick={() => setNewClientModalOpen(false)}
-                  className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
+                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
+                  onClick={() =>
+                    setNewUsers((rows) => [...rows, { displayName: "", email: "" }])
+                  }
                 >
-                  סגירה
+                  הוסף משתמש ללקוח
                 </button>
+              ) : (
+                <p className="text-xs text-zinc-500">
+                  הגעת למקסימום של ארבעה משתמשים מוזמנים.
+                </p>
+              )}
+
+              {newModalErr ? (
+                <p className="text-sm text-red-700" role="alert">
+                  {newModalErr}
+                </p>
+              ) : null}
+
+              <div className="flex gap-2 border-t border-zinc-100 pt-4">
                 <button
                   type="submit"
-                  disabled={pending}
-                  className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+                  disabled={submitBusy}
+                  className="flex-1 rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
                 >
-                  {pending ? "יוצרים…" : "יצירת תיק והזמנה"}
+                  {submitBusy ? "מריצים…" : "בצע"}
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      ) : null}
+
+      {detailOpen && detailId ? (
+        <div className="fixed inset-0 z-[101] flex items-start justify-center overflow-y-auto px-4 pb-10 pt-4 sm:pt-10" dir="rtl">
+          <button
+            type="button"
+            className="absolute inset-0 bg-zinc-900/50"
+            aria-label="סגירה"
+            onClick={() => setDetailOpen(false)}
+          />
+          <div className="relative z-10 my-4 flex w-full max-w-lg flex-col rounded-xl border border-zinc-200 bg-white shadow-xl sm:my-6 max-h-[min(100vh-2rem,40rem)] sm:max-h-[min(100vh-4rem,48rem)]">
+            <div className="flex shrink-0 items-start justify-between border-b border-zinc-100 px-4 py-3 sm:px-5">
+              <div className="min-w-0 ps-8 sm:ps-0">
+                {detailLoading ? (
+                  <p className="text-sm text-zinc-600">טוענים…</p>
+                ) : detail ? (
+                  <>
+                    <h2 className="text-base font-semibold text-zinc-900 break-words">
+                      {detail.client.displayName}
+                    </h2>
+                    <p className="mt-1 text-xs text-zinc-500">סטטוס: {detail.client.status}</p>
+                  </>
+                ) : (
+                  <p className="text-sm text-red-700">{detailErr ?? "שגיאה"}</p>
+                )}
+              </div>
+              <button
+                type="button"
+                className="absolute start-3 top-3 rounded-md p-1.5 text-zinc-500 hover:bg-zinc-100"
+                aria-label="סגירה"
+                onClick={() => setDetailOpen(false)}
+              >
+                <span aria-hidden className="text-lg leading-none">
+                  ×
+                </span>
+              </button>
+            </div>
+
+            <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">
+              {detailErr && detail ? (
+                <p className="mb-3 text-sm text-red-700" role="alert">
+                  {detailErr}
+                </p>
+              ) : null}
+
+              {detail && !detailLoading ? (
+                <div className="space-y-6">
+                  <div>
+                    <p className="mb-2 text-sm font-medium text-zinc-800">משתמשים</p>
+                    {detail.members.length === 0 && detail.pendingInvitations.length === 0 ? (
+                      <p className="text-sm text-zinc-600">אין משתמשים או הזמנות ממתינות.</p>
+                    ) : null}
+                    <ul className="space-y-3">
+                      {detail.members.map((m) => {
+                        const key = `m:${m.userId}`;
+                        const exp = expandedRow === key;
+                        const bus = sectionBusyKey === key;
+                        const draft = drafts[key] ?? {
+                          name: m.displayName,
+                          email: m.email,
+                        };
+                        const edits = editFlags[key] ?? { name: false, email: false };
+                        return (
+                          <li
+                            key={m.userId}
+                            className="rounded-lg border border-zinc-200 bg-zinc-50/80 p-3"
+                          >
+                            <button
+                              type="button"
+                              className="w-full text-start text-sm font-medium text-zinc-900 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+                              onClick={() => toggleRow(key, m.displayName, m.email)}
+                            >
+                              {m.displayName}
+                            </button>
+                            {exp ? (
+                              <div className="mt-3 space-y-3 border-t border-zinc-100 pt-3">
+                                {edits.name ? (
+                                  <div>
+                                    <label className="mb-1 block text-xs text-zinc-600">
+                                      שם תצוגה למשתמש
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={draft.name}
+                                      onChange={(e) =>
+                                        setDrafts((prev) => ({
+                                          ...prev,
+                                          [key]: { ...draft, name: e.target.value },
+                                        }))
+                                      }
+                                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                                    />
+                                  </div>
+                                ) : null}
+                                <div>
+                                  <p className="text-xs font-medium text-zinc-600">כתובת אימייל</p>
+                                  {edits.email ? (
+                                    <input
+                                      type="email"
+                                      value={draft.email}
+                                      onChange={(e) =>
+                                        setDrafts((prev) => ({
+                                          ...prev,
+                                          [key]: { ...draft, email: e.target.value },
+                                        }))
+                                      }
+                                      className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                                    />
+                                  ) : (
+                                    <p className="mt-1 break-all text-sm text-zinc-800">{draft.email}</p>
+                                  )}
+                                </div>
+                                <div className="flex flex-wrap gap-2 pt-1">
+                                  <button
+                                    type="button"
+                                    disabled={bus}
+                                    className="rounded-md border border-red-200 bg-white px-2 py-1.5 text-xs font-medium text-red-800 hover:bg-red-50 disabled:opacity-50"
+                                    onClick={() => deleteMember(detail.client.id, key, m.userId)}
+                                  >
+                                    מחק
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={bus}
+                                    className="rounded-md border border-zinc-200 bg-white px-2 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-50"
+                                    onClick={() =>
+                                      setEditFlags((p) => ({
+                                        ...p,
+                                        [key]: { ...edits, name: true },
+                                      }))
+                                    }
+                                  >
+                                    ערוך שם
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={bus}
+                                    className="rounded-md border border-zinc-200 bg-white px-2 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-50"
+                                    onClick={() =>
+                                      setEditFlags((p) => ({
+                                        ...p,
+                                        [key]: { ...edits, email: true },
+                                      }))
+                                    }
+                                  >
+                                    ערוך כתובת
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={bus}
+                                    className="rounded-md bg-zinc-900 px-2 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+                                    onClick={() => patchMember(detail.client.id, key, m.userId)}
+                                  >
+                                    שמור שינויים
+                                  </button>
+                                </div>
+                              </div>
+                            ) : null}
+                          </li>
+                        );
+                      })}
+
+                      {detail.pendingInvitations.map((inv) => {
+                        const label = displayLabelForInvite(inv);
+                        const key = `i:${inv.invitationId}`;
+                        const exp = expandedRow === key;
+                        const bus = sectionBusyKey === key;
+                        const draft =
+                          drafts[key] ?? {
+                            name: inv.inviteeDisplayName ?? label,
+                            email: inv.email,
+                          };
+                        const edits = editFlags[key] ?? { name: false, email: false };
+                        return (
+                          <li
+                            key={inv.invitationId}
+                            className="rounded-lg border border-amber-200 bg-amber-50/70 p-3"
+                          >
+                            <div className="flex items-center gap-2">
+                              <button
+                                type="button"
+                                className="min-w-0 flex-1 text-start text-sm font-medium text-zinc-900 hover:underline focus-visible:outline-none"
+                                onClick={() =>
+                                  toggleRow(
+                                    key,
+                                    inv.inviteeDisplayName ?? label,
+                                    inv.email,
+                                  )
+                                }
+                              >
+                                {label}
+                              </button>
+                              <span className="shrink-0 rounded bg-amber-100 px-2 py-0.5 text-[10px] font-medium uppercase text-amber-900">
+                                הזמנה
+                              </span>
+                            </div>
+                            {exp ? (
+                              <div className="mt-3 space-y-3 border-t border-amber-100 pt-3">
+                                {edits.name ? (
+                                  <div>
+                                    <label className="mb-1 block text-xs text-zinc-600">
+                                      שם תצוגה למשתמש
+                                    </label>
+                                    <input
+                                      type="text"
+                                      value={draft.name}
+                                      onChange={(e) =>
+                                        setDrafts((prev) => ({
+                                          ...prev,
+                                          [key]: {
+                                            ...draft,
+                                            name: e.target.value,
+                                          },
+                                        }))
+                                      }
+                                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                                    />
+                                  </div>
+                                ) : null}
+                                <div>
+                                  <p className="text-xs font-medium text-zinc-600">כתובת אימייל</p>
+                                  {edits.email ? (
+                                    <input
+                                      type="email"
+                                      value={draft.email}
+                                      onChange={(e) =>
+                                        setDrafts((prev) => ({
+                                          ...prev,
+                                          [key]: {
+                                            ...draft,
+                                            email: e.target.value,
+                                          },
+                                        }))
+                                      }
+                                      className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                                    />
+                                  ) : (
+                                    <p className="mt-1 break-all text-sm text-zinc-800">{draft.email}</p>
+                                  )}
+                                </div>
+
+                                <div className="flex flex-wrap gap-2 pt-1">
+                                  <button
+                                    type="button"
+                                    disabled={bus}
+                                    className="rounded-md border border-red-200 bg-white px-2 py-1.5 text-xs font-medium text-red-800 hover:bg-red-50 disabled:opacity-50"
+                                    onClick={() =>
+                                      deleteInvite(detail.client.id, key, inv.invitationId)
+                                    }
+                                  >
+                                    מחק
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={bus}
+                                    className="rounded-md border border-zinc-200 bg-white px-2 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-50"
+                                    onClick={() =>
+                                      setEditFlags((p) => ({
+                                        ...p,
+                                        [key]: { ...edits, name: true },
+                                      }))
+                                    }
+                                  >
+                                    ערוך שם
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={bus}
+                                    className="rounded-md border border-zinc-200 bg-white px-2 py-1.5 text-xs font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-50"
+                                    onClick={() =>
+                                      setEditFlags((p) => ({
+                                        ...p,
+                                        [key]: { ...edits, email: true },
+                                      }))
+                                    }
+                                  >
+                                    ערוך כתובת
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={bus}
+                                    className="rounded-md bg-zinc-900 px-2 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+                                    onClick={() =>
+                                      patchInvite(detail.client.id, key, inv.invitationId)
+                                    }
+                                  >
+                                    שמור שינויים
+                                  </button>
+                                </div>
+                              </div>
+                            ) : null}
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
+
+                  <div className="border-t border-zinc-100 pt-4">
+                    <button
+                      type="button"
+                      className="w-full rounded-md border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-800 hover:bg-red-50"
+                      onClick={() => deleteClient(detail.client.id)}
+                    >
+                      מחק לקוח
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
           </div>
         </div>
       ) : null}

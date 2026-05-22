@@ -47,7 +47,7 @@ export async function POST(request: Request, context: RouteContext) {
 
   if (!created.ok) {
     if (created.reason === "forbidden") {
-      return jsonError(403, "FORBIDDEN", "אין גישה לתיק הלקוח.");
+      return jsonError(403, "FORBIDDEN", "אין גישה ללקוח זה.");
     }
     if (created.reason === "email_taken") {
       return jsonError(

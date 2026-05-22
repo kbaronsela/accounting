@@ -263,30 +263,60 @@ export type CreateClientWithInvitationInput = {
 };
 
 /**
- * טרנזקציה: יצירת תיק לקוח + הזמנת חבר ראשון (role: client).
+ * טרנזקציה: יצירת לקוח + הזמנת החבר הראשון (תאימות מול קוד קיים).
  */
 export async function createClientWithInvitation(
   input: CreateClientWithInvitationInput,
 ) {
-  await ensureInvitationSchema(pool);
-  const email = input.inviteEmail.trim().toLowerCase();
-  const rawToken = generateInvitationRawToken();
-  const tokenHash = hashInvitationToken(rawToken);
-  const clientId = crypto.randomUUID();
-  const invId = crypto.randomUUID();
-  const expiresAt = new Date(
-    Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000,
-  );
-  const clientMemberRole = input.memberRole === "primary" ? "primary" : "member";
-  const displayName = input.displayName.trim();
+  const batch = await createClientWithInvitations({
+    accountantUserId: input.accountantUserId,
+    clientDisplayName: input.displayName,
+    invitations: [
+      {
+        email: input.inviteEmail,
+        inviteeDisplayName: input.inviteeDisplayName ?? null,
+        memberRole:
+          input.memberRole === "primary"
+            ? ("primary" as const)
+            : ("member" as const),
+      },
+    ],
+  });
 
+  if (!batch.ok) {
+    return batch;
+  }
+  const head = batch.invites[0];
+  if (!head) {
+    return { ok: false as const, reason: "transaction_failed" as const };
+  }
+  return {
+    ok: true as const,
+    client: batch.client,
+    invitationId: head.invitationId,
+    expiresAt: head.expiresAt,
+    rawToken: head.rawToken,
+  };
+}
+
+export type ClientInvitationRowInput = {
+  email: string;
+  inviteeDisplayName?: string | null;
+  memberRole?: "primary" | "member";
+};
+
+/**
+ * נקודות כניסה לאימות מייל לפני יצירת הזמנת לקוח חדשה.
+ */
+export async function validateNewClientInvitationEmail(emailRaw: string) {
+  const email = emailRaw.trim().toLowerCase();
   const [existing] = await db
     .select({ id: users.id })
     .from(users)
     .where(eq(users.email, email))
     .limit(1);
   if (existing) {
-    return { ok: false as const, reason: "email_taken" as const };
+    return { ok: false as const, reason: "email_taken" as const, email };
   }
 
   const [pending] = await db
@@ -301,52 +331,127 @@ export async function createClientWithInvitation(
     )
     .limit(1);
   if (pending) {
-    return { ok: false as const, reason: "pending_invitation" as const };
+    return { ok: false as const, reason: "pending_invitation" as const, email };
   }
 
-  return db.transaction(async (tx) => {
-    await tx.insert(clients).values({
-      id: clientId,
-      accountantId: input.accountantUserId,
-      displayName,
-      status: "pending_invite",
-      invitedEmail: email,
-      updatedAt: new Date(),
-    });
+  return { ok: true as const, email };
+}
 
-    await tx.insert(invitations).values({
-      id: invId,
-      email,
-      role: "client",
-      tokenHash,
-      expiresAt,
-      createdByUserId: input.accountantUserId,
-      inviteeDisplayName: input.inviteeDisplayName?.trim() || null,
-      clientId,
-      clientMemberRole,
-    });
+/**
+ * טרנזקציה: יצירת לקוח + עד ארבע הזמנות לחברים (כל המיילים ייחודיים).
+ */
+export async function createClientWithInvitations(input: {
+  accountantUserId: string;
+  clientDisplayName: string;
+  invitations: ClientInvitationRowInput[];
+}) {
+  await ensureInvitationSchema(pool);
+  const displayName = input.clientDisplayName.trim();
+  const rows = input.invitations;
 
-    await tx.insert(auditEvents).values({
-      id: crypto.randomUUID(),
-      actorUserId: input.accountantUserId,
-      action: "client_created_with_invitation",
-      entityType: "client",
-      entityId: clientId,
-      payloadJson: { invitationId: invId, email },
-    });
+  if (rows.length < 1 || rows.length > 4) {
+    return { ok: false as const, reason: "invite_count" as const };
+  }
 
-    return {
-      ok: true as const,
-      client: {
+  const seen = new Set<string>();
+  for (const row of rows) {
+    const e = row.email.trim().toLowerCase();
+    if (seen.has(e)) {
+      return { ok: false as const, reason: "duplicate_emails_in_request" as const };
+    }
+    seen.add(e);
+  }
+
+  for (const r of rows) {
+    const v = await validateNewClientInvitationEmail(r.email);
+    if (!v.ok) {
+      return { ok: false as const, reason: v.reason, email: v.email };
+    }
+  }
+
+  const clientId = crypto.randomUUID();
+
+  const resolvedRows = rows.map((r, i) => ({
+    email: r.email.trim().toLowerCase(),
+    inviteeDisplayName: r.inviteeDisplayName?.trim() || null,
+    memberRole:
+      r.memberRole ?? (i === 0 ? ("primary" as const) : ("member" as const)),
+  }));
+
+  try {
+    return await db.transaction(async (tx) => {
+      const firstEmail = resolvedRows[0]?.email;
+
+      await tx.insert(clients).values({
         id: clientId,
+        accountantId: input.accountantUserId,
         displayName,
-        status: "pending_invite" as const,
-      },
-      invitationId: invId,
-      expiresAt: expiresAt.toISOString(),
-      rawToken,
-    };
-  });
+        status: "pending_invite",
+        invitedEmail: firstEmail ?? null,
+        updatedAt: new Date(),
+      });
+
+      const outInvites: {
+        invitationId: string;
+        email: string;
+        expiresAt: string;
+        rawToken: string;
+      }[] = [];
+
+      for (const rw of resolvedRows) {
+        const rawToken = generateInvitationRawToken();
+        const tokenHash = hashInvitationToken(rawToken);
+        const invId = crypto.randomUUID();
+        const expiresAt = new Date(
+          Date.now() + INVITE_TTL_DAYS * 24 * 60 * 60 * 1000,
+        );
+
+        await tx.insert(invitations).values({
+          id: invId,
+          email: rw.email,
+          role: "client",
+          tokenHash,
+          expiresAt,
+          createdByUserId: input.accountantUserId,
+          inviteeDisplayName: rw.inviteeDisplayName,
+          clientId,
+          clientMemberRole: rw.memberRole === "primary" ? "primary" : "member",
+        });
+
+        outInvites.push({
+          invitationId: invId,
+          email: rw.email,
+          expiresAt: expiresAt.toISOString(),
+          rawToken,
+        });
+      }
+
+      await tx.insert(auditEvents).values({
+        id: crypto.randomUUID(),
+        actorUserId: input.accountantUserId,
+        action: "client_created_with_invitation",
+        entityType: "client",
+        entityId: clientId,
+        payloadJson: {
+          invitationIds: outInvites.map((o) => o.invitationId),
+          emails: resolvedRows.map((r) => r.email),
+          count: resolvedRows.length,
+        },
+      });
+
+      return {
+        ok: true as const,
+        client: {
+          id: clientId,
+          displayName,
+          status: "pending_invite" as const,
+        },
+        invites: outInvites,
+      };
+    });
+  } catch {
+    return { ok: false as const, reason: "transaction_failed" as const };
+  }
 }
 
 export type InviteClientMemberInput = {
@@ -358,7 +463,7 @@ export type InviteClientMemberInput = {
 };
 
 /**
- * הזמנת משתמש נוסף לתיק לקוח קיים (רק אם clients.accountantId תואם).
+ * הזמנת משתמש נוסף ללקוח קיים (רק אם clients.accountantId תואם).
  */
 export async function inviteAdditionalClientMember(
   input: InviteClientMemberInput,
