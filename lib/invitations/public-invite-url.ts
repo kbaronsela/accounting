@@ -1,14 +1,6 @@
-import { z } from "zod";
+import { getAuthPublicBaseUrl } from "@/lib/env/auth-public-base-url";
 
-const inviteHost = z
-  .string()
-  .min(1)
-  .parse(
-    process.env.AUTH_URL ??
-      process.env.NEXTAUTH_URL ??
-      "http://localhost:3000",
-  )
-  .replace(/\/$/, "");
+const inviteHost = getAuthPublicBaseUrl();
 
 export function getPublicInviteUrl(rawToken: string): string {
   const u = new URL("/invite", inviteHost);

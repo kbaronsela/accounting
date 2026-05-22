@@ -1,5 +1,8 @@
 import type { NextAuthConfig } from "next-auth";
+import { syncAuthPublicBaseUrlIntoProcessEnv } from "@/lib/env/auth-public-base-url";
 import Credentials from "next-auth/providers/credentials";
+
+syncAuthPublicBaseUrlIntoProcessEnv();
 import Facebook from "next-auth/providers/facebook";
 import Google from "next-auth/providers/google";
 
