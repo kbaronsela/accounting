@@ -156,8 +156,12 @@ export function ClientUploadSection({ clients }: Props) {
       if (!putRes.ok) {
         let msg = "העלאת הקובץ נכשלה. יש לנסות שוב.";
         try {
-          const j = (await putRes.json()) as { error?: { message?: string } };
+          const j = (await putRes.json()) as {
+            error?: { message?: string; details?: { upstream?: string } };
+          };
           if (j.error?.message?.trim()) msg = j.error.message.trim();
+          const up = j.error?.details?.upstream?.trim();
+          if (up) msg = `${msg} (${up})`;
         } catch {
           msg = `${msg} (קוד ${putRes.status})`;
         }

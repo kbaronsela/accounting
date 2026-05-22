@@ -303,3 +303,32 @@ export async function getDocumentStorageForAccountant(
     .limit(1);
   return row ?? null;
 }
+
+export type AccountantDocumentDeletionContext = {
+  id: string;
+  clientId: string;
+  storageObjectKey: string;
+  status: string;
+};
+
+/** הרשאה למחיקה ע״י רו״ח — המסמך שייך ללקוח שלו בלבד */
+export async function getDocumentDeletionContextForAccountant(
+  accountantUserId: string,
+  documentId: string,
+): Promise<AccountantDocumentDeletionContext | null> {
+  if (!uuidPattern(documentId)) return null;
+  const [row] = await db
+    .select({
+      id: documents.id,
+      clientId: documents.clientId,
+      storageObjectKey: documents.storageObjectKey,
+      status: documents.status,
+    })
+    .from(documents)
+    .innerJoin(clients, eq(documents.clientId, clients.id))
+    .where(
+      and(eq(documents.id, documentId), eq(clients.accountantId, accountantUserId)),
+    )
+    .limit(1);
+  return row ?? null;
+}

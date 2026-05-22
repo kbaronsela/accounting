@@ -55,6 +55,21 @@ function envAwsSecretAccessKey(): string {
   );
 }
 
+/** חלופה לשם AWS — מתאימה ל‑R2 (אותם ערכים כמו מה שמקבלים מ‑«R2 API Token») */
+function envDocumentsS3AccessKeyId(): string {
+  return String.fromCharCode(
+    68, 79, 67, 85, 77, 69, 78, 84, 83, 95, 83, 51, 95, 65, 67, 67, 69, 83, 83, 95,
+    75, 69, 89, 95, 73, 68,
+  );
+}
+
+function envDocumentsS3SecretAccessKey(): string {
+  return String.fromCharCode(
+    68, 79, 67, 85, 77, 69, 78, 84, 83, 95, 83, 51, 95, 83, 69, 67, 82, 69, 84, 95,
+    65, 67, 67, 69, 83, 83, 95, 75, 69, 89,
+  );
+}
+
 function getBucket(): string {
   const b = trimEnvValue(readVolatileEnv(envDocumentsS3Bucket()));
   if (!b) {
@@ -65,11 +80,36 @@ function getBucket(): string {
   return b;
 }
 
+function resolvedEndpointHostname(): string {
+  const raw = trimEnvValue(readVolatileEnv(envDocumentsS3Endpoint())).toLowerCase();
+  try {
+    return new URL(raw).hostname;
+  } catch {
+    return "";
+  }
+}
+
+/**
+ * עם R2 והאזור `auto`, AWS SDK לעיתים פושט חתימות לא נכון.
+ * ב‑R2 ובמיניו/endpoint מותאם מתקנים ל‑`us-east-1` כשאין אזור קונקרטי (מקובל בספקי S3-compat).
+ */
 function getRegion(): string {
-  const r =
+  const explicit =
     trimEnvValue(readVolatileEnv(envDocumentsS3Region())) ||
     trimEnvValue(readVolatileEnv(envAwsRegion()));
-  return r.length > 0 ? r : "auto";
+  const host = resolvedEndpointHostname();
+  const low = explicit.toLowerCase();
+
+  if (host.includes("r2.cloudflarestorage.com")) {
+    return !explicit || low === "auto" ? "us-east-1" : explicit;
+  }
+
+  if (host.length > 0 && (!explicit || low === "auto")) {
+    return "us-east-1";
+  }
+
+  if (!explicit || low === "auto") return "auto";
+  return explicit;
 }
 
 function shouldForcePathStyle(endpoint: string | undefined): boolean {
@@ -82,8 +122,12 @@ function shouldForcePathStyle(endpoint: string | undefined): boolean {
 }
 
 function volatileAwsCredentials(): { accessKeyId: string; secretAccessKey: string } | undefined {
-  const accessKeyId = trimEnvValue(readVolatileEnv(envAwsAccessKeyId()));
-  const secretAccessKey = trimEnvValue(readVolatileEnv(envAwsSecretAccessKey()));
+  const accessKeyId =
+    trimEnvValue(readVolatileEnv(envDocumentsS3AccessKeyId())) ||
+    trimEnvValue(readVolatileEnv(envAwsAccessKeyId()));
+  const secretAccessKey =
+    trimEnvValue(readVolatileEnv(envDocumentsS3SecretAccessKey())) ||
+    trimEnvValue(readVolatileEnv(envAwsSecretAccessKey()));
   if (!accessKeyId?.length || !secretAccessKey?.length) return undefined;
   return { accessKeyId, secretAccessKey };
 }
@@ -94,6 +138,12 @@ function getOrCreateClient(): S3Client {
   const endpointRaw = trimEnvValue(readVolatileEnv(envDocumentsS3Endpoint()));
   const endpoint = endpointRaw.length > 0 ? endpointRaw : undefined;
   const explicitCreds = volatileAwsCredentials();
+
+  if (endpoint?.length && !explicitCreds) {
+    throw new Error(
+      "חסרים מפתחות גישה ל‑S3-compat: הגדירי DOCUMENTS_S3_ACCESS_KEY_ID ו־DOCUMENTS_S3_SECRET_ACCESS_KEY, או AWS_ACCESS_KEY_ID ו־AWS_SECRET_ACCESS_KEY (ב־Cloudflare R2 הערכים מ־«R2 API Token»).",
+    );
+  }
 
   _client = new S3Client({
     region,

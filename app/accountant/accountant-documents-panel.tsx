@@ -72,6 +72,7 @@ export function AccountantDocumentsPanel() {
   const [listError, setListError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const filterPanelId = useId();
 
   useEffect(() => {
@@ -181,6 +182,40 @@ export function AccountantDocumentsPanel() {
     minAmount,
     maxAmount,
   ]);
+
+  const handleDeleteDoc = useCallback(async (documentId: string) => {
+    if (
+      !window.confirm(
+        "למחוק את המסמך ואת הקובץ לצמיתות מהמערכת? הפעולה אינה ניתנת לביטול.",
+      )
+    ) {
+      return;
+    }
+    setDeletingId(documentId);
+    setListError(null);
+    try {
+      const res = await fetch(`/api/accountants/me/documents/${documentId}`, {
+        method: "DELETE",
+        credentials: "same-origin",
+      });
+      if (!res.ok) {
+        let msg = "מחיקה נכשלה.";
+        try {
+          const data = (await res.json()) as { error?: { message?: string } };
+          if (data.error?.message?.trim()) msg = data.error.message.trim();
+        } catch {
+          msg = `${msg} (קוד ${res.status})`;
+        }
+        setListError(msg);
+        return;
+      }
+      await loadDocs();
+    } catch {
+      setListError("שגיאת רשת בעת המחיקה.");
+    } finally {
+      setDeletingId(null);
+    }
+  }, [loadDocs]);
 
   useEffect(() => {
     let cancelled = false;
@@ -453,14 +488,26 @@ export function AccountantDocumentsPanel() {
                     </dd>
                   </div>
                 </dl>
-                <a
-                  href={`/api/accountants/me/documents/${d.id}/file`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-3 inline-flex text-sm font-medium text-blue-700 underline-offset-4 hover:underline"
-                >
-                  צפייה בקובץ
-                </a>
+                <div className="mt-3 flex flex-wrap gap-4">
+                  <a
+                    href={`/api/accountants/me/documents/${d.id}/file`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex text-sm font-medium text-blue-700 underline-offset-4 hover:underline"
+                  >
+                    צפייה בקובץ
+                  </a>
+                  <button
+                    type="button"
+                    disabled={deletingId === d.id}
+                    className="inline-flex text-sm font-medium text-red-700 underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                    onClick={() => {
+                      void handleDeleteDoc(d.id);
+                    }}
+                  >
+                    {deletingId === d.id ? "מוחק…" : "מחק"}
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -506,14 +553,26 @@ export function AccountantDocumentsPanel() {
                       {d.uploadedByDisplayName ?? "—"}
                     </td>
                     <td className="py-2.5">
-                      <a
-                        href={`/api/accountants/me/documents/${d.id}/file`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-700 underline-offset-4 hover:underline"
-                      >
-                        צפייה בקובץ
-                      </a>
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                        <a
+                          href={`/api/accountants/me/documents/${d.id}/file`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-blue-700 underline-offset-4 hover:underline"
+                        >
+                          צפייה בקובץ
+                        </a>
+                        <button
+                          type="button"
+                          disabled={deletingId === d.id}
+                          className="text-red-700 underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                          onClick={() => {
+                            void handleDeleteDoc(d.id);
+                          }}
+                        >
+                          {deletingId === d.id ? "מוחק…" : "מחק"}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

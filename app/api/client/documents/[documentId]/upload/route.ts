@@ -3,6 +3,7 @@ import { jsonError } from "@/lib/api/errors";
 import { hasRole } from "@/lib/auth/roles";
 import { getDocumentForClientMember } from "@/lib/client/document-access";
 import { writeUploadedDocumentFile } from "@/lib/uploads/document-storage";
+import { safeS3UpstreamSummary } from "@/lib/uploads/s3-upload-error";
 
 type RouteContext = { params: Promise<{ documentId: string }> };
 
@@ -56,13 +57,19 @@ export async function PUT(request: Request, context: RouteContext) {
     await writeUploadedDocumentFile(documentId, doc.storageObjectKey, buf);
   } catch (e) {
     const err = e as Error & { Code?: string; name?: string; $metadata?: unknown };
+    const upstream = safeS3UpstreamSummary(e);
     console.error("[document-upload PUT]", documentId, {
       message: err?.message,
       name: err?.name,
       code: err?.Code,
       metadata: err?.$metadata,
     });
-    return jsonError(500, "UPLOAD_FAILED", "שמירת הקובץ נכשלה.");
+    return jsonError(
+      500,
+      "UPLOAD_FAILED",
+      "שמירת הקובץ נכשלה.",
+      upstream ? { upstream } : undefined,
+    );
   }
 
   return new Response(null, { status: 204 });
