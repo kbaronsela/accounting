@@ -558,7 +558,7 @@ export function ClientDocumentWorkspace({
             תאריך חשבונית (DD.MM.YYYY)
             <RequiredFieldMark />
           </label>
-          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-nowrap sm:items-stretch sm:gap-0">
+          <div className="flex min-w-0 flex-row flex-nowrap items-stretch gap-0">
             <input
               id="d-date-display"
               type="text"
@@ -577,7 +577,7 @@ export function ClientDocumentWorkspace({
                 );
               }}
               onBlur={() => flushInvoiceDateFromDisplay()}
-              className="min-w-0 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm disabled:bg-zinc-100 sm:flex-1 sm:rounded-s-md sm:rounded-e-none sm:border-e-0"
+              className="min-w-0 flex-1 rounded-s-md rounded-e-none border border-zinc-300 border-e-0 px-3 py-2 text-sm disabled:bg-zinc-100"
               aria-invalid={invoiceDateParseError ? true : undefined}
               aria-describedby={
                 invoiceDateParseError ? "d-date-error" : undefined
@@ -585,7 +585,7 @@ export function ClientDocumentWorkspace({
             />
             <span
               className={[
-                "relative flex h-10 w-full shrink-0 items-stretch rounded-md border border-zinc-300 bg-white sm:h-auto sm:inline-flex sm:w-11 sm:rounded-e-md sm:rounded-s-none sm:border-s-0 sm:-ms-px",
+                "relative inline-flex h-10 w-11 shrink-0 items-stretch rounded-e-md rounded-s-none border border-zinc-300 border-s-0 bg-white -ms-px",
                 !finalEditable ? "opacity-40" : "",
               ].join(" ")}
             >
