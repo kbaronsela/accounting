@@ -20,6 +20,7 @@ export type AccountantDocumentListItem = {
   clientId: string;
   clientDisplayName: string;
   status: string;
+  mimeType: string;
   finalAmount: string | null;
   finalCurrency: string | null;
   finalDate: string | null;
@@ -203,6 +204,7 @@ export async function listDocumentsForAccountant(
       clientId: documents.clientId,
       clientDisplayName: clients.displayName,
       status: documents.status,
+      mimeType: documents.mimeType,
       finalAmount: documents.finalAmount,
       finalCurrency: documents.finalCurrency,
       finalDate: documents.finalDate,
@@ -223,6 +225,7 @@ export async function listDocumentsForAccountant(
     clientId: r.clientId,
     clientDisplayName: r.clientDisplayName,
     status: r.status,
+    mimeType: r.mimeType,
     finalAmount: r.finalAmount,
     finalCurrency: canonicalizeCurrency(r.finalCurrency),
     finalDate: r.finalDate,

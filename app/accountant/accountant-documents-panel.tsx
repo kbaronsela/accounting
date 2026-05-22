@@ -1,6 +1,8 @@
 "use client";
 
+import { createPortal } from "react-dom";
 import { useCallback, useEffect, useId, useState } from "react";
+import { DocumentFileViewerOverlay } from "@/components/document-file-viewer-overlay";
 
 type ClientOption = {
   id: string;
@@ -12,6 +14,7 @@ type DocRow = {
   clientId: string;
   clientDisplayName: string;
   status: string;
+  mimeType: string;
   finalAmount: string | null;
   finalCurrency: string | null;
   finalVendor: string | null;
@@ -73,6 +76,10 @@ export function AccountantDocumentsPanel() {
   const [loading, setLoading] = useState(true);
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [viewerDoc, setViewerDoc] = useState<{
+    id: string;
+    mimeType: string;
+  } | null>(null);
   const filterPanelId = useId();
 
   useEffect(() => {
@@ -489,14 +496,19 @@ export function AccountantDocumentsPanel() {
                   </div>
                 </dl>
                 <div className="mt-3 flex flex-wrap gap-4">
-                  <a
-                    href={`/api/accountants/me/documents/${d.id}/file`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex text-sm font-medium text-blue-700 underline-offset-4 hover:underline"
-                  >
-                    צפייה בקובץ
-                  </a>
+                  {d.status !== "draft_uploading" ? (
+                    <button
+                      type="button"
+                      className="inline-flex text-sm font-medium text-blue-700 underline-offset-4 hover:underline"
+                      onClick={() =>
+                        setViewerDoc({ id: d.id, mimeType: d.mimeType })
+                      }
+                    >
+                      צפייה בקובץ
+                    </button>
+                  ) : (
+                    <span className="text-sm text-zinc-400">אין קובץ מוכן</span>
+                  )}
                   <button
                     type="button"
                     disabled={deletingId === d.id}
@@ -554,14 +566,22 @@ export function AccountantDocumentsPanel() {
                     </td>
                     <td className="py-2.5">
                       <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
-                        <a
-                          href={`/api/accountants/me/documents/${d.id}/file`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-blue-700 underline-offset-4 hover:underline"
-                        >
-                          צפייה בקובץ
-                        </a>
+                        {d.status !== "draft_uploading" ? (
+                          <button
+                            type="button"
+                            className="text-blue-700 underline-offset-4 hover:underline"
+                            onClick={() =>
+                              setViewerDoc({
+                                id: d.id,
+                                mimeType: d.mimeType,
+                              })
+                            }
+                          >
+                            צפייה בקובץ
+                          </button>
+                        ) : (
+                          <span className="text-zinc-400">—</span>
+                        )}
                         <button
                           type="button"
                           disabled={deletingId === d.id}
@@ -581,6 +601,23 @@ export function AccountantDocumentsPanel() {
           </div>
         </>
       )}
+
+      {viewerDoc
+        ? createPortal(
+            <DocumentFileViewerOverlay
+              viewerKey={viewerDoc.id}
+              mimeTypeHint={viewerDoc.mimeType}
+              onClose={() => setViewerDoc(null)}
+              fetchFile={() =>
+                fetch(`/api/accountants/me/documents/${viewerDoc.id}/file`, {
+                  credentials: "same-origin",
+                  cache: "no-store",
+                })
+              }
+            />,
+            document.body,
+          )
+        : null}
     </div>
   );
 }
