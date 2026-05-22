@@ -82,6 +82,19 @@ export function AccountantClientsPanel() {
   const [newModalErr, setNewModalErr] = useState<string | null>(null);
   const newModalTitleId = useId();
 
+  const [addMemberModalOpen, setAddMemberModalOpen] = useState(false);
+  const addMemberModalTitleId = useId();
+  const [addMemberName, setAddMemberName] = useState("");
+  const [addMemberEmail, setAddMemberEmail] = useState("");
+  const [addMemberBusy, setAddMemberBusy] = useState(false);
+  const [addMemberErr, setAddMemberErr] = useState<string | null>(null);
+  const [addMemberInviteBanner, setAddMemberInviteBanner] = useState<
+    | {
+        inviteUrl?: string | null;
+      }
+    | null
+  >(null);
+
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -168,21 +181,44 @@ export function AccountantClientsPanel() {
     };
   }, [newModalOpen, resetNewModal]);
 
+  const resetAddMemberModal = useCallback(() => {
+    setAddMemberName("");
+    setAddMemberEmail("");
+    setAddMemberErr(null);
+    setAddMemberBusy(false);
+  }, []);
+
+  useEffect(() => {
+    if (!addMemberModalOpen) return;
+    function onEsc(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        resetAddMemberModal();
+        setAddMemberModalOpen(false);
+      }
+    }
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [addMemberModalOpen, resetAddMemberModal]);
+
   useEffect(() => {
     if (!detailOpen) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [detailOpen]);
+
+  useEffect(() => {
+    if (!detailOpen || addMemberModalOpen) return;
     function onEsc(e: KeyboardEvent) {
       if (e.key === "Escape") {
         setDetailOpen(false);
       }
     }
     window.addEventListener("keydown", onEsc);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", onEsc);
-      document.body.style.overflow = prev;
-    };
-  }, [detailOpen]);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [detailOpen, addMemberModalOpen]);
 
   async function openDetail(clientId: string) {
     setDetailId(clientId);
@@ -193,6 +229,9 @@ export function AccountantClientsPanel() {
     setExpandedRow(null);
     setDrafts({});
     setEditFlags({});
+    setAddMemberModalOpen(false);
+    resetAddMemberModal();
+    setAddMemberInviteBanner(null);
 
     try {
       const res = await fetch(`/api/accountants/me/clients/${clientId}`);
@@ -209,6 +248,70 @@ export function AccountantClientsPanel() {
       setDetailErr("שגיאת רשת.");
     }
     setDetailLoading(false);
+  }
+
+  async function refreshDetailQuiet(clientId: string) {
+    setDetailErr(null);
+    try {
+      const res = await fetch(`/api/accountants/me/clients/${clientId}`);
+      const data = (await res.json()) as ClientDetailPayload & {
+        error?: { message?: string };
+      };
+      if (!res.ok) {
+        setDetailErr(data.error?.message ?? "לא ניתן לרענן את פרטי הלקוח.");
+        return;
+      }
+      setDetail(data);
+    } catch {
+      setDetailErr("שגיאת רשת.");
+    }
+  }
+
+  async function submitAddMember(clientId: string, e: React.FormEvent) {
+    e.preventDefault();
+    setAddMemberErr(null);
+    const email = addMemberEmail.trim().toLowerCase();
+    const nameTrim = addMemberName.trim();
+    if (!email) {
+      setAddMemberErr("נדרשת כתובת אימייל.");
+      return;
+    }
+    setAddMemberBusy(true);
+    try {
+      const body: Record<string, string | undefined> = { email };
+      if (nameTrim.length > 0) {
+        body.inviteeDisplayName = nameTrim;
+      }
+      const res = await fetch(
+        `/api/accountants/me/clients/${clientId}/members`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        },
+      );
+      const data = (await res.json().catch(() => ({}))) as {
+        inviteUrl?: string;
+        error?: { message?: string };
+      };
+      if (!res.ok) {
+        setAddMemberErr(
+          data.error?.message ?? `הבקשה נכשלה (${String(res.status)}).`,
+        );
+        setAddMemberBusy(false);
+        return;
+      }
+      await refreshDetailQuiet(clientId);
+      setAddMemberInviteBanner({
+        inviteUrl: data.inviteUrl ?? null,
+      });
+      resetAddMemberModal();
+      setAddMemberModalOpen(false);
+      await refreshList();
+    } catch {
+      setAddMemberErr("שגיאת רשת.");
+    }
+    setAddMemberBusy(false);
   }
 
   function displayLabelForInvite(inv: DetailInvite) {
@@ -674,14 +777,18 @@ export function AccountantClientsPanel() {
       ) : null}
 
       {detailOpen && detailId ? (
-        <div className="fixed inset-0 z-[101] flex items-start justify-center overflow-y-auto px-4 pb-10 pt-4 sm:pt-10" dir="rtl">
-          <button
-            type="button"
-            className="absolute inset-0 bg-zinc-900/50"
-            aria-label="סגירה"
-            onClick={() => setDetailOpen(false)}
-          />
-          <div className="relative z-10 my-4 flex w-full max-w-lg flex-col rounded-xl border border-zinc-200 bg-white shadow-xl sm:my-6 max-h-[min(100vh-2rem,40rem)] sm:max-h-[min(100vh-4rem,48rem)]">
+        <>
+          <div
+            className="fixed inset-0 z-[101] flex items-start justify-center overflow-y-auto px-4 pb-10 pt-4 sm:pt-10"
+            dir="rtl"
+          >
+            <button
+              type="button"
+              className="absolute inset-0 bg-zinc-900/50"
+              aria-label="סגירה"
+              onClick={() => setDetailOpen(false)}
+            />
+            <div className="relative z-10 my-4 flex w-full max-w-lg flex-col rounded-xl border border-zinc-200 bg-white shadow-xl sm:my-6 max-h-[min(100vh-2rem,40rem)] sm:max-h-[min(100vh-4rem,48rem)]">
             <div className="relative shrink-0 border-b border-zinc-100 px-4 py-3 sm:px-5">
               <button
                 type="button"
@@ -719,9 +826,43 @@ export function AccountantClientsPanel() {
               {detail && !detailLoading ? (
                 <div className="space-y-6">
                   <div>
-                    <p className="mb-2 text-sm font-medium text-zinc-800">משתמשים</p>
-                    {detail.members.length === 0 && detail.pendingInvitations.length === 0 ? (
-                      <p className="text-sm text-zinc-600">אין משתמשים או הזמנות ממתינות.</p>
+                    <div className="mb-2 flex flex-wrap items-start justify-between gap-2">
+                      <p className="text-sm font-medium text-zinc-800">
+                        משתמשים
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          resetAddMemberModal();
+                          setAddMemberModalOpen(true);
+                        }}
+                        className="shrink-0 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-900 shadow-sm hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+                      >
+                        הוספת משתמש
+                      </button>
+                    </div>
+                    {addMemberInviteBanner ? (
+                      <div className="mb-3 rounded-md border border-green-100 bg-green-50/90 p-3 text-sm text-green-950">
+                        <p>הוזמנה נוצרה. הקישור בפיתוח (ניתן גם מהלוג):</p>
+                        {addMemberInviteBanner.inviteUrl ? (
+                          <p className="mt-2 break-all text-xs font-mono text-green-950">
+                            {addMemberInviteBanner.inviteUrl}
+                          </p>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="mt-2 text-xs text-green-900 underline underline-offset-2 hover:text-green-700"
+                          onClick={() => setAddMemberInviteBanner(null)}
+                        >
+                          סגירה
+                        </button>
+                      </div>
+                    ) : null}
+                    {detail.members.length === 0 &&
+                    detail.pendingInvitations.length === 0 ? (
+                      <p className="text-sm text-zinc-600">
+                        אין משתמשים או הזמנות ממתינות.
+                      </p>
                     ) : null}
                     <ul className="space-y-3">
                       {detail.members.map((m) => {
@@ -982,6 +1123,101 @@ export function AccountantClientsPanel() {
             </div>
           </div>
         </div>
+
+          {addMemberModalOpen && detail ? (
+            <div className="fixed inset-0 z-[106] flex items-start justify-center overflow-y-auto px-4 pb-10 pt-4 sm:pt-10">
+              <button
+                type="button"
+                className="absolute inset-0 bg-zinc-900/55"
+                aria-label="סגירה"
+                onClick={() => {
+                  resetAddMemberModal();
+                  setAddMemberModalOpen(false);
+                }}
+              />
+              <div className="relative z-10 my-4 flex w-full max-w-md flex-col rounded-xl border border-zinc-200 bg-white shadow-xl">
+                <div className="relative shrink-0 border-b border-zinc-100 px-4 py-3 sm:px-5">
+                  <button
+                    type="button"
+                    className="absolute end-3 top-3 rounded-md p-1.5 text-zinc-500 hover:bg-zinc-100"
+                    aria-label="סגירה"
+                    onClick={() => {
+                      resetAddMemberModal();
+                      setAddMemberModalOpen(false);
+                    }}
+                  >
+                    <span aria-hidden className="text-lg leading-none">
+                      ×
+                    </span>
+                  </button>
+                  <h3
+                    id={addMemberModalTitleId}
+                    className="text-base font-semibold text-zinc-900 pe-11"
+                  >
+                    משתמש ללקוח «{detail.client.displayName}»
+                  </h3>
+                  <p className="mt-2 text-xs text-zinc-600">
+                    ההזמנה נוצרת לפי האימייל; בפיתוח מוצג הקישור כאן ובלוג השרת.
+                  </p>
+                </div>
+                <form
+                  aria-labelledby={addMemberModalTitleId}
+                  onSubmit={(e) => submitAddMember(detail.client.id, e)}
+                  className="flex flex-col gap-4 px-4 py-4 sm:px-5"
+                  dir="rtl"
+                >
+                  <div>
+                    <label
+                      htmlFor="cpa-add-member-name"
+                      className="mb-1 block text-sm font-medium text-zinc-700"
+                    >
+                      שם תצוגה (אופציונלי)
+                    </label>
+                    <input
+                      id="cpa-add-member-name"
+                      type="text"
+                      autoComplete="off"
+                      value={addMemberName}
+                      onChange={(e) => setAddMemberName(e.target.value)}
+                      className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      htmlFor="cpa-add-member-email"
+                      className="mb-1 block text-sm font-medium text-zinc-700"
+                    >
+                      אימייל
+                    </label>
+                    <input
+                      id="cpa-add-member-email"
+                      type="email"
+                      required
+                      autoComplete="off"
+                      value={addMemberEmail}
+                      onChange={(e) => setAddMemberEmail(e.target.value)}
+                      className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                    />
+                  </div>
+                  {addMemberErr ? (
+                    <p className="text-sm text-red-700" role="alert">
+                      {addMemberErr}
+                    </p>
+                  ) : null}
+                  <div className="border-t border-zinc-100 pt-4">
+                    <button
+                      type="submit"
+                      disabled={addMemberBusy}
+                      className="w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+                    >
+                      {addMemberBusy ? "מריצים…" : "שליחת הזמנה"}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          ) : null}
+        </>
       ) : null}
     </div>
   );
