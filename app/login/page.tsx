@@ -1,9 +1,17 @@
 import { LoginFooterLink, LoginForm } from "./login-form";
+import { auth } from "@/auth";
+import { defaultHomePath } from "@/lib/auth/roles";
+import { redirect } from "next/navigation";
 
 /** משתני סביבה (Railway וכו׳) מתעדכנים בפריסה — לא לקבע כפתור Google לפי זמן build */
 export const dynamic = "force-dynamic";
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  const session = await auth();
+  if (session?.user?.id) {
+    redirect(defaultHomePath(session.user.roles ?? []));
+  }
+
   const googleOAuthEnabled = Boolean(
     process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
   );
