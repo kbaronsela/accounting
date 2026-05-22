@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useId, useState } from "react";
+import { SignOutButton } from "../admin/sign-out-button";
 import { AccountantClientsPanel } from "./accountant-clients-panel";
 import { AccountantDocumentsPanel } from "./accountant-documents-panel";
 import { AccountantUsersPlaceholderPanel } from "./accountant-users-placeholder-panel";
@@ -14,7 +15,18 @@ const NAV: { section: Section; label: string }[] = [
   { section: "users", label: "ניהול משתמשים" },
 ];
 
-export function AccountantWorkspace() {
+const linkSecondaryClass =
+  "rounded-lg px-3 py-2 text-start text-sm font-medium text-blue-700 outline-none hover:bg-blue-50/80 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2";
+
+type AccountantWorkspaceProps = {
+  showAdminLink: boolean;
+  showClientLink: boolean;
+};
+
+export function AccountantWorkspace({
+  showAdminLink,
+  showClientLink,
+}: AccountantWorkspaceProps) {
   const [active, setActive] = useState<Section>("documents");
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileMenuId = useId();
@@ -43,41 +55,87 @@ export function AccountantWorkspace() {
     closeMobile();
   }
 
-  return (
-    <div
-      className="mx-auto flex min-h-full max-w-6xl flex-1 flex-col lg:flex-row"
-      dir="rtl"
-    >
-      <aside
-        aria-label="ניווט אזור רואה החשבון"
-        className="hidden shrink-0 border-zinc-200 bg-zinc-50 lg:flex lg:w-52 lg:flex-col lg:border-s lg:px-3 lg:py-8 xl:w-56"
-      >
-        <nav className="flex flex-col gap-1 px-2">
-          {NAV.map(({ section, label }) => (
-            <button
-              key={section}
-              type="button"
-              onClick={() => select(section)}
-              aria-current={active === section ? "page" : undefined}
-              className={`rounded-lg px-3 py-2 text-start text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 ${
-                active === section
-                  ? "bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200"
-                  : "text-zinc-700 hover:bg-zinc-100/80"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+  function MenuFooter({ mobile }: { mobile: boolean }) {
+    const wrap = mobile ? "mt-4 border-t border-zinc-100 pt-4" : "";
+    return (
+      <div className={wrap}>
+        <div className="flex flex-col gap-1">
           <Link
             href="/"
-            className="mt-4 rounded-lg px-3 py-2 text-start text-sm font-medium text-blue-700 hover:bg-blue-50/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2"
+            onClick={mobile ? closeMobile : undefined}
+            className={linkSecondaryClass}
           >
             דף הבית
           </Link>
-        </nav>
+          <Link
+            href="/settings/password"
+            onClick={mobile ? closeMobile : undefined}
+            className={linkSecondaryClass}
+          >
+            ניהול סיסמה
+          </Link>
+          {showAdminLink ? (
+            <Link
+              href="/admin"
+              onClick={mobile ? closeMobile : undefined}
+              className={linkSecondaryClass}
+            >
+              אדמין
+            </Link>
+          ) : null}
+          {showClientLink ? (
+            <Link
+              href="/client"
+              onClick={mobile ? closeMobile : undefined}
+              className={linkSecondaryClass}
+            >
+              לקוח
+            </Link>
+          ) : null}
+          <SignOutButton className="mt-2 w-full" />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className="relative flex min-h-full flex-1 flex-col lg:min-h-screen"
+      dir="rtl"
+    >
+      {/* דסקטופ: תפריט קבוע בקצה ימין המסך (ב־RTL זה inline-start) */}
+      <aside
+        aria-label="ניווט אזור רואה החשבון"
+        className="fixed inset-y-0 start-0 z-40 hidden w-52 flex-col border-e border-zinc-200 bg-zinc-50 xl:w-56 lg:flex"
+      >
+        <div className="flex flex-1 flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto px-3 py-8">
+            <nav className="flex flex-col gap-1 px-0">
+              {NAV.map(({ section, label }) => (
+                <button
+                  key={section}
+                  type="button"
+                  onClick={() => select(section)}
+                  aria-current={active === section ? "page" : undefined}
+                  className={`rounded-lg px-3 py-2 text-start text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 ${
+                    active === section
+                      ? "bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200"
+                      : "text-zinc-700 hover:bg-zinc-100/80"
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </nav>
+          </div>
+          <div className="shrink-0 border-t border-zinc-200 bg-zinc-50 px-3 py-4">
+            <MenuFooter mobile={false} />
+          </div>
+        </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      {/* תוכן ראשי — מוזז כדי לא להיחתך תחת הסרגל הקבוע */}
+      <div className="flex min-h-full min-w-0 flex-1 flex-col ps-0 lg:ps-52 xl:ps-56">
         <div className="sticky top-0 z-30 flex shrink-0 items-center border-b border-zinc-200 bg-white px-3 py-3 sm:px-4 lg:hidden">
           <button
             type="button"
@@ -155,13 +213,7 @@ export function AccountantWorkspace() {
                   {label}
                 </button>
               ))}
-              <Link
-                href="/"
-                onClick={closeMobile}
-                className="mt-auto rounded-lg border border-zinc-200 px-3 py-3 text-center text-sm font-medium text-blue-700 hover:bg-blue-50/80"
-              >
-                דף הבית
-              </Link>
+              <MenuFooter mobile />
             </nav>
           </div>
         </>
