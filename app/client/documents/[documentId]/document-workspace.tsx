@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { DraftUploadResumeButton } from "@/app/client/draft-upload-resume-button";
+import { RequiredFieldMark } from "@/app/client/required-field-mark";
 import {
   SHEKEL_DISPLAY,
   canonicalizeCurrency,
@@ -430,10 +431,7 @@ export function ClientDocumentWorkspace({
     initial.clientDisplayName ?? initial.clientId.slice(0, 8);
 
   return (
-    <div
-      className="mx-auto w-full min-w-0 max-w-xl space-y-5 px-3 pb-10 pt-6 sm:space-y-6 sm:px-4 sm:pt-10"
-      dir="rtl"
-    >
+    <div className="mx-auto w-full min-w-0 max-w-xl space-y-5 pb-10 sm:space-y-6">
       <div>
         <Link
           href="/client"
@@ -504,19 +502,17 @@ export function ClientDocumentWorkspace({
         <h2 className="text-base font-semibold text-zinc-900">
           פרטי חשבונית להגשה
         </h2>
-        <p className="text-sm text-zinc-600">
-          לפני שליחה לרואה החשבון יש למלא את כל השדות החובה (סכום, מטבע, תאריך,
-          ספק).
-        </p>
 
         <div>
-          <label htmlFor="d-amt" className="mb-1 block text-sm text-zinc-700">
+          <label htmlFor="d-amt" className="mb-1 inline-flex flex-wrap items-baseline gap-0 text-sm text-zinc-700">
             סכום סופי
+            <RequiredFieldMark />
           </label>
           <input
             id="d-amt"
             type="text"
             inputMode="decimal"
+            aria-required="true"
             value={finalAmount}
             disabled={!finalEditable}
             onChange={(e) => setFinalAmount(e.target.value)}
@@ -530,11 +526,13 @@ export function ClientDocumentWorkspace({
         </div>
 
         <div>
-          <label htmlFor="d-curr" className="mb-1 block text-sm text-zinc-700">
+          <label htmlFor="d-curr" className="mb-1 inline-flex flex-wrap items-baseline gap-0 text-sm text-zinc-700">
             מטבע
+            <RequiredFieldMark />
           </label>
           <select
             id="d-curr"
+            aria-required="true"
             value={finalCurrencyCode}
             disabled={!finalEditable}
             onChange={(e) =>
@@ -556,13 +554,15 @@ export function ClientDocumentWorkspace({
         </div>
 
         <div className="min-w-0">
-          <span className="mb-1 block text-sm text-zinc-700">
+          <label htmlFor="d-date-display" className="mb-1 inline-flex flex-wrap items-baseline gap-0 text-sm text-zinc-700">
             תאריך חשבונית (DD.MM.YYYY)
-          </span>
+            <RequiredFieldMark />
+          </label>
           <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-nowrap sm:items-stretch sm:gap-0">
             <input
               id="d-date-display"
               type="text"
+              aria-required="true"
               placeholder={`למשל ${isoDateToDisplay(todayIsoLocal())}`}
               inputMode="numeric"
               autoComplete="off"
@@ -579,7 +579,9 @@ export function ClientDocumentWorkspace({
               onBlur={() => flushInvoiceDateFromDisplay()}
               className="min-w-0 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm disabled:bg-zinc-100 sm:flex-1 sm:rounded-s-md sm:rounded-e-none sm:border-e-0"
               aria-invalid={invoiceDateParseError ? true : undefined}
-              aria-describedby="d-date-help"
+              aria-describedby={
+                invoiceDateParseError ? "d-date-error" : undefined
+              }
             />
             <span
               className={[
@@ -614,13 +616,8 @@ export function ClientDocumentWorkspace({
               </span>
             </span>
           </div>
-          <p id="d-date-help" className="mt-1 text-xs text-zinc-500">
-            ברירת מחדל: היום. סמל הקלנדר ליד השדה פותח את מתאריכון המערכת. ניתן
-            גם להקליד ב-DD.MM.YYYY עם נקודות, עם / או עם - רק כשמתקבלת פרשנות
-            תאריך אחת ברורה; אחרת תופיע שגיאה.
-          </p>
           {invoiceDateParseError ? (
-            <p className="mt-1 text-xs text-red-600" role="alert">
+            <p id="d-date-error" className="mt-1 text-xs text-red-600" role="alert">
               {invoiceDateParseError}
             </p>
           ) : null}
@@ -632,12 +629,14 @@ export function ClientDocumentWorkspace({
         </div>
 
         <div>
-          <label htmlFor="d-vendor" className="mb-1 block text-sm text-zinc-700">
+          <label htmlFor="d-vendor" className="mb-1 inline-flex flex-wrap items-baseline gap-0 text-sm text-zinc-700">
             ספק / שם העסק
+            <RequiredFieldMark />
           </label>
           <input
             id="d-vendor"
             type="text"
+            aria-required="true"
             value={finalVendor}
             disabled={!finalEditable}
             onChange={(e) => setFinalVendor(e.target.value)}

@@ -3,7 +3,9 @@ import { redirect, notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { clients } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { ClientPortalShell } from "@/app/client/client-portal-shell";
 import { ClientDocumentWorkspace } from "./document-workspace";
+import { hasRole } from "@/lib/auth/roles";
 import { getDocumentForClientMember } from "@/lib/client/document-access";
 import { isClientDocumentEditable } from "@/lib/client/document-edit-policy";
 
@@ -42,10 +44,17 @@ export default async function ClientDocumentPage(props: PageProps) {
     editable: isClientDocumentEditable(doc.status),
   };
 
+  const roles = session.user.roles ?? [];
+
   return (
-    <ClientDocumentWorkspace
-      key={`${doc.id}-${doc.submittedAt?.toISOString() ?? "nosubmit"}-${doc.updatedAt.toISOString()}`}
-      initial={initial}
-    />
+    <ClientPortalShell
+      showAdminLink={hasRole(roles, "admin")}
+      showAccountantLink={hasRole(roles, "accountant")}
+    >
+      <ClientDocumentWorkspace
+        key={`${doc.id}-${doc.submittedAt?.toISOString() ?? "nosubmit"}-${doc.updatedAt.toISOString()}`}
+        initial={initial}
+      />
+    </ClientPortalShell>
   );
 }
