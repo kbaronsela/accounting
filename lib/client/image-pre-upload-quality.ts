@@ -3,14 +3,18 @@
  * לא דיוק מלא — מסייע להפחית קבלות שלא יזוהו טוב.
  */
 
-/** מתחת לערך זה — נחשב כמטושטש (variance of Laplacian אחרי downscale) */
-export const DEFAULT_BLUR_VARIANCE_THRESHOLD = 70;
+/**
+ * מתחת לערך זה — נחשב כמטושטש (variance of Laplacian אחרי downscale).
+ * סף גבוה יותר = יותר תמונות יסומנו כלא חדות; נמוך יותר = פחות התראות טשטוש.
+ */
+export const DEFAULT_BLUR_VARIANCE_THRESHOLD = 80;
 
 /**
  * מתחת לממוצע זה (0–255 על פיקסלים באפור) — נחשב כחשוך מדי.
- * (ניתן לכיון: ערך גבוה = פחות התראות; נמוך = יותר)
+ * סף **גבוה יותר** = יותר תמונות יסומנו כחשוכות (מחמירים).
+ * סף **נמוך יותר** = פחות התראות על חשיכה (סובלים יותר).
  */
-export const DEFAULT_DARK_MEAN_THRESHOLD = 52;
+export const DEFAULT_DARK_MEAN_THRESHOLD = 62;
 
 export type ImagePreUploadQualityResult =
   | {
@@ -139,7 +143,35 @@ export async function assessImagePreUploadQuality(
 }
 
 /** תאימות לאחור — רק הערכת טשטוש */
-export async function assessImageBlurLikelihood(
+/**
+ * פרמטרים אופציונליים מ־Env (צד לקוח). הגדר ב־`.env.local` כ־NEXT_PUBLIC_*:
+ * `NEXT_PUBLIC_UPLOAD_IMAGE_DARK_MEAN_THRESHOLD`
+ * `NEXT_PUBLIC_UPLOAD_IMAGE_BLUR_VARIANCE_THRESHOLD`
+ */
+export function preUploadQualityOptionsFromPublicEnv(): PreUploadQualityOptions {
+  const o: PreUploadQualityOptions = {};
+  if (typeof process === "undefined") return o;
+
+  const blurRaw =
+    process.env.NEXT_PUBLIC_UPLOAD_IMAGE_BLUR_VARIANCE_THRESHOLD?.trim();
+  if (blurRaw !== undefined && blurRaw !== "") {
+    const n = Number(blurRaw);
+    if (Number.isFinite(n) && n >= 10 && n <= 5000) {
+      o.blurVarianceThreshold = n;
+    }
+  }
+
+  const darkRaw =
+    process.env.NEXT_PUBLIC_UPLOAD_IMAGE_DARK_MEAN_THRESHOLD?.trim();
+  if (darkRaw !== undefined && darkRaw !== "") {
+    const n = Number(darkRaw);
+    if (Number.isFinite(n) && n >= 1 && n <= 254) {
+      o.darkMeanThreshold = n;
+    }
+  }
+
+  return o;
+}
   file: File,
   threshold: number = DEFAULT_BLUR_VARIANCE_THRESHOLD,
 ): Promise<

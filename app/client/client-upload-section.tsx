@@ -3,7 +3,10 @@
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import type { ClientMeClientRow } from "@/lib/client/queries";
-import { assessImagePreUploadQuality } from "@/lib/client/image-pre-upload-quality";
+import {
+  assessImagePreUploadQuality,
+  preUploadQualityOptionsFromPublicEnv,
+} from "@/lib/client/image-pre-upload-quality";
 import { completeUploadRobust } from "@/lib/client/upload-complete-robust";
 import { isAllowedUploadMime } from "@/lib/uploads/config";
 
@@ -87,7 +90,9 @@ export function ClientUploadSection({ clients }: Props) {
     ) {
       setQualityChecking(true);
       try {
-        const ass = await assessImagePreUploadQuality(file);
+        const ass = await assessImagePreUploadQuality(file, {
+          ...preUploadQualityOptionsFromPublicEnv(),
+        });
         if (ass.ok && (ass.likelyBlurry || ass.likelyTooDark)) {
           setQualityHold({
             blur: ass.likelyBlurry,
