@@ -11,6 +11,9 @@ import {
 import { createClientWithInvitations } from "@/lib/invitations/service";
 import { getPublicInviteUrl } from "@/lib/invitations/public-invite-url";
 import {
+  newBatchInvitesContainDuplicateFingerprints,
+} from "@/lib/accountant/display-uniqueness";
+import {
   and,
   count,
   eq,
@@ -44,6 +47,21 @@ const postBodySchema = z
         path: ["users"],
         code: z.ZodIssueCode.custom,
         message: "כתובות האימייל של המוזמנים חייבות להיות שונות.",
+      });
+    }
+    if (
+      newBatchInvitesContainDuplicateFingerprints(
+        d.users.map((u) => ({
+          email: u.email.trim().toLowerCase(),
+          inviteeDisplayName: u.inviteeDisplayName,
+        })),
+      )
+    ) {
+      ctx.addIssue({
+        path: ["users"],
+        code: z.ZodIssueCode.custom,
+        message:
+          "יש שני מוזמנים עם שם התצוגה שיוצג בשורה לאחר ההזמנה; יש להבדיל ביניהם (שם או אימייל).",
       });
     }
   });
@@ -204,6 +222,20 @@ export async function POST(request: Request) {
         400,
         "VALIDATION_ERROR",
         "נדרש בין משתמש אחד לארבעה.",
+      );
+    }
+    if (created.reason === "duplicate_client_display_name") {
+      return jsonError(
+        409,
+        "DUPLICATE_CLIENT_NAME",
+        "כבר קיים לקוח עם שם התצוגה הזה אצל רואה החשבון. יש לבחור שם אחר ללקוח.",
+      );
+    }
+    if (created.reason === "duplicate_member_display_name_batch") {
+      return jsonError(
+        409,
+        "DUPLICATE_MEMBER_NAME",
+        "שני משתמשים מתוכננים מאותה הזמנה עם אותה תצוגת שם בסופו של דבר. יש לשנות את שם התצוגה של אחד מהם.",
       );
     }
     return jsonError(400, "INVITATION_FAILED", "לא ניתן ליצור את הלקוח והזמנות.");

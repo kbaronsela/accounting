@@ -3,6 +3,12 @@ import { and, eq, isNull } from "drizzle-orm";
 import { db, pool } from "@/lib/db";
 import { ensureInvitationSchema } from "@/lib/db/ensure-invitation-schema";
 import {
+  accountantHasAnotherClientWithSameDisplayName,
+  clientHasMemberFingerprintCollision,
+  newBatchInvitesContainDuplicateFingerprints,
+  memberInviteDisplayFingerprint,
+} from "@/lib/accountant/display-uniqueness";
+import {
   auditEvents,
   clientMembers,
   clients,
@@ -369,14 +375,40 @@ export async function createClientWithInvitations(input: {
     }
   }
 
-  const clientId = crypto.randomUUID();
-
   const resolvedRows = rows.map((r, i) => ({
     email: r.email.trim().toLowerCase(),
     inviteeDisplayName: r.inviteeDisplayName?.trim() || null,
     memberRole:
       r.memberRole ?? (i === 0 ? ("primary" as const) : ("member" as const)),
   }));
+
+  const takenByAccountant =
+    await accountantHasAnotherClientWithSameDisplayName({
+      accountantUserId: input.accountantUserId,
+      displayName: displayName,
+    });
+  if (takenByAccountant) {
+    return {
+      ok: false as const,
+      reason: "duplicate_client_display_name" as const,
+    };
+  }
+
+  if (
+    newBatchInvitesContainDuplicateFingerprints(
+      resolvedRows.map((r) => ({
+        email: r.email,
+        inviteeDisplayName: r.inviteeDisplayName,
+      })),
+    )
+  ) {
+    return {
+      ok: false as const,
+      reason: "duplicate_member_display_name_batch" as const,
+    };
+  }
+
+  const clientId = crypto.randomUUID();
 
   try {
     return await db.transaction(async (tx) => {
@@ -509,6 +541,21 @@ export async function inviteAdditionalClientMember(
     .limit(1);
   if (pendingAny) {
     return { ok: false as const, reason: "pending_invitation" as const };
+  }
+
+  const newFp = memberInviteDisplayFingerprint(
+    input.inviteeDisplayName ?? null,
+    email,
+  );
+  const collides = await clientHasMemberFingerprintCollision({
+    clientId: input.clientId,
+    fingerprint: newFp,
+  });
+  if (collides) {
+    return {
+      ok: false as const,
+      reason: "duplicate_member_display_name" as const,
+    };
   }
 
   await db.insert(invitations).values({

@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { auth } from "@/auth";
 import { getClientOwnedByAccountant } from "@/lib/accountant/assert-accountant-client-access";
+import {
+  clientHasMemberFingerprintCollision,
+  memberInviteDisplayFingerprint,
+} from "@/lib/accountant/display-uniqueness";
 import { jsonError } from "@/lib/api/errors";
 import { hasRole } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
@@ -111,6 +115,44 @@ export async function PATCH(request: Request, context: RouteContext) {
   const nameUpdate =
     parsed.data.displayName !== undefined ? parsed.data.displayName.trim() : undefined;
 
+  const [beforeUser] = await db
+    .select({ id: users.id, email: users.email, name: users.name })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  if (!beforeUser) {
+    return jsonError(404, "NOT_FOUND", "משתמש לא קיים.");
+  }
+
+  const nextEmail =
+    newEmailNorm !== undefined
+      ? newEmailNorm
+      : (beforeUser.email ?? "").trim().toLowerCase();
+  const nextVisualNameSource =
+    nameUpdate !== undefined
+      ? nameUpdate
+      : (() => {
+          const n = (beforeUser.name ?? "").trim();
+          return n.length > 0 ? n : null;
+        })();
+
+  const nextFingerprint = memberInviteDisplayFingerprint(
+    nextVisualNameSource,
+    nextEmail,
+  );
+  const memberNameCollides = await clientHasMemberFingerprintCollision({
+    clientId,
+    fingerprint: nextFingerprint,
+    excludeUserId: userId,
+  });
+  if (memberNameCollides) {
+    return jsonError(
+      409,
+      "DUPLICATE_MEMBER_NAME",
+      "כבר קיים משתמש אחר או הזמנה ממתינה עם תצוגת השם שהתקבלה מהשילוב של שם ואימייל. נא להבדיל ביניהם.",
+    );
+  }
+
   const updates: Partial<{
     name: string;
     email: string;
@@ -122,11 +164,6 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
   if (newEmailNorm !== undefined) {
     updates.email = newEmailNorm;
-  }
-
-  const [existingUser] = await db.select({ id: users.id }).from(users).where(eq(users.id, userId)).limit(1);
-  if (!existingUser) {
-    return jsonError(404, "NOT_FOUND", "משתמש לא קיים.");
   }
 
   await db.update(users).set(updates).where(eq(users.id, userId));

@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { auth } from "@/auth";
 import { deleteClientOwnedByAccountant } from "@/lib/accountant/delete-client-owned-by-accountant";
+import { accountantHasAnotherClientWithSameDisplayName } from "@/lib/accountant/display-uniqueness";
 import { getClientOwnedByAccountant } from "@/lib/accountant/assert-accountant-client-access";
 import { jsonError } from "@/lib/api/errors";
 import { hasRole } from "@/lib/auth/roles";
@@ -119,6 +120,19 @@ export async function PATCH(request: Request, context: RouteContext) {
   }
 
   const name = parsed.data.displayName.trim();
+  const nameTakenByOther = await accountantHasAnotherClientWithSameDisplayName({
+    accountantUserId: session.user.id,
+    displayName: name,
+    excludeClientId: clientId,
+  });
+  if (nameTakenByOther) {
+    return jsonError(
+      409,
+      "DUPLICATE_CLIENT_NAME",
+      "כבר קיים לקוח אחר עם שם התצוגה הזה. נא לבחור שם אחר.",
+    );
+  }
+
   const updated = await db
     .update(clients)
     .set({

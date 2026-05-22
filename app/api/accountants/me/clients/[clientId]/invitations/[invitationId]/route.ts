@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { auth } from "@/auth";
 import { getClientOwnedByAccountant } from "@/lib/accountant/assert-accountant-client-access";
+import {
+  clientHasMemberFingerprintCollision,
+  memberInviteDisplayFingerprint,
+} from "@/lib/accountant/display-uniqueness";
 import { jsonError } from "@/lib/api/errors";
 import { hasRole } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
@@ -117,6 +121,29 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   if (Object.keys(upsertPatch).length === 0) {
     return jsonError(400, "VALIDATION_ERROR", "אין מה לעדכן.");
+  }
+
+  const nextEmailFinal = upsertPatch.email ?? inv.email.trim().toLowerCase();
+  const nextInviteeDisplayResolved =
+    "inviteeDisplayName" in upsertPatch
+      ? upsertPatch.inviteeDisplayName
+      : (inv.inviteeDisplayName ?? null);
+
+  const nextFingerprint = memberInviteDisplayFingerprint(
+    nextInviteeDisplayResolved,
+    nextEmailFinal,
+  );
+  const inviteLabelCollides = await clientHasMemberFingerprintCollision({
+    clientId,
+    fingerprint: nextFingerprint,
+    excludeInvitationId: invitationId,
+  });
+  if (inviteLabelCollides) {
+    return jsonError(
+      409,
+      "DUPLICATE_MEMBER_NAME",
+      "כבר קיים משתמש אחר או הזמנה ממתינה עם תצוגת השם שהתקבלה מהשילוב של שם ואימייל. נא להבדיל ביניהם.",
+    );
   }
 
   await db.update(invitations).set(upsertPatch).where(eq(invitations.id, invitationId));

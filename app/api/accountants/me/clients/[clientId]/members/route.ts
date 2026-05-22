@@ -63,6 +63,13 @@ export async function POST(request: Request, context: RouteContext) {
         "כבר קיימת הזמנה פעילה לכתובת המייל הזו.",
       );
     }
+    if (created.reason === "duplicate_member_display_name") {
+      return jsonError(
+        409,
+        "DUPLICATE_MEMBER_NAME",
+        "כבר קיים או מתוכנן משתמש אחר בשם התצוגה הזה אצל הלקוח. יש להבדיל בין משתמשים.",
+      );
+    }
     return jsonError(400, "INVITATION_FAILED", "לא ניתן ליצור הזמנה.");
   }
 
