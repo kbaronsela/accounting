@@ -33,7 +33,6 @@ export default async function AccountantLayout({
       <header className="border-b border-zinc-200 bg-white px-3 py-2 sm:px-4">
         <nav className="mx-auto flex max-w-4xl flex-wrap items-center justify-between gap-x-3 gap-y-2 text-sm text-zinc-600">
           <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1">
-            <span className="font-medium text-zinc-800">אזור רואה חשבון</span>
             <Link href="/settings/password" className="text-blue-700 hover:underline">
               סיסמה
             </Link>
@@ -53,7 +52,7 @@ export default async function AccountantLayout({
           </div>
         </nav>
       </header>
-      {children}
+      <div className="flex flex-1 flex-col">{children}</div>
     </div>
   );
 }

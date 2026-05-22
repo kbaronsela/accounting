@@ -286,7 +286,7 @@ export function AccountantClientsPanel() {
     <div className="w-full max-w-3xl space-y-6 sm:space-y-8">
       <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-base font-semibold text-zinc-900">תיקי לקוחות</h2>
+          <h2 className="text-base font-semibold text-zinc-900">ניהול תיקים</h2>
           <button
             type="button"
             onClick={() => {

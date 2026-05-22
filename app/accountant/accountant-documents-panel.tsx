@@ -196,7 +196,7 @@ export function AccountantDocumentsPanel() {
   return (
     <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
-        <h2 className="text-base font-semibold text-zinc-900">מסמכים מהלקוחות</h2>
+        <h2 className="text-base font-semibold text-zinc-900">מסמכים</h2>
         <button
           type="button"
           className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-800 shadow-sm hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2"
