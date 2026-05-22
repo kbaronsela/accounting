@@ -304,36 +304,8 @@ export function ClientDocumentWorkspace({
   const [pendingSubmit, setPendingSubmit] = useState(false);
 
   const [fileViewerOpen, setFileViewerOpen] = useState(false);
-  const [showNewTabFileLink, setShowNewTabFileLink] = useState(false);
 
   const closeFileViewer = useCallback(() => setFileViewerOpen(false), []);
-
-  useEffect(() => {
-    const sync = () => {
-      try {
-        const standaloneLike =
-          window.matchMedia("(display-mode: standalone)").matches ||
-          Boolean(
-            (window.navigator as Navigator & { standalone?: boolean }).standalone,
-          );
-        const wideEnough = window.matchMedia("(min-width: 640px)").matches;
-        setShowNewTabFileLink(wideEnough && !standaloneLike);
-      } catch {
-        setShowNewTabFileLink(false);
-      }
-    };
-    sync();
-    const mqStandalone = window.matchMedia("(display-mode: standalone)");
-    const mqWide = window.matchMedia("(min-width: 640px)");
-    mqStandalone.addEventListener("change", sync);
-    mqWide.addEventListener("change", sync);
-    window.addEventListener("orientationchange", sync);
-    return () => {
-      mqStandalone.removeEventListener("change", sync);
-      mqWide.removeEventListener("change", sync);
-      window.removeEventListener("orientationchange", sync);
-    };
-  }, []);
 
   function flushInvoiceDateFromDisplay(): boolean {
     const parsed = parseFlexibleInvoiceDate(invoiceDate.display);
@@ -473,7 +445,7 @@ export function ClientDocumentWorkspace({
           מסמך
         </h1>
         <p className="mt-1 text-sm text-zinc-600">
-          תיק: <span className="font-medium">{title}</span> · סטטוס:{" "}
+          לקוח: <span className="font-medium">{title}</span> · סטטוס:{" "}
           {STATUS_LABELS[status] ?? status}
         </p>
         {status === "submitted" && initial.submittedAt ? (
@@ -505,34 +477,13 @@ export function ClientDocumentWorkspace({
 
       {showFileLink ? (
         <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
-          <p className="text-sm font-medium text-zinc-800">קבצים</p>
-          <div className="mt-2 space-y-2">
-            <button
-              type="button"
-              onClick={() => setFileViewerOpen(true)}
-              className="block text-sm font-medium text-blue-700 underline-offset-4 hover:underline"
-            >
-              הצגת הקובץ
-            </button>
-            {showNewTabFileLink ? (
-              <p className="text-xs text-zinc-600">
-                <a
-                  href={`/api/client/documents/${initial.id}/file`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-700 underline-offset-4 hover:underline"
-                >
-                  פתיחה בלשונית חדשה
-                </a>{" "}
-                — נוח בעיקר במחשב
-              </p>
-            ) : (
-              <p className="text-xs text-zinc-600">
-                בתצוגת אפליקציה במובייל ההצגה היא בתוך המסך; לסיום התצוגה יש להשתמש
-                ב־«סגירה» (ולא בהקשה על Esc שעלול לסגור את האפליקציה).
-              </p>
-            )}
-          </div>
+          <button
+            type="button"
+            onClick={() => setFileViewerOpen(true)}
+            className="text-sm font-medium text-blue-700 underline-offset-4 hover:underline"
+          >
+            הצגת הקובץ
+          </button>
           {fileViewerOpen
             ? createPortal(
                 <ClientDocumentFileViewerOverlay
