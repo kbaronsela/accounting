@@ -100,9 +100,18 @@ export function AccountantClientsPanel() {
   const [detailId, setDetailId] = useState<string | null>(null);
   const [detail, setDetail] = useState<ClientDetailPayload | null>(null);
   const [detailErr, setDetailErr] = useState<string | null>(null);
+  const detailClientTitleId = useId();
+  const detailRenameFieldId = useId();
 
   /** מפתח: `m:userId` או `i:invitationId` */
   const [expandedRow, setExpandedRow] = useState<string | null>(null);
+
+  /** כותרת מודאל לקוח: עריכת שם ארגון */
+  const [clientDisplayNameEditing, setClientDisplayNameEditing] =
+    useState(false);
+  const [clientDisplayNameDraft, setClientDisplayNameDraft] = useState("");
+  const [clientDisplayNameSaving, setClientDisplayNameSaving] =
+    useState(false);
 
   /** טיוטות עריכה לפי מפתח שורת משתמש/הזמנה */
   const [drafts, setDrafts] = useState<
@@ -209,17 +218,6 @@ export function AccountantClientsPanel() {
     };
   }, [detailOpen]);
 
-  useEffect(() => {
-    if (!detailOpen || addMemberModalOpen) return;
-    function onEsc(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        setDetailOpen(false);
-      }
-    }
-    window.addEventListener("keydown", onEsc);
-    return () => window.removeEventListener("keydown", onEsc);
-  }, [detailOpen, addMemberModalOpen]);
-
   async function openDetail(clientId: string) {
     setDetailId(clientId);
     setDetailOpen(true);
@@ -229,6 +227,9 @@ export function AccountantClientsPanel() {
     setExpandedRow(null);
     setDrafts({});
     setEditFlags({});
+    setClientDisplayNameEditing(false);
+    setClientDisplayNameDraft("");
+    setClientDisplayNameSaving(false);
     setAddMemberModalOpen(false);
     resetAddMemberModal();
     setAddMemberInviteBanner(null);
@@ -249,6 +250,99 @@ export function AccountantClientsPanel() {
     }
     setDetailLoading(false);
   }
+
+  async function saveClientDisplayName() {
+    if (!detail || !detailId) return;
+    const name = clientDisplayNameDraft.trim();
+    if (!name) {
+      setDetailErr("נדרש שם לקוח.");
+      return;
+    }
+    if (name === detail.client.displayName) {
+      setClientDisplayNameEditing(false);
+      return;
+    }
+    setDetailErr(null);
+    setClientDisplayNameSaving(true);
+    try {
+      const res = await fetch(`/api/accountants/me/clients/${detailId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ displayName: name }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        client?: { displayName?: string; status?: string };
+        error?: { message?: string };
+      };
+      if (!res.ok) {
+        setDetailErr(data.error?.message ?? "לא ניתן לעדכן את השם.");
+        setClientDisplayNameSaving(false);
+        return;
+      }
+      const nextName = data.client?.displayName ?? name;
+      const nextStatus = data.client?.status ?? detail.client.status;
+      setDetail((d) =>
+        d
+          ? {
+              ...d,
+              client: {
+                ...d.client,
+                displayName: nextName,
+                status: nextStatus,
+              },
+            }
+          : d,
+      );
+      setClientDisplayNameDraft(nextName);
+      setClientDisplayNameEditing(false);
+      await refreshList();
+    } catch {
+      setDetailErr("שגיאת רשת.");
+    }
+    setClientDisplayNameSaving(false);
+  }
+
+  function cancelClientDisplayNameEdit() {
+    if (detail) {
+      setClientDisplayNameDraft(detail.client.displayName);
+    }
+    setClientDisplayNameEditing(false);
+    setDetailErr(null);
+  }
+
+  const closeDetailModal = useCallback(() => {
+    setClientDisplayNameEditing(false);
+    setClientDisplayNameDraft("");
+    setClientDisplayNameSaving(false);
+    setExpandedRow(null);
+    setDrafts({});
+    setEditFlags({});
+    setSectionBusyKey(null);
+    setAddMemberModalOpen(false);
+    resetAddMemberModal();
+    setAddMemberInviteBanner(null);
+    setDetailOpen(false);
+  }, [resetAddMemberModal]);
+
+  useEffect(() => {
+    if (!detailOpen || addMemberModalOpen) return;
+    function onEsc(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        if (clientDisplayNameEditing) {
+          cancelClientDisplayNameEdit();
+          return;
+        }
+        closeDetailModal();
+      }
+    }
+    window.addEventListener("keydown", onEsc);
+    return () => window.removeEventListener("keydown", onEsc);
+  }, [
+    detailOpen,
+    addMemberModalOpen,
+    clientDisplayNameEditing,
+    closeDetailModal,
+  ]);
 
   async function refreshDetailQuiet(clientId: string) {
     setDetailErr(null);
@@ -568,7 +662,7 @@ export function AccountantClientsPanel() {
         method: "DELETE",
       });
       if (res.status === 204) {
-        setDetailOpen(false);
+        closeDetailModal();
         await refreshList();
       } else {
         const data = (await res.json().catch(() => ({}))) as {
@@ -786,7 +880,7 @@ export function AccountantClientsPanel() {
               type="button"
               className="absolute inset-0 bg-zinc-900/50"
               aria-label="סגירה"
-              onClick={() => setDetailOpen(false)}
+              onClick={closeDetailModal}
             />
             <div className="relative z-10 my-4 flex w-full max-w-lg flex-col rounded-xl border border-zinc-200 bg-white shadow-xl sm:my-6 max-h-[min(100vh-2rem,40rem)] sm:max-h-[min(100vh-4rem,48rem)]">
             <div className="relative shrink-0 border-b border-zinc-100 px-4 py-3 sm:px-5">
@@ -794,7 +888,7 @@ export function AccountantClientsPanel() {
                 type="button"
                 className="absolute end-3 top-3 rounded-md p-1.5 text-zinc-500 hover:bg-zinc-100"
                 aria-label="סגירה"
-                onClick={() => setDetailOpen(false)}
+                onClick={closeDetailModal}
               >
                 <span aria-hidden className="text-lg leading-none">
                   ×
@@ -805,10 +899,76 @@ export function AccountantClientsPanel() {
                   <p className="text-sm text-zinc-600">טוענים…</p>
                 ) : detail ? (
                   <>
-                    <h2 className="text-base font-semibold text-zinc-900 break-words">
-                      {detail.client.displayName}
-                    </h2>
-                    <p className="mt-1 text-xs text-zinc-500">סטטוס: {detail.client.status}</p>
+                    {clientDisplayNameEditing ? (
+                      <div className="space-y-2">
+                        <label
+                          htmlFor={detailRenameFieldId}
+                          className="text-xs font-medium text-zinc-600"
+                        >
+                          שם הלקוח
+                        </label>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <input
+                            id={detailRenameFieldId}
+                            type="text"
+                            autoComplete="organization"
+                            value={clientDisplayNameDraft}
+                            disabled={clientDisplayNameSaving}
+                            onChange={(e) =>
+                              setClientDisplayNameDraft(e.target.value)
+                            }
+                            onKeyDown={(e) => {
+                              if (e.key === "Escape") {
+                                e.preventDefault();
+                                cancelClientDisplayNameEdit();
+                              }
+                            }}
+                            className="min-w-0 flex-1 rounded-md border border-zinc-300 px-3 py-1.5 text-sm outline-none focus:border-zinc-500 disabled:bg-zinc-100 sm:max-w-[min(100%,28rem)]"
+                          />
+                          <div className="flex shrink-0 gap-2">
+                            <button
+                              type="button"
+                              disabled={clientDisplayNameSaving}
+                              className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-800 shadow-sm hover:bg-zinc-50 disabled:opacity-50"
+                              onClick={cancelClientDisplayNameEdit}
+                            >
+                              ביטול
+                            </button>
+                            <button
+                              type="button"
+                              disabled={clientDisplayNameSaving}
+                              className="rounded-md bg-zinc-900 px-2.5 py-1 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+                              onClick={() => void saveClientDisplayName()}
+                            >
+                              {clientDisplayNameSaving ? "שומרים…" : "שמור"}
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                        <h2
+                          id={detailClientTitleId}
+                          className="text-base font-semibold text-zinc-900 break-words"
+                        >
+                          {detail.client.displayName}
+                        </h2>
+                        <button
+                          type="button"
+                          className="shrink-0 rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-900 shadow-sm hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+                          onClick={() => {
+                            setDetailErr(null);
+                            setClientDisplayNameDraft(detail.client.displayName);
+                            setClientDisplayNameEditing(true);
+                          }}
+                        >
+                          ערוך שם
+                        </button>
+                      </div>
+                    )}
+                    <p className="mt-1 text-xs text-zinc-500">
+                      סטטוס: {detail.client.status}
+                    </p>
                   </>
                 ) : (
                   <p className="text-sm text-red-700">{detailErr ?? "שגיאה"}</p>

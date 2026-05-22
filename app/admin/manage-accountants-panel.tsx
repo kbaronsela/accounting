@@ -278,6 +278,25 @@ export function ManageAccountantsPanel({
 
   function closeModal() {
     if (pending) return;
+    if (modalAcct) {
+      const id = modalAcct.id;
+      const acctRow = items.find((x) => x.id === id);
+      if (acctRow) {
+        setDrafts((p) => ({
+          ...p,
+          [id]: {
+            name: displayLabel(acctRow),
+            email: acctRow.email?.trim() ?? "",
+          },
+        }));
+      }
+      setEditFlags((p) => ({ ...p, [id]: { name: false, email: false } }));
+      setPatchErrById((p) => {
+        const copy = { ...p };
+        delete copy[id];
+        return copy;
+      });
+    }
     setModalAcct(null);
     setModalErr(null);
   }
