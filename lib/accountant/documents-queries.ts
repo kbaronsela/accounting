@@ -21,7 +21,7 @@ export type AccountantDocumentListItem = {
   finalDate: string | null;
   finalVendor: string | null;
   submittedAt: string | null;
-  uploadedByEmail: string | null;
+  uploadedByDisplayName: string | null;
   updatedAt: string;
 };
 
@@ -80,6 +80,14 @@ export async function assertAccountantOwnsClient(
 }
 
 const uploader = alias(users, "doc_uploader");
+
+function uploadedByDisplayLabel(
+  name: string | null | undefined,
+): string | null {
+  const n = name?.trim();
+  if (n && n.length > 0) return n;
+  return null;
+}
 
 export async function listDocumentsForAccountant(
   accountantUserId: string,
@@ -192,7 +200,7 @@ export async function listDocumentsForAccountant(
       finalDate: documents.finalDate,
       finalVendor: documents.finalVendor,
       submittedAt: documents.submittedAt,
-      uploadedByEmail: uploader.email,
+      uploadedByName: uploader.name,
       updatedAt: documents.updatedAt,
     })
     .from(documents)
@@ -212,7 +220,7 @@ export async function listDocumentsForAccountant(
     finalDate: r.finalDate,
     finalVendor: r.finalVendor,
     submittedAt: r.submittedAt?.toISOString() ?? null,
-    uploadedByEmail: r.uploadedByEmail ?? null,
+    uploadedByDisplayName: uploadedByDisplayLabel(r.uploadedByName),
     updatedAt: r.updatedAt.toISOString(),
   }));
 }

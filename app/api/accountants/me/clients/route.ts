@@ -2,11 +2,29 @@ import { auth } from "@/auth";
 import { jsonError } from "@/lib/api/errors";
 import { hasRole } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
-import { clientMembers, clients } from "@/lib/db/schema";
+import {
+  clientMembers,
+  clients,
+  invitations,
+  users,
+} from "@/lib/db/schema";
 import { createClientWithInvitations } from "@/lib/invitations/service";
 import { getPublicInviteUrl } from "@/lib/invitations/public-invite-url";
-import { and, count, eq, ilike } from "drizzle-orm";
+import {
+  and,
+  count,
+  eq,
+  ilike,
+  inArray,
+  isNotNull,
+  isNull,
+  or,
+} from "drizzle-orm";
 import { z } from "zod";
+
+function escapeIlikeSubstring(input: string) {
+  return input.replace(/[%_\\]/g, "\\$&");
+}
 
 const invitedUserSchema = z.object({
   email: z.string().email(),
@@ -44,9 +62,63 @@ export async function GET(request: Request) {
   if (status && status.length > 0) {
     conditions.push(eq(clients.status, status));
   }
+
   if (search && search.length > 0) {
-    const safe = search.replace(/[%_]/g, "\\$&");
-    conditions.push(ilike(clients.displayName, `%${safe}%`));
+    const safe = escapeIlikeSubstring(search);
+    const pat = `%${safe}%`;
+    const idSet = new Set<string>();
+
+    const [byClientName, byMember, byInvite] = await Promise.all([
+      db
+        .select({ id: clients.id })
+        .from(clients)
+        .where(
+          and(eq(clients.accountantId, session.user.id), ilike(clients.displayName, pat)),
+        ),
+      db
+        .select({ id: clients.id })
+        .from(clients)
+        .innerJoin(clientMembers, eq(clientMembers.clientId, clients.id))
+        .innerJoin(users, eq(users.id, clientMembers.userId))
+        .where(
+          and(
+            eq(clients.accountantId, session.user.id),
+            or(ilike(users.email, pat), ilike(users.name, pat)),
+          ),
+        ),
+      db
+        .select({ id: clients.id })
+        .from(clients)
+        .innerJoin(
+          invitations,
+          and(
+            eq(invitations.clientId, clients.id),
+            eq(invitations.role, "client"),
+            isNull(invitations.consumedAt),
+          ),
+        )
+        .where(
+          and(
+            eq(clients.accountantId, session.user.id),
+            or(
+              ilike(invitations.email, pat),
+              and(
+                isNotNull(invitations.inviteeDisplayName),
+                ilike(invitations.inviteeDisplayName, pat),
+              ),
+            ),
+          ),
+        ),
+    ]);
+
+    for (const r of byClientName) idSet.add(r.id);
+    for (const r of byMember) idSet.add(r.id);
+    for (const r of byInvite) idSet.add(r.id);
+
+    if (idSet.size === 0) {
+      return Response.json({ items: [], nextCursor: null });
+    }
+    conditions.push(inArray(clients.id, [...idSet]));
   }
 
   const rows = await db

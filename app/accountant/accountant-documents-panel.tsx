@@ -16,7 +16,7 @@ type DocRow = {
   finalCurrency: string | null;
   finalVendor: string | null;
   submittedAt: string | null;
-  uploadedByEmail: string | null;
+  uploadedByDisplayName: string | null;
   updatedAt: string;
 };
 
@@ -449,7 +449,7 @@ export function AccountantDocumentsPanel() {
                   <div className="flex flex-wrap justify-between gap-x-3 gap-y-1">
                     <dt className="shrink-0 text-zinc-500">הועלה ע״י</dt>
                     <dd className="min-w-0 break-all text-end text-xs">
-                      {d.uploadedByEmail ?? "—"}
+                      {d.uploadedByDisplayName ?? "—"}
                     </dd>
                   </div>
                 </dl>
@@ -503,7 +503,7 @@ export function AccountantDocumentsPanel() {
                         : "—"}
                     </td>
                     <td className="max-w-[10rem] truncate py-2.5 text-zinc-500">
-                      {d.uploadedByEmail ?? "—"}
+                      {d.uploadedByDisplayName ?? "—"}
                     </td>
                     <td className="py-2.5">
                       <a

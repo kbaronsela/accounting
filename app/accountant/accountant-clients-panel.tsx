@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 
 type ClientListRow = {
   id: string;
@@ -35,11 +35,22 @@ function initialUserRows() {
   return [{ displayName: "", email: "" }];
 }
 
-async function fetchClientList(): Promise<
+async function fetchClientList(
+  search: string,
+): Promise<
   | { ok: true; items: ClientListRow[] }
   | { ok: false; message: string }
 > {
-  const res = await fetch("/api/accountants/me/clients");
+  const sp = new URLSearchParams();
+  if (search.trim().length > 0) {
+    sp.set("search", search.trim());
+  }
+  const qs = sp.toString();
+  const url =
+    qs.length > 0
+      ? `/api/accountants/me/clients?${qs}`
+      : "/api/accountants/me/clients";
+  const res = await fetch(url);
   const data = (await res.json()) as {
     items?: ClientListRow[];
     error?: { message?: string };
@@ -50,13 +61,19 @@ async function fetchClientList(): Promise<
       message: data.error?.message ?? "לא ניתן לטעון את רשימת הלקוחות.",
     };
   }
-  return { ok: true, items: (data.items ?? []).map(({ id, displayName }) => ({ id, displayName })) };
+  return {
+    ok: true,
+    items: (data.items ?? []).map(({ id, displayName }) => ({ id, displayName })),
+  };
 }
 
 export function AccountantClientsPanel() {
   const [items, setItems] = useState<ClientListRow[]>([]);
   const [listError, setListError] = useState<string | null>(null);
   const [loadingList, setLoadingList] = useState(true);
+  const [searchInput, setSearchInput] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const searchFieldId = useId();
 
   const [newModalOpen, setNewModalOpen] = useState(false);
   const [clientNameInput, setClientNameInput] = useState("");
@@ -92,7 +109,7 @@ export function AccountantClientsPanel() {
   }, []);
 
   const refreshList = useCallback(async () => {
-    const result = await fetchClientList();
+    const result = await fetchClientList(debouncedSearch);
     if (result.ok) {
       setItems(result.items);
       setListError(null);
@@ -100,24 +117,39 @@ export function AccountantClientsPanel() {
       setItems([]);
       setListError(result.message);
     }
-  }, []);
+  }, [debouncedSearch]);
+
+  const isFirstSearchMount = useRef(true);
+  useEffect(() => {
+    const trimmed = searchInput.trim();
+    if (isFirstSearchMount.current) {
+      isFirstSearchMount.current = false;
+      setDebouncedSearch(trimmed);
+      return;
+    }
+    const t = window.setTimeout(() => setDebouncedSearch(trimmed), 300);
+    return () => window.clearTimeout(t);
+  }, [searchInput]);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      const result = await fetchClientList();
+      setLoadingList(true);
+      const result = await fetchClientList(debouncedSearch);
       if (cancelled) return;
       setLoadingList(false);
       if (result.ok) {
         setItems(result.items);
+        setListError(null);
       } else {
+        setItems([]);
         setListError(result.message);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [debouncedSearch]);
 
   useEffect(() => {
     if (!newModalOpen) return;
@@ -449,15 +481,34 @@ export function AccountantClientsPanel() {
   return (
     <div className="w-full max-w-3xl space-y-6 sm:space-y-8">
       <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-base font-semibold text-zinc-900">ניהול לקוחות</h2>
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0 flex-1 space-y-2">
+            <h2 className="text-base font-semibold text-zinc-900">ניהול לקוחות</h2>
+            <div>
+              <label
+                htmlFor={searchFieldId}
+                className="mb-1 block text-xs font-medium text-zinc-600"
+              >
+                חיפוש לפי לקוח או משתמש
+              </label>
+              <input
+                id={searchFieldId}
+                type="search"
+                autoComplete="off"
+                placeholder="שם לקוח, כתובת אימייל או שם משתמש…"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className="w-full max-w-md rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none placeholder:text-zinc-400 focus:border-zinc-500"
+              />
+            </div>
+          </div>
           <button
             type="button"
             onClick={() => {
               resetNewModal();
               setNewModalOpen(true);
             }}
-            className="rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-900 shadow-sm hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+            className="shrink-0 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-900 shadow-sm hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
           >
             לקוח חדש
           </button>
@@ -470,7 +521,11 @@ export function AccountantClientsPanel() {
             {listError}
           </p>
         ) : items.length === 0 ? (
-          <p className="mt-3 text-sm text-zinc-600">אין לקוחות עדיין.</p>
+          <p className="mt-3 text-sm text-zinc-600">
+            {debouncedSearch.length > 0
+              ? "לא נמצאו לקוחות או משתמשים תואמים לחיפוש."
+              : "אין לקוחות עדיין."}
+          </p>
         ) : (
           <ul className="mt-4 divide-y divide-zinc-100 border-t border-zinc-100">
             {items.map((c) => (
@@ -500,13 +555,10 @@ export function AccountantClientsPanel() {
             }}
           />
           <div className="relative z-10 my-4 flex w-full max-w-lg flex-col rounded-xl border border-zinc-200 bg-white shadow-xl sm:my-6">
-            <div className="flex items-start justify-between border-b border-zinc-100 px-4 py-3 sm:px-5">
-              <h2 id={newModalTitleId} className="text-base font-semibold text-zinc-900 ps-10">
-                לקוח חדש
-              </h2>
+            <div className="relative shrink-0 border-b border-zinc-100 px-4 py-3 sm:px-5">
               <button
                 type="button"
-                className="absolute start-3 top-3 rounded-md p-1.5 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800"
+                className="absolute end-3 top-3 rounded-md p-1.5 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800"
                 aria-label="סגירה"
                 onClick={() => {
                   resetNewModal();
@@ -517,6 +569,9 @@ export function AccountantClientsPanel() {
                   ×
                 </span>
               </button>
+              <h2 id={newModalTitleId} className="text-base font-semibold text-zinc-900 pe-11">
+                לקוח חדש
+              </h2>
             </div>
 
             <form onSubmit={submitNewClient} className="flex flex-col gap-4 px-4 py-4 sm:px-5">
@@ -627,8 +682,18 @@ export function AccountantClientsPanel() {
             onClick={() => setDetailOpen(false)}
           />
           <div className="relative z-10 my-4 flex w-full max-w-lg flex-col rounded-xl border border-zinc-200 bg-white shadow-xl sm:my-6 max-h-[min(100vh-2rem,40rem)] sm:max-h-[min(100vh-4rem,48rem)]">
-            <div className="flex shrink-0 items-start justify-between border-b border-zinc-100 px-4 py-3 sm:px-5">
-              <div className="min-w-0 ps-8 sm:ps-0">
+            <div className="relative shrink-0 border-b border-zinc-100 px-4 py-3 sm:px-5">
+              <button
+                type="button"
+                className="absolute end-3 top-3 rounded-md p-1.5 text-zinc-500 hover:bg-zinc-100"
+                aria-label="סגירה"
+                onClick={() => setDetailOpen(false)}
+              >
+                <span aria-hidden className="text-lg leading-none">
+                  ×
+                </span>
+              </button>
+              <div className="min-w-0 pe-11">
                 {detailLoading ? (
                   <p className="text-sm text-zinc-600">טוענים…</p>
                 ) : detail ? (
@@ -642,16 +707,6 @@ export function AccountantClientsPanel() {
                   <p className="text-sm text-red-700">{detailErr ?? "שגיאה"}</p>
                 )}
               </div>
-              <button
-                type="button"
-                className="absolute start-3 top-3 rounded-md p-1.5 text-zinc-500 hover:bg-zinc-100"
-                aria-label="סגירה"
-                onClick={() => setDetailOpen(false)}
-              >
-                <span aria-hidden className="text-lg leading-none">
-                  ×
-                </span>
-              </button>
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-5">

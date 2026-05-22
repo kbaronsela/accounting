@@ -200,6 +200,8 @@
 
 **Query**: `status`, `search`, `cursor`, `limit`.
 
+פרמטר `search` מתאים לכל אחד מכך ברמת הלקוח: **שם הלקוח**, **כתובת אימייל או שם משתמש** של חברי הלקוח, או **אימייל / שם מוזמן** בהזמנת לקוח שעדיין לא נוצלה.
+
 **Response 200**
 
 ```json
@@ -401,7 +403,7 @@
       "finalDate": "2026-01-10",
       "finalVendor": "ספק לדוגמה",
       "submittedAt": "2026-01-12T10:00:00.000Z",
-      "uploadedByEmail": "client@example.com"
+      "uploadedByDisplayName": "אורז"
     }
   ],
   "nextCursor": null
@@ -409,6 +411,8 @@
 ```
 
 ---
+
+`uploadedByDisplayName` מתוך שם המשתמש ב־DB; ללא שם — `null`.
 
 ### 4.10 `GET /accountants/me/documents/:documentId`
 

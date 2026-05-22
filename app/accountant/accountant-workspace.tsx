@@ -5,14 +5,12 @@ import { useCallback, useEffect, useId, useState } from "react";
 import { SignOutButton } from "../admin/sign-out-button";
 import { AccountantClientsPanel } from "./accountant-clients-panel";
 import { AccountantDocumentsPanel } from "./accountant-documents-panel";
-import { AccountantUsersPlaceholderPanel } from "./accountant-users-placeholder-panel";
 
-type Section = "documents" | "clients" | "users";
+type Section = "documents" | "clients";
 
 const NAV: { section: Section; label: string }[] = [
   { section: "documents", label: "מסמכים" },
   { section: "clients", label: "ניהול לקוחות" },
-  { section: "users", label: "ניהול משתמשים" },
 ];
 
 const linkSecondaryClass =
@@ -103,7 +101,6 @@ export function AccountantWorkspace({
       className="relative flex min-h-full flex-1 flex-col lg:min-h-screen"
       dir="rtl"
     >
-      {/* דסקטופ: תפריט קבוע בקצה ימין המסך (ב־RTL זה inline-start) */}
       <aside
         aria-label="ניווט אזור רואה החשבון"
         className="fixed inset-y-0 start-0 z-40 hidden w-52 flex-col border-e border-zinc-200 bg-zinc-50 xl:w-56 lg:flex"
@@ -134,7 +131,6 @@ export function AccountantWorkspace({
         </div>
       </aside>
 
-      {/* תוכן ראשי — מוזז כדי לא להיחתך תחת הסרגל הקבוע */}
       <div className="flex min-h-full min-w-0 flex-1 flex-col ps-0 lg:ps-52 xl:ps-56">
         <div className="sticky top-0 z-30 flex shrink-0 items-center border-b border-zinc-200 bg-white px-3 py-3 sm:px-4 lg:hidden">
           <button
@@ -157,10 +153,8 @@ export function AccountantWorkspace({
         <main className="flex flex-1 flex-col gap-6 px-3 py-6 sm:gap-8 sm:px-4 sm:py-12">
           {active === "documents" ? (
             <AccountantDocumentsPanel />
-          ) : active === "clients" ? (
-            <AccountantClientsPanel />
           ) : (
-            <AccountantUsersPlaceholderPanel />
+            <AccountantClientsPanel />
           )}
         </main>
       </div>
