@@ -2,7 +2,10 @@ import { auth } from "@/auth";
 import { jsonError } from "@/lib/api/errors";
 import { hasRole } from "@/lib/auth/roles";
 import { getDocumentStorageForAccountant } from "@/lib/accountant/documents-queries";
-import { readLocalDocumentByStorageMeta } from "@/lib/uploads/local-store";
+import {
+  isManagedDocumentStorageKey,
+  readUploadedDocumentBuffer,
+} from "@/lib/uploads/document-storage";
 
 type RouteContext = { params: Promise<{ documentId: string }> };
 
@@ -18,15 +21,15 @@ export async function GET(_request: Request, context: RouteContext) {
     return jsonError(404, "NOT_FOUND", "מסמך לא נמצא.");
   }
 
-  if (!/^local\//i.test(meta.storageObjectKey)) {
+  if (!isManagedDocumentStorageKey(meta.storageObjectKey)) {
     return jsonError(
       501,
       "NOT_IMPLEMENTED",
-      "הורדה זמינה רק למאגר מקומי (פיתוח).",
+      "הורדה זמינה רק למאגר הפנימי או ל־S3 (DOCUMENTS_STORAGE).",
     );
   }
 
-  const buf = await readLocalDocumentByStorageMeta({
+  const buf = await readUploadedDocumentBuffer({
     id: meta.id,
     storageObjectKey: meta.storageObjectKey,
   });

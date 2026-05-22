@@ -18,3 +18,9 @@ export function isAllowedUploadMime(mime: string): mime is UploadMimeType {
 export function getLocalUploadRelativeDir(): string {
   return process.env.LOCAL_UPLOAD_DIR?.trim() || ".data/uploads";
 }
+
+/** מפתחות שמתבצעים דרך `document-storage.ts` (`local/` או `s3/`). */
+export function isManagedDocumentStorageKey(key: string): boolean {
+  const k = key.trim();
+  return /^local\//i.test(k) || /^s3\//i.test(k);
+}

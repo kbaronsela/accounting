@@ -1,7 +1,7 @@
 import "server-only";
 
 import { randomUUID } from "node:crypto";
-import { deleteLocalDocumentFile } from "@/lib/uploads/local-store";
+import { deleteUploadedDocumentAfterDbChange } from "@/lib/uploads/document-storage";
 import { db } from "@/lib/db";
 import {
   auditEvents,
@@ -22,16 +22,19 @@ async function accountantClientCount(tx: DrizzleTxn, accountantUserId: string) {
   return Number(row?.n ?? 0);
 }
 
-async function loadDocumentIdsForAccountant(
+async function loadDocumentsForAccountantFileCleanup(
   tx: DrizzleTxn,
   accountantUserId: string,
 ) {
   const rows = await tx
-    .select({ id: documents.id })
+    .select({
+      id: documents.id,
+      storageObjectKey: documents.storageObjectKey,
+    })
     .from(documents)
     .innerJoin(clients, eq(documents.clientId, clients.id))
     .where(eq(clients.accountantId, accountantUserId));
-  return rows.map((r) => r.id);
+  return rows;
 }
 
 async function userHasRoleAccountant(tx: DrizzleTxn, userId: string) {
@@ -64,10 +67,10 @@ type TxOk = {
   ok: true;
   removedUserEntirely: boolean;
   previousClientCount: number;
-  docIdsForFileCleanup: string[];
+  docIdsForFileCleanup: { id: string; storageObjectKey: string }[];
 };
 
-/** ריק מחוץ ל־transaction; מוחק קבצי upload מקומיים אחרי commit מוצלח */
+/** ריק מחוץ ל־transaction; מוחק קבצי מסמכים (מקומי או S3) אחרי commit מוצלח */
 export async function removeAccountantUser(params: {
   actorUserId: string;
   accountantUserId: string;
@@ -98,7 +101,7 @@ export async function removeAccountantUser(params: {
       }
 
       const clientCount = await accountantClientCount(tx, accountantUserId);
-      let docIdsForFileCleanup: string[] = [];
+      let docIdsForFileCleanup: { id: string; storageObjectKey: string }[] = [];
 
       if (clientCount > 0) {
         if (resolution.kind === "none") {
@@ -138,7 +141,7 @@ export async function removeAccountantUser(params: {
             })
             .where(eq(clients.accountantId, accountantUserId));
         } else if (resolution.kind === "delete_all_clients") {
-          docIdsForFileCleanup = await loadDocumentIdsForAccountant(
+          docIdsForFileCleanup = await loadDocumentsForAccountantFileCleanup(
             tx,
             accountantUserId,
           );
@@ -193,8 +196,8 @@ export async function removeAccountantUser(params: {
       return txResult;
     }
 
-    for (const id of txResult.docIdsForFileCleanup) {
-      await deleteLocalDocumentFile(id);
+    for (const doc of txResult.docIdsForFileCleanup) {
+      await deleteUploadedDocumentAfterDbChange(doc.storageObjectKey, doc.id);
     }
 
     return {

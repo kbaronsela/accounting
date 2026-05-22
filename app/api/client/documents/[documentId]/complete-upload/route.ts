@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { getDocumentForClientMember } from "@/lib/client/document-access";
 import { documents } from "@/lib/db/schema";
 import { runDocumentOcr } from "@/lib/ocr/run-document-ocr";
-import { localDocumentFileExists } from "@/lib/uploads/local-store";
+import { uploadedDocumentFileExists } from "@/lib/uploads/document-storage";
 import { eq } from "drizzle-orm";
 
 export const runtime = "nodejs";
@@ -48,7 +48,10 @@ export async function POST(_request: Request, context: RouteContext) {
     );
   }
 
-  const { exists, size } = await localDocumentFileExists(documentId);
+  const { exists, size } = await uploadedDocumentFileExists({
+    documentId,
+    storageObjectKey: doc.storageObjectKey,
+  });
   if (!exists) {
     return jsonError(
       400,

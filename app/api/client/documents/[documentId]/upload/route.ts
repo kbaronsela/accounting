@@ -2,9 +2,12 @@ import { auth } from "@/auth";
 import { jsonError } from "@/lib/api/errors";
 import { hasRole } from "@/lib/auth/roles";
 import { getDocumentForClientMember } from "@/lib/client/document-access";
-import { writeLocalDocumentFile } from "@/lib/uploads/local-store";
+import { writeUploadedDocumentFile } from "@/lib/uploads/document-storage";
 
 type RouteContext = { params: Promise<{ documentId: string }> };
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function PUT(request: Request, context: RouteContext) {
   const session = await auth();
@@ -50,7 +53,7 @@ export async function PUT(request: Request, context: RouteContext) {
   }
 
   try {
-    await writeLocalDocumentFile(documentId, buf);
+    await writeUploadedDocumentFile(documentId, doc.storageObjectKey, buf);
   } catch {
     return jsonError(500, "UPLOAD_FAILED", "שמירת הקובץ נכשלה.");
   }

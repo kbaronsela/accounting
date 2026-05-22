@@ -8,6 +8,7 @@ import {
   isAllowedUploadMime,
   UPLOAD_MAX_BYTES,
 } from "@/lib/uploads/config";
+import { newDocumentStorageObjectKey } from "@/lib/uploads/document-storage";
 import { and, eq } from "drizzle-orm";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
@@ -17,6 +18,9 @@ const postBodySchema = z.object({
   mimeType: z.string().min(1).max(200),
   byteSize: z.number().int().positive(),
 });
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   const session = await auth();
@@ -73,7 +77,7 @@ export async function POST(request: Request) {
   }
 
   const documentId = randomUUID();
-  const storageObjectKey = `local/${documentId}`;
+  const storageObjectKey = newDocumentStorageObjectKey(documentId);
   const now = new Date();
 
   await db.insert(documents).values({

@@ -8,7 +8,7 @@ import { canonicalizeCurrency } from "@/lib/client/currency-canonical";
 import { getDocumentForClientMember } from "@/lib/client/document-access";
 import { isClientDocumentEditable } from "@/lib/client/document-edit-policy";
 import { getPublicAppOrigin } from "@/lib/invitations/public-invite-url";
-import { deleteLocalDocumentFile } from "@/lib/uploads/local-store";
+import { deleteUploadedDocumentAfterDbChange } from "@/lib/uploads/document-storage";
 import { z } from "zod";
 
 type RouteContext = { params: Promise<{ documentId: string }> };
@@ -187,7 +187,7 @@ export async function DELETE(_request: Request, context: RouteContext) {
     );
   }
 
-  await deleteLocalDocumentFile(documentId);
+  await deleteUploadedDocumentAfterDbChange(doc.storageObjectKey, documentId);
   await db.delete(documents).where(eq(documents.id, documentId));
 
   return new Response(null, { status: 204 });

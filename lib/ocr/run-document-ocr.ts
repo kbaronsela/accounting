@@ -3,7 +3,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { documents } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { readLocalDocumentByStorageMeta } from "@/lib/uploads/local-store";
+import { readUploadedDocumentBuffer } from "@/lib/uploads/document-storage";
 import { extractDocumentPlainText } from "@/lib/ocr/document-text";
 import { extractHeuristicInvoiceFields } from "@/lib/ocr/heuristic-fields";
 import { recognizeWithTesseract } from "@/lib/ocr/tesseract-runner";
@@ -57,12 +57,12 @@ export async function runDocumentOcr(documentId: string): Promise<void> {
   }
 
   try {
-    const buf = await readLocalDocumentByStorageMeta({
+    const buf = await readUploadedDocumentBuffer({
       id: doc.id,
       storageObjectKey: doc.storageObjectKey,
     });
     if (!buf?.length) {
-      throw new Error("הקובץ לא נמצא בשרת ההעלאה המקומי.");
+      throw new Error("הקובץ לא נמצא באחסון המסמכים.");
     }
 
     const extractedPlain = await extractDocumentPlainText({

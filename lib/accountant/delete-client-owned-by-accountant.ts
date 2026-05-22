@@ -3,13 +3,13 @@ import "server-only";
 import { randomUUID } from "node:crypto";
 import { db } from "@/lib/db";
 import { auditEvents, clients, documents } from "@/lib/db/schema";
-import { deleteLocalDocumentFile } from "@/lib/uploads/local-store";
+import { deleteUploadedDocumentAfterDbChange } from "@/lib/uploads/document-storage";
 import { and, eq } from "drizzle-orm";
 
 const notFoundSentinel = "__delete_client_not_found__";
 
 /**
- * קורא למחוק את הלקוח ואת מסמכיו (DB + קבצי upload מקומיים).
+ * קורא למחוק את הלקוח ואת מסמכיו (DB + קבצי אחסון מסמכים).
  */
 export async function deleteClientOwnedByAccountant(params: {
   clientId: string;
@@ -18,12 +18,15 @@ export async function deleteClientOwnedByAccountant(params: {
 }): Promise<{ ok: true } | { ok: false; code: "NOT_FOUND"; message: string }> {
   const { clientId, accountantUserId, actorUserId } = params;
 
-  let docIdsForFiles: string[] = [];
+  let docIdsForFiles: { id: string; storageObjectKey: string }[] = [];
 
   try {
     await db.transaction(async (tx) => {
       const docRows = await tx
-        .select({ id: documents.id })
+        .select({
+          id: documents.id,
+          storageObjectKey: documents.storageObjectKey,
+        })
         .from(documents)
         .innerJoin(clients, eq(documents.clientId, clients.id))
         .where(
@@ -32,7 +35,7 @@ export async function deleteClientOwnedByAccountant(params: {
             eq(clients.accountantId, accountantUserId),
           ),
         );
-      docIdsForFiles = docRows.map((r) => r.id);
+      docIdsForFiles = docRows;
 
       const deleted = await tx
         .delete(clients)
@@ -75,8 +78,8 @@ export async function deleteClientOwnedByAccountant(params: {
     throw e;
   }
 
-  for (const id of docIdsForFiles) {
-    await deleteLocalDocumentFile(id);
+  for (const d of docIdsForFiles) {
+    await deleteUploadedDocumentAfterDbChange(d.storageObjectKey, d.id);
   }
 
   return { ok: true as const };
