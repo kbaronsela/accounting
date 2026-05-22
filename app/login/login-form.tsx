@@ -159,9 +159,6 @@ function LoginFormFields({ googleOAuthEnabled }: { googleOAuthEnabled: boolean }
             <GoogleGlyph />
             התחברות עם Google
           </button>
-          <p className="text-center text-xs text-zinc-500">
-            נדרשת רישום בהזמנה או הגדרת אדמין — עם אותו מייל כמו בחשבון גוגל.
-          </p>
         </>
       ) : (
         <p className="text-center text-xs text-zinc-500">
