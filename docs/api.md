@@ -141,15 +141,32 @@
 
 ---
 
-### 3.3 `PATCH /admin/accountants/:id` (אופציונלי MVP+)
+### 3.3 `PATCH /api/admin/accountants/:userId`
 
-**מטרה**: השבקה / הפעלה.
+**מטרה**: עדכון שם תצוגה (`users.name`) ו/או אימייל — רק משתמש שיש לו תפקיד `accountant`.
 
-**Body**
+**Body** (חייב להכיל לפחות אחד)
 
 ```json
 {
-  "archived": true
+  "displayName": "רחל",
+  "email": "cpa@example.com"
+}
+```
+
+**התנהגות**: שינוי אימייל נחסם למשתמשים עם חשבון OAuth (`google`, `facebook`); התנגשות מייל → `409`.
+
+**Response 200**
+
+```json
+{
+  "item": {
+    "id": "uuid",
+    "email": "cpa@example.com",
+    "displayName": "רחל",
+    "createdAt": "2026-01-01T00:00:00.000Z",
+    "clientCount": 3
+  }
 }
 ```
 
