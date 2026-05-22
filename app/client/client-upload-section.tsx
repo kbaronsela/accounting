@@ -225,10 +225,7 @@ export function ClientUploadSection({ clients }: Props) {
     <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
       <h2 className="text-base font-semibold text-zinc-900">העלאת מסמך</h2>
       <p className="mt-1 text-sm text-zinc-600">
-        קבלות ומסמכים (PDF או תמונה), עד 20 מ״ב. במסכים צרים אפשר לצלם או לבחור קובץ;
-        במחשב — העלאת קובץ בלבד. בפיתוח הקבצים נשמרים בתיקייה מקומית (
-        <code className="rounded bg-zinc-100 px-1 text-xs">.data/uploads</code>
-        ).
+        PDF או תמונה, עד 20MB למסמך.
       </p>
       <form
         ref={formRef}
@@ -393,7 +390,7 @@ export function ClientUploadSection({ clients }: Props) {
             ? "בודקים איכות תמונה…"
             : pending
               ? "מעלים…"
-              : "העלאה"}
+              : "העלה"}
         </button>
       </form>
     </section>

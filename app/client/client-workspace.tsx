@@ -3,30 +3,33 @@
 import Link from "next/link";
 import { useCallback, useEffect, useId, useState } from "react";
 import { SignOutButton } from "../admin/sign-out-button";
-import { AccountantClientsPanel } from "./accountant-clients-panel";
-import { AccountantDocumentsPanel } from "./accountant-documents-panel";
+import {
+  ClientDocumentsList,
+  ClientDocumentsListMobileSortBar,
+  DEFAULT_DOCUMENTS_LIST_SORT,
+} from "./client-documents-list";
+import { ClientUploadSection } from "./client-upload-section";
+import type { ClientDocumentListItem, ClientMeClientRow } from "@/lib/client/queries";
 
-type Section = "documents" | "clients";
+type Section = "documents";
 
 const NAV: { section: Section; label: string }[] = [
-  { section: "documents", label: "מסמכים" },
-  { section: "clients", label: "ניהול לקוחות" },
+  { section: "documents", label: "ניהול מסמכים" },
 ];
 
 const linkSecondaryClass =
   "rounded-lg px-3 py-2 text-start text-sm font-medium text-blue-700 outline-none hover:bg-blue-50/80 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2";
 
-function AccountantWorkspaceMenuFooter({
+function ClientWorkspaceMenuFooter({
   mobile,
   closeMobileNav,
   showAdminLink,
-  showClientLink,
+  showAccountantLink,
 }: {
   mobile: boolean;
-  /** נקרא בתפריט מובייל לפני ניווט לדף אחר */
   closeMobileNav?: () => void;
   showAdminLink: boolean;
-  showClientLink: boolean;
+  showAccountantLink: boolean;
 }) {
   const wrap = mobile ? "mt-4 border-t border-zinc-100 pt-4" : "";
   return (
@@ -55,13 +58,13 @@ function AccountantWorkspaceMenuFooter({
             אדמין
           </Link>
         ) : null}
-        {showClientLink ? (
+        {showAccountantLink ? (
           <Link
-            href="/client"
+            href="/accountant"
             onClick={mobile ? closeMobileNav : undefined}
             className={linkSecondaryClass}
           >
-            לקוח
+            רואה חשבון
           </Link>
         ) : null}
         <SignOutButton className="mt-2 w-full" />
@@ -70,16 +73,21 @@ function AccountantWorkspaceMenuFooter({
   );
 }
 
-type AccountantWorkspaceProps = {
-  showAdminLink: boolean;
-  showClientLink: boolean;
-};
-
-export function AccountantWorkspace({
+export function ClientWorkspace({
+  greetingName,
+  clients,
+  documents,
   showAdminLink,
-  showClientLink,
-}: AccountantWorkspaceProps) {
-  const [active, setActive] = useState<Section>("documents");
+  showAccountantLink,
+}: {
+  greetingName: string;
+  clients: ClientMeClientRow[];
+  documents: ClientDocumentListItem[];
+  showAdminLink: boolean;
+  showAccountantLink: boolean;
+}) {
+  const [active] = useState<Section>("documents");
+  const [documentsSort, setDocumentsSort] = useState(DEFAULT_DOCUMENTS_LIST_SORT);
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileMenuId = useId();
   const drawerHeadingId = useId();
@@ -102,18 +110,13 @@ export function AccountantWorkspace({
     };
   }, [mobileOpen]);
 
-  function select(section: Section) {
-    setActive(section);
-    closeMobile();
-  }
-
   return (
     <div
       className="relative flex min-h-full flex-1 flex-col lg:min-h-screen"
       dir="rtl"
     >
       <aside
-        aria-label="ניווט אזור רואה החשבון"
+        aria-label="ניווט אזור לקוח"
         className="fixed inset-y-0 start-0 z-40 hidden w-52 flex-col border-e border-zinc-200 bg-zinc-50 xl:w-56 lg:flex"
       >
         <div className="flex flex-1 flex-col overflow-hidden">
@@ -123,7 +126,9 @@ export function AccountantWorkspace({
                 <button
                   key={section}
                   type="button"
-                  onClick={() => select(section)}
+                  onClick={() => {
+                    /** פריט יחיד — מקטע מסמכים */
+                  }}
                   aria-current={active === section ? "page" : undefined}
                   className={`rounded-lg px-3 py-2 text-start text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 ${
                     active === section
@@ -137,10 +142,10 @@ export function AccountantWorkspace({
             </nav>
           </div>
           <div className="shrink-0 border-t border-zinc-200 bg-zinc-50 px-3 py-4">
-            <AccountantWorkspaceMenuFooter
+            <ClientWorkspaceMenuFooter
               mobile={false}
               showAdminLink={showAdminLink}
-              showClientLink={showClientLink}
+              showAccountantLink={showAccountantLink}
             />
           </div>
         </div>
@@ -160,17 +165,52 @@ export function AccountantWorkspace({
               <span aria-hidden className="text-zinc-500">
                 ☰
               </span>
-              אזור רואה חשבון
+              אזור לקוח
             </span>
           </button>
         </div>
 
         <main className="flex flex-1 flex-col gap-6 px-3 py-6 sm:gap-8 sm:px-4 sm:py-12">
           {active === "documents" ? (
-            <AccountantDocumentsPanel />
-          ) : (
-            <AccountantClientsPanel />
-          )}
+            <div className="w-full max-w-3xl space-y-6 sm:space-y-8">
+              <div>
+                <h1 className="text-lg font-semibold text-zinc-900 sm:text-xl">
+                  שלום, {greetingName}
+                </h1>
+                <p className="mt-3 text-sm text-zinc-600">
+                  כאן ניתן להעלות מסמכים ולערוך פרטים לפני שליחה לרואה החשבון מדף
+                  המסמך.
+                </p>
+              </div>
+
+              <ClientUploadSection clients={clients} />
+
+              <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+                  <h2 className="text-base font-semibold text-zinc-900">
+                    מסמכים אחרונים
+                  </h2>
+                  {documents.length > 0 ? (
+                    <ClientDocumentsListMobileSortBar
+                      sort={documentsSort}
+                      onSortChange={setDocumentsSort}
+                    />
+                  ) : null}
+                </div>
+                {documents.length === 0 ? (
+                  <p className="mt-3 text-sm text-zinc-600">
+                    אין עדיין מסמכים. ניתן להעלות קובץ למעלה.
+                  </p>
+                ) : (
+                  <ClientDocumentsList
+                    documents={documents}
+                    sort={documentsSort}
+                    onSortChange={setDocumentsSort}
+                  />
+                )}
+              </section>
+            </div>
+          ) : null}
         </main>
       </div>
 
@@ -195,7 +235,7 @@ export function AccountantWorkspace({
                 id={drawerHeadingId}
                 className="text-base font-semibold text-zinc-900"
               >
-                אזור רואה חשבון
+                אזור לקוח
               </p>
               <button
                 type="button"
@@ -211,7 +251,7 @@ export function AccountantWorkspace({
                 <button
                   key={section}
                   type="button"
-                  onClick={() => select(section)}
+                  onClick={closeMobile}
                   aria-current={active === section ? "page" : undefined}
                   className={`rounded-lg px-3 py-3 text-start text-sm font-medium ${
                     active === section
@@ -222,11 +262,11 @@ export function AccountantWorkspace({
                   {label}
                 </button>
               ))}
-              <AccountantWorkspaceMenuFooter
+              <ClientWorkspaceMenuFooter
                 mobile
                 closeMobileNav={closeMobile}
                 showAdminLink={showAdminLink}
-                showClientLink={showClientLink}
+                showAccountantLink={showAccountantLink}
               />
             </nav>
           </div>

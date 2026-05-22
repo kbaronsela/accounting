@@ -456,12 +456,6 @@ export function ClientDocumentsList({
           </tbody>
         </table>
       </div>
-
-      <p className="mt-2 text-xs text-zinc-500">
-        במובייל בוחרים מיון בשורת &quot;מסמכים אחרונים&quot;; במסך רחב — בלחיצה על
-        כותרות העמודות. לחיצה על הבלוק או על השורה פותחת את פרטי המסמך והגשה לרואה
-        החשבון.
-      </p>
     </>
   );
 }

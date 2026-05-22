@@ -1,7 +1,8 @@
 import { auth } from "@/auth";
+import { hasRole } from "@/lib/auth/roles";
 import { redirect } from "next/navigation";
-import { ClientDashboard } from "./client-dashboard";
 import { getClientMe, listDocumentsForClientUser } from "@/lib/client/queries";
+import { ClientWorkspace } from "./client-workspace";
 
 export default async function ClientHomePage() {
   const session = await auth();
@@ -24,12 +25,15 @@ export default async function ClientHomePage() {
     me.user.email?.split("@")[0] ||
     "משתמשת";
 
+  const roles = session.user.roles ?? [];
+
   return (
-    <ClientDashboard
+    <ClientWorkspace
       greetingName={greetingName}
-      email={me.user.email}
       clients={me.clients}
       documents={documents}
+      showAdminLink={hasRole(roles, "admin")}
+      showAccountantLink={hasRole(roles, "accountant")}
     />
   );
 }
