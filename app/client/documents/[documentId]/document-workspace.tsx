@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { DraftUploadResumeButton } from "@/app/client/draft-upload-resume-button";
 import {
@@ -78,20 +78,116 @@ function CalendarIcon({ className }: { className?: string }) {
 }
 
 type ClientDocumentFileViewerProps = {
-  mimeType: string;
-  fileUrl: string;
+  documentId: string;
+  /** מ־שורת המסמך — נופל לאחור אם הבלוב חסר `type` אחרי הורדה */
+  mimeTypeHint: string;
   onClose: () => void;
-  closeRef: React.RefObject<HTMLButtonElement | null>;
 };
 
-/** תצוגה פנימית — ב־PWA במובייל `target=_blank` מחליף את האפליקציה וב־ESC נסגרת כולה במקום הלשונית */
+async function loadClientDocumentIntoObjectUrl(documentId: string): Promise<{
+  objectUrl: string;
+  viewerMime: string;
+}> {
+  const res = await fetch(`/api/client/documents/${documentId}/file`, {
+    credentials: "same-origin",
+  });
+  const headerMime =
+    res.headers.get("Content-Type")?.split(";")[0]?.trim() ?? "";
+
+  if (!res.ok) {
+    let apiMessage = `שגיאה ${res.status}`;
+    try {
+      const j = (await res.json()) as { error?: { message?: string } };
+      if (j.error?.message) apiMessage = j.error.message;
+    } catch {
+      /* ignore */
+    }
+    throw new Error(apiMessage);
+  }
+
+  const blob = await res.blob();
+  const viewerMime = (blob.type || headerMime).trim();
+  const objectUrl = URL.createObjectURL(blob);
+  return { objectUrl, viewerMime };
+}
+
+/**
+ * צפייה בתוך המסך עם fetch מפורש (+ קוקי סשן כמו בשאר האפליקציה).
+ * ניווט מוטמע (`img`/`iframe` ישר ל־URL) וב־PWA/WebViews לפעמים לא משגר קוקי — ומתקבל 404 מהשרת («לא באחסון»).
+ */
 function ClientDocumentFileViewerOverlay({
-  mimeType,
-  fileUrl,
+  documentId,
+  mimeTypeHint,
   onClose,
-  closeRef,
 }: ClientDocumentFileViewerProps) {
-  const preferImageViewer = mimeType.trim().toLowerCase().startsWith("image/");
+  type ViewerPhase =
+    | { kind: "loading" }
+    | { kind: "ready"; objectUrl: string; isImage: boolean }
+    | { kind: "error"; message: string };
+
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const [phase, setPhase] = useState<ViewerPhase>({ kind: "loading" });
+
+  useEffect(() => {
+    let cancelled = false;
+    let objectUrl: string | null = null;
+
+    void (async () => {
+      try {
+        const loaded = await loadClientDocumentIntoObjectUrl(documentId);
+        const hintMime = mimeTypeHint.trim().toLowerCase();
+        const effective =
+          loaded.viewerMime.length > 0
+            ? loaded.viewerMime.toLowerCase()
+            : hintMime;
+        const isImage = effective.startsWith("image/");
+        objectUrl = loaded.objectUrl;
+        if (cancelled) {
+          URL.revokeObjectURL(objectUrl);
+          objectUrl = null;
+          return;
+        }
+        setPhase({ kind: "ready", objectUrl: loaded.objectUrl, isImage });
+      } catch (e) {
+        if (cancelled) return;
+        const msg =
+          e instanceof Error
+            ? e.message
+            : "לא ניתן לטעון את הקובץ. ניתן לנסות שוב בעוד רגע.";
+        setPhase({ kind: "error", message: msg });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [documentId, mimeTypeHint]);
+
+  useEffect(() => {
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown, true);
+
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKeyDown, true);
+    };
+  }, [onClose]);
+
+  useEffect(() => {
+    if (phase.kind !== "loading") {
+      window.setTimeout(() => closeBtnRef.current?.focus(), 0);
+    }
+  }, [phase]);
 
   return (
     <div
@@ -115,7 +211,7 @@ function ClientDocumentFileViewerOverlay({
             תצוגת המסמך
           </h2>
           <button
-            ref={closeRef}
+            ref={closeBtnRef}
             type="button"
             onClick={onClose}
             className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
@@ -124,18 +220,46 @@ function ClientDocumentFileViewerOverlay({
           </button>
         </div>
         <div className="relative min-h-0 flex-1 bg-zinc-100">
-          {preferImageViewer ? (
+          {phase.kind === "loading" ? (
+            <div className="flex size-full items-center justify-center p-6 text-sm text-zinc-700">
+              טוענים את הקובץ…
+            </div>
+          ) : null}
+
+          {phase.kind === "error" ? (
+            <div className="flex size-full flex-col justify-center gap-3 p-6 text-center">
+              <p className="text-sm text-red-700" role="alert">
+                {phase.message}
+              </p>
+              <button
+                type="button"
+                className="mx-auto rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm hover:bg-zinc-50"
+                onClick={onClose}
+              >
+                סגירה
+              </button>
+            </div>
+          ) : null}
+
+          {phase.kind === "ready" && phase.isImage ? (
             <div className="size-full overflow-auto p-2 sm:p-4">
-              {/* eslint-disable-next-line @next/next/no-img-element -- הצגת מסמך מאות origin עם קוקי הסשן (לא מתאים ל־next/image) */}
+              {/* בלוב שזורם מה־API — לא מתאים ל־next/image */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={fileUrl}
+                src={phase.objectUrl}
                 alt=""
                 className="mx-auto block max-h-full max-w-full object-contain"
               />
             </div>
-          ) : (
-            <iframe title="תוכן המסמך" src={fileUrl} className="absolute inset-0 size-full bg-white" />
-          )}
+          ) : null}
+
+          {phase.kind === "ready" && !phase.isImage ? (
+            <iframe
+              title="תוכן המסמך"
+              src={phase.objectUrl}
+              className="absolute inset-0 size-full bg-white"
+            />
+          ) : null}
         </div>
       </div>
     </div>
@@ -178,9 +302,10 @@ export function ClientDocumentWorkspace({
   const [pendingSave, setPendingSave] = useState(false);
   const [pendingSubmit, setPendingSubmit] = useState(false);
 
-  const viewerCloseBtnRef = useRef<HTMLButtonElement>(null);
   const [fileViewerOpen, setFileViewerOpen] = useState(false);
   const [showNewTabFileLink, setShowNewTabFileLink] = useState(false);
+
+  const closeFileViewer = useCallback(() => setFileViewerOpen(false), []);
 
   useEffect(() => {
     const sync = () => {
@@ -208,31 +333,6 @@ export function ClientDocumentWorkspace({
       window.removeEventListener("orientationchange", sync);
     };
   }, []);
-
-  useEffect(() => {
-    if (!fileViewerOpen) return undefined;
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const id = window.setTimeout(() => {
-      viewerCloseBtnRef.current?.focus();
-    }, 0);
-    return () => {
-      window.clearTimeout(id);
-      document.body.style.overflow = prevOverflow;
-    };
-  }, [fileViewerOpen]);
-
-  useEffect(() => {
-    if (!fileViewerOpen) return undefined;
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        setFileViewerOpen(false);
-      }
-    };
-    window.addEventListener("keydown", onKeyDown, true);
-    return () => window.removeEventListener("keydown", onKeyDown, true);
-  }, [fileViewerOpen]);
 
   function flushInvoiceDateFromDisplay(): boolean {
     const parsed = parseFlexibleInvoiceDate(invoiceDate.display);
@@ -435,10 +535,9 @@ export function ClientDocumentWorkspace({
           {fileViewerOpen
             ? createPortal(
                 <ClientDocumentFileViewerOverlay
-                  mimeType={initial.mimeType}
-                  fileUrl={`/api/client/documents/${initial.id}/file`}
-                  onClose={() => setFileViewerOpen(false)}
-                  closeRef={viewerCloseBtnRef}
+                  documentId={initial.id}
+                  mimeTypeHint={initial.mimeType}
+                  onClose={closeFileViewer}
                 />,
                 document.body,
               )
