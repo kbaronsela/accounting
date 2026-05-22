@@ -2,6 +2,33 @@
 
 import { useEffect, useRef, useState } from "react";
 
+function isPdfMime(mime: string): boolean {
+  const m = mime.trim().toLowerCase();
+  return m.startsWith("application/pdf");
+}
+
+/** Chrome/Android (ובדפדפנים ניידים) לעיתים מציגים PDF בתוך iframe עם כפתור "Open" שבור על blob: — במקום זה פותחים בלשונית חדשה מחוות משתמש. */
+function usePreferOpeningPdfExternally(): boolean {
+  const [prefer, setPrefer] = useState(false);
+
+  useEffect(() => {
+    const mqCoarse = window.matchMedia("(pointer: coarse)");
+    const mqNarrow = window.matchMedia("(max-width: 640px)");
+    const update = () =>
+      setPrefer(mqCoarse.matches || mqNarrow.matches);
+
+    update();
+    mqCoarse.addEventListener("change", update);
+    mqNarrow.addEventListener("change", update);
+    return () => {
+      mqCoarse.removeEventListener("change", update);
+      mqNarrow.removeEventListener("change", update);
+    };
+  }, []);
+
+  return prefer;
+}
+
 export type DocumentFileViewerOverlayProps = {
   /** מזהה לשכבת טעינה מחדש כשמחליפים מסמך (למשל id) */
   viewerKey: string;
@@ -49,12 +76,18 @@ export function DocumentFileViewerOverlay({
 }: DocumentFileViewerOverlayProps) {
   type ViewerPhase =
     | { kind: "loading" }
-    | { kind: "ready"; objectUrl: string; isImage: boolean }
+    | {
+        kind: "ready";
+        objectUrl: string;
+        isImage: boolean;
+        effectiveMime: string;
+      }
     | { kind: "error"; message: string };
 
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const fetchRef = useRef(fetchFile);
   fetchRef.current = fetchFile;
+  const preferExternalPdf = usePreferOpeningPdfExternally();
   const [phase, setPhase] = useState<ViewerPhase>({ kind: "loading" });
 
   useEffect(() => {
@@ -77,7 +110,12 @@ export function DocumentFileViewerOverlay({
           objectUrl = null;
           return;
         }
-        setPhase({ kind: "ready", objectUrl: loaded.objectUrl, isImage });
+        setPhase({
+          kind: "ready",
+          objectUrl: loaded.objectUrl,
+          isImage,
+          effectiveMime: effective,
+        });
       } catch (e) {
         if (cancelled) return;
         const msg =
@@ -182,7 +220,29 @@ export function DocumentFileViewerOverlay({
             </div>
           ) : null}
 
-          {phase.kind === "ready" && !phase.isImage ? (
+          {phase.kind === "ready" &&
+          !phase.isImage &&
+          preferExternalPdf &&
+          isPdfMime(phase.effectiveMime) ? (
+            <div className="flex size-full flex-col items-center justify-center gap-4 px-6 py-10 text-center">
+              <p className="max-w-md text-sm leading-relaxed text-zinc-700">
+                בטלפונים ובכרום אנדרואיד PDF בתוך המסגרת לא תמיד עובד. כדי לקרוא את
+                הקובץ, יש לפתוח אותו בלשונית או בתצוגה מלאה של הדפדפן.
+              </p>
+              <a
+                href={phase.objectUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-sky-700 px-8 py-3 text-base font-semibold text-white hover:bg-sky-800 active:bg-sky-900"
+              >
+                פתיחת הקובץ
+              </a>
+            </div>
+          ) : null}
+
+          {phase.kind === "ready" &&
+          !phase.isImage &&
+          !(preferExternalPdf && isPdfMime(phase.effectiveMime)) ? (
             <iframe
               title="תוכן המסמך"
               src={phase.objectUrl}
