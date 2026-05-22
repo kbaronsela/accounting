@@ -61,7 +61,7 @@ npm run db:bootstrap-admin
 **הזמנות (פיתוח):**
 
 - אדמין: בעמוד `/admin` — טופס «הזמנת רואה חשבון». הקישור מוחזר ב־JSON ובממשק + מודפס ללוג השרת (מייל עתידי).
-- רואה חשבון: בעמוד `/accountant` — מסמכים לפי תיק (סינון), תיקים ולקוחות; API `GET /api/accountants/me/documents`, `GET .../documents/:id`, הורדה `GET .../documents/:id/file`, בנוסף `GET/POST /api/accountants/me/clients`, `POST .../clients/:clientId/members`.
+- רואה חשבון: בעמוד `/accountant` — מסמכים לפי תיק (סינון), תיקים ולקוחות (שינוי שם תיק / מחיקת תיק ומסמכיו בממשק); API `GET /api/accountants/me/documents`, `GET .../documents/:id`, הורדה `GET .../documents/:id/file`, בנוסף `GET/POST/PATCH/DELETE /api/accountants/me/clients` (על `:clientId`), `POST .../clients/:clientId/members`.
 - מוזמן: `/invite?token=...` — הגדרת סיסמה והתחברות.
 - לקוח: דשבורד ב־`/client`, עריכת מסמך ב־`/client/documents/:id` (**שמירה + הגשה לרואה החשבון**); העלאות מקומיות בפיתוח תחת `.data/uploads`. API לדוגמה: `GET/PATCH /api/client/documents/:id`, `GET .../file`, `POST .../submit`, `POST .../uploads`, `PUT .../upload`.
 - API: `GET /api/invitations/lookup?token=`, `POST /api/invitations/accept`, `POST /api/admin/accountants` (אדמין בלבד), `GET /api/admin/accountants`.

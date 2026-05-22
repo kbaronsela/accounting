@@ -249,6 +249,36 @@
 
 ---
 
+### `PATCH /accountants/me/clients/:clientId`
+
+**מטרה**: עדכון שם תצוגה של תיק שנפתח על ידי רואה החשבון המחובר — רק כשהתיק שייך אליו.
+
+**Body**
+
+```json
+{ "displayName": "שם חדש" }
+```
+
+**Response 204** — אין גוף.
+
+**שגיאות**: `400` ולידציה, `403`/`404` אין גישה.
+
+**Audit**: `accountant_rename_client`.
+
+---
+
+### `DELETE /accountants/me/clients/:clientId`
+
+**מטרה**: מחיקת התיק ובמסגרת DB גם רשומות מסמכים (cascade); קבצי העלאה מקומיים נמחקים אחרי מחיקת הרשומות.
+
+**Response 204** — אין גוף.
+
+**שגיאות**: `403`/`404` אין גישה.
+
+**Audit**: `accountant_delete_client`.
+
+---
+
 ### 4.6 `POST /accountants/me/clients/:clientId/members`
 
 **מטרה**: הזמנת משתמש נוסף לאותו `client_id`.

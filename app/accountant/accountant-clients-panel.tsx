@@ -28,6 +28,157 @@ async function fetchClientsList(): Promise<
   return { ok: true, items: data.items ?? [] };
 }
 
+function AccountantClientRow({
+  client,
+  onRemoved,
+  onRenamed,
+}: {
+  client: ClientRow;
+  onRemoved: () => void | Promise<void>;
+  onRenamed: (displayName: string) => void;
+}) {
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameValue, setRenameValue] = useState(client.displayName);
+  const [busy, setBusy] = useState(false);
+  const [rowErr, setRowErr] = useState<string | null>(null);
+
+  useEffect(() => {
+    setRenameValue(client.displayName);
+  }, [client.displayName, client.id]);
+
+  async function handleSaveRename() {
+    const trimmed = renameValue.trim();
+    if (!trimmed) {
+      setRowErr("שם התיק לא יכול להיות ריק.");
+      return;
+    }
+    setBusy(true);
+    setRowErr(null);
+    try {
+      const res = await fetch(`/api/accountants/me/clients/${client.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ displayName: trimmed }),
+      });
+      const data = (await res.json().catch(() => ({}))) as {
+        client?: { displayName?: string };
+        error?: { message?: string };
+      };
+      if (!res.ok) {
+        setRowErr(data.error?.message ?? `שגיאה (${String(res.status)}).`);
+        return;
+      }
+      const next = data.client?.displayName ?? trimmed;
+      onRenamed(next);
+      setRenameOpen(false);
+      setRenameValue(next);
+    } catch {
+      setRowErr("שגיאת רשת.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDelete() {
+    const okConfirm = window.confirm(
+      `למחוק את התיק «${client.displayName}» ואת כל המסמכים המצורפים? הפעולה בלתי הפיכית.`,
+    );
+    if (!okConfirm) return;
+    setBusy(true);
+    setRowErr(null);
+    try {
+      const res = await fetch(`/api/accountants/me/clients/${client.id}`, {
+        method: "DELETE",
+      });
+      if (res.status === 204) {
+        await Promise.resolve(onRemoved());
+      } else {
+        const data = (await res.json().catch(() => ({}))) as {
+          error?: { message?: string };
+        };
+        setRowErr(data.error?.message ?? `המחיקה נכשלה (${String(res.status)}).`);
+      }
+    } catch {
+      setRowErr("שגיאת רשת.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <li className="flex flex-wrap items-center gap-x-3 gap-y-2 py-3">
+      {!renameOpen ? (
+        <span className="font-medium text-zinc-900">{client.displayName}</span>
+      ) : (
+        <input
+          type="text"
+          value={renameValue}
+          onChange={(e) => setRenameValue(e.target.value)}
+          className="min-w-[10rem] max-w-[20rem] flex-1 rounded-md border border-zinc-400 px-2 py-1 text-sm text-zinc-900"
+          aria-label="שם התיק לעריכה"
+        />
+      )}
+      <span className="text-xs text-zinc-500">{client.status}</span>
+      <span className="text-xs text-zinc-500">
+        {client.memberCount} משתמשים במערכת
+      </span>
+
+      {!renameOpen ? (
+        <>
+          <button
+            type="button"
+            onClick={() => {
+              setRenameValue(client.displayName);
+              setRenameOpen(true);
+              setRowErr(null);
+            }}
+            className="rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-50"
+          >
+            שינוי שם תיק
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={handleDelete}
+            className="rounded-md border border-red-200 bg-white px-2 py-1 text-xs font-medium text-red-800 hover:bg-red-50 disabled:opacity-60"
+          >
+            מחק תיק
+          </button>
+        </>
+      ) : (
+        <>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={handleSaveRename}
+            className="rounded-md bg-zinc-900 px-2 py-1 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+          >
+            {busy ? "שומרים…" : "שמירה"}
+          </button>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => {
+              setRenameOpen(false);
+              setRenameValue(client.displayName);
+              setRowErr(null);
+            }}
+            className="rounded-md border border-zinc-300 bg-white px-2 py-1 text-xs text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
+          >
+            ביטול
+          </button>
+        </>
+      )}
+
+      {rowErr ? (
+        <p className="w-full basis-full text-start text-xs text-red-700" role="alert">
+          {rowErr}
+        </p>
+      ) : null}
+    </li>
+  );
+}
+
 export function AccountantClientsPanel() {
   const [items, setItems] = useState<ClientRow[]>([]);
   const [listError, setListError] = useState<string | null>(null);
@@ -159,13 +310,18 @@ export function AccountantClientsPanel() {
         ) : (
           <ul className="mt-4 divide-y divide-zinc-100 border-t border-zinc-100">
             {items.map((c) => (
-              <li key={c.id} className="flex flex-wrap items-baseline gap-x-4 py-3">
-                <span className="font-medium text-zinc-900">{c.displayName}</span>
-                <span className="text-xs text-zinc-500">{c.status}</span>
-                <span className="text-xs text-zinc-500">
-                  {c.memberCount} משתמשים במערכת
-                </span>
-              </li>
+              <AccountantClientRow
+                key={c.id}
+                client={c}
+                onRemoved={() => refreshClients()}
+                onRenamed={(nextDisplayName) =>
+                  setItems((prev) =>
+                    prev.map((row) =>
+                      row.id === c.id ? { ...row, displayName: nextDisplayName } : row,
+                    ),
+                  )
+                }
+              />
             ))}
           </ul>
         )}

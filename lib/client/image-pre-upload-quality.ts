@@ -143,6 +143,24 @@ export async function assessImagePreUploadQuality(
 }
 
 /** תאימות לאחור — רק הערכת טשטוש */
+export async function assessImageBlurLikelihood(
+  file: File,
+  threshold: number = DEFAULT_BLUR_VARIANCE_THRESHOLD,
+): Promise<
+  | { ok: true; variance: number; likelyBlurry: boolean }
+  | { ok: false; reason: string }
+> {
+  const r = await assessImagePreUploadQuality(file, {
+    blurVarianceThreshold: threshold,
+  });
+  if (!r.ok) return r;
+  return {
+    ok: true,
+    variance: r.laplacianVariance,
+    likelyBlurry: r.likelyBlurry,
+  };
+}
+
 /**
  * פרמטרים אופציונליים מ־Env (צד לקוח). הגדר ב־`.env.local` כ־NEXT_PUBLIC_*:
  * `NEXT_PUBLIC_UPLOAD_IMAGE_DARK_MEAN_THRESHOLD`
@@ -171,20 +189,4 @@ export function preUploadQualityOptionsFromPublicEnv(): PreUploadQualityOptions 
   }
 
   return o;
-}
-  file: File,
-  threshold: number = DEFAULT_BLUR_VARIANCE_THRESHOLD,
-): Promise<
-  | { ok: true; variance: number; likelyBlurry: boolean }
-  | { ok: false; reason: string }
-> {
-  const r = await assessImagePreUploadQuality(file, {
-    blurVarianceThreshold: threshold,
-  });
-  if (!r.ok) return r;
-  return {
-    ok: true,
-    variance: r.laplacianVariance,
-    likelyBlurry: r.likelyBlurry,
-  };
 }
