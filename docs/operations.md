@@ -46,7 +46,7 @@
 
 - בפרודקשן עם **HTTPS** האתר משתמש ב־`/manifest.json` (איקונים 192/512) וב־`public/sw.js` — כדי שכרום יוכל להתקין/לפתוח ב־**standalone** במקום «קיצור דרך שפותח בכרום».
 - **`http://<IP בתוך ה-LAN>`** (לא localhost ולא HTTPS) אינו *secure context*: **רישום Service Worker לא יעבוד**, וברוב המקרים מה שתראי הוא **קיצור דרך עם סמל קטן של כרום** — התנהגות צפויה. לבדיקה מהטלפון: **Tunnel עם HTTPS** (למשל ngrok / Cloudflare Tunnel) או אירוח על דומיין עם TLS.
-- איקונים: `npm run icons:pwa` יוצר `public/icons/icon-*.png` (Placeholder עם «R»; ניתן להחליף בעיצוב אמיתי).
+- איקונים: `npm run icons:pwa` יוצר `public/icons/icon-*.png` (מסמך/חשבונית בסגנון משטח בצבע האפליקציה; ניתן לערוך ב־`scripts/generate-pwa-icons.ps1`).
 - אחרי שינוי איקון/manifest כדאי **למחוק את הקיצור הישן ממסך הבית ולהוסיף מחדש**.
 
 ---
@@ -80,6 +80,15 @@ npm run db:bootstrap-admin
 - `npm run db:migrate` מריץ את ה-SQL מתיקיית `lib/db/migrations` ומעדכן את `drizzle.__drizzle_migrations`.
 - אם `npm run db:migrate` נכשל עם **relation already exists** אחרי שימוש ב־`db:push`: `npm run db:baseline` ואז שוב `npm run db:migrate`.
 - אם נראה שהמסד לא משתנה: `npm run db:status` — `current_database`, עמודות `invitation`, והיסטוריית מיגרציות. ודאי ש־`DATABASE_URL` זהה לזה של `next dev`.
+
+### אדמין — הסרת רואה חשבון
+
+ב־`/admin` הטבלה «ניהול רואי חשבון» מאפשרת להסיר רואה חשבון מהמערכת:
+
+- **אין תיקי לקוח**: נמחק תפקיד `accountant`; אין תפקידים נוספים — נמחק המשתמש (כולל סשן/OAuth בסיסי בגלל הרקורסיה במסד).
+- **יש תיקים**: **העברה** אל רואה חשבון אחר (כול התיקים) או **מחיקת כל התיקים** (לא הפיך, כולל מסמכים ב־DB; קבצי upload מקומיים נוקו אחרי commit).
+
+פרוגרמתית: `DELETE /api/admin/accountants/[userId]` — גוף `{}` כשאין לקוחות; אחרת `{ "transferToAccountantUserId": "<uuid>" }` או `{ "deleteAllClients": true }`.
 
 ---
 

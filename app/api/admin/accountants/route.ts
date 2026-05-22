@@ -1,11 +1,9 @@
 import { auth } from "@/auth";
 import { hasRole } from "@/lib/auth/roles";
 import { jsonError } from "@/lib/api/errors";
+import { listAccountantsWithClientCounts } from "@/lib/admin/accountants-queries";
 import { getPublicInviteUrl } from "@/lib/invitations/public-invite-url";
 import { createAccountantInvitation } from "@/lib/invitations/service";
-import { db } from "@/lib/db";
-import { userRoles, users } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
 import { z } from "zod";
 
 const postBodySchema = z.object({
@@ -19,24 +17,10 @@ export async function GET() {
     return jsonError(403, "FORBIDDEN", "נדרשת הרשאת אדמין.");
   }
 
-  const rows = await db
-    .select({
-      id: users.id,
-      email: users.email,
-      displayName: users.name,
-      createdAt: users.createdAt,
-    })
-    .from(users)
-    .innerJoin(userRoles, eq(userRoles.userId, users.id))
-    .where(eq(userRoles.role, "accountant"));
+  const items = await listAccountantsWithClientCounts();
 
   return Response.json({
-    items: rows.map((r) => ({
-      id: r.id,
-      email: r.email,
-      displayName: r.displayName,
-      createdAt: r.createdAt?.toISOString() ?? null,
-    })),
+    items,
     nextCursor: null,
   });
 }

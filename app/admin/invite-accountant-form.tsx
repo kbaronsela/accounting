@@ -38,6 +38,7 @@ export function InviteAccountantForm() {
       setInviteUrl(data.inviteUrl ?? null);
       setEmail("");
       setDisplayName("");
+      window.dispatchEvent(new Event("accountants-invites-changed"));
     } catch {
       setMessage("שגיאת רשת.");
     }
