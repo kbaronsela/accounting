@@ -83,3 +83,10 @@ npm run dev
 ## Bootstrap אדמין
 
 ראו למעלה: `npm run db:bootstrap-admin` + `docs/operations.md`.
+
+## אבטחת repository (Git / GitHub)
+
+- **לא לקומט קבצים עם סודות:** כל מה שמתחיל ב־`.env` — מושמט ב־`.gitignore`, מלבד **`.env.example`** (רק placeholders).
+- הקבצים `.env.local`, `.pem`, הרחבות credentials ב־JSON, וגם התיקייה **`.data/`** (העלאות מקומיות) לא אמורים להופיע אצל `git push`.
+- **סודות בפרודקשן / Railway:** הגדירו רק במשתני הסביבה של הפלטפורמה או ב־CI Secrets — לא בתוך קוד ובקומיט.
+- אם סוד זלגל ל־repository בעבר: החלפת ערך (למשל `AUTH_SECRET` חדש) + ניקוי היסטוריה (`git filter-repo` / תמיכה ב־GitHub) לפי הצורך.

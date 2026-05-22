@@ -22,7 +22,6 @@
 
 # misc
 .DS_Store
-*.pem
 
 # debug
 npm-debug.log*
@@ -30,9 +29,19 @@ yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
-# env files — קומיטים של דוגמה בלבד
+# משתני סביבה — לעולם לא לקומט ערכים אמיתיים; רק .env.example עם placeholders
 .env*
 !.env.example
+.env*.local
+*.env.backup
+.vercel.vars
+
+# מפתחות / credentials שעלולים להישאר ליד הפיתוח (לא חלק מהקוד בקומיט)
+*.pem
+*.p12
+*.pfx
+*credentials*.json
+*service-account*.json
 
 # vercel
 .vercel
