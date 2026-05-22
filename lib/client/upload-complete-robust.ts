@@ -35,7 +35,7 @@ export async function completeUploadRobust(
         credentials: "same-origin",
       });
     } catch {
-      lastMessage = "שגיאת רשת בזמן השלמת ההעלאה. נסי שוב בעוד רגע.";
+      lastMessage = "שגיאת רשת בזמן השלמת ההעלאה. יש לנסות שוב בעוד רגע.";
       continue;
     }
 

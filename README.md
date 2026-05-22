@@ -13,7 +13,7 @@
 ```bash
 npm install
 cp .env.example .env.local
-# הגדרי AUTH_SECRET (לפחות 32 תווים אקראיים) ו-DATABASE_URL
+# יש להגדיר AUTH_SECRET (לפחות 32 תווים אקראיים) ו-DATABASE_URL
 ```
 
 ### התחברות עם Google (אופציונלי)
@@ -35,7 +35,7 @@ npm run db:create
 npm run db:push
 ```
 
-אם מתחילים ממסד שכבר הכיל טבלאות מגרסה מוקדמת, או אם בלוגי השרת מופיעה שגיאת PostgreSQL `42P01` (טבלה לא קיימת) על `user_role` — **הריצי `npm run db:migrate`**, או הריצי שוב את האפליקציה ב־`npm run dev`: בפיתוח נוצרת הטבלה אוטומטית בעת התחברות (בפרודקשן חובה מיגרציה).
+אם מתחילים ממסד שכבר הכיל טבלאות מגרסה מוקדמת, או אם בלוגי השרת מופיעה שגיאת PostgreSQL `42P01` (טבלה לא קיימת) על `user_role` — **יש להריץ `npm run db:migrate`**, או **להריץ שוב** את האפליקציה ב־`npm run dev`: בפיתוח נוצרת הטבלה אוטומטית בעת התחברות (בפרודקשן חובה מיגרציה).
 
 `db:create` יוצר את מסד הנתונים לפי השם ב-`DATABASE_URL` (למשל `.../accounting`), אחרי שהחלפת `USER:PASSWORD` בפרטי PostgreSQL אמיתיים.
 
@@ -53,7 +53,7 @@ npm run db:bootstrap-admin
 1. `npm run db:baseline` — מסמן את `0000` ו־`0001` כהוחלות (לפי hash כמו Drizzle).
 2. `npm run db:migrate` — מחילה רק את מה שנשאר (למשל `0002`, `0003`).
 
-אם נראה שאין שינוי ב-DB: הריצי **`npm run db:status`** — תראי לאיזה מסד את מחוברת ואילו עמודות קיימות ב־`invitation`.  
+אם נראה שאין שינוי ב-DB: **יש להריץ `npm run db:status`** — ניתן לבדוק לאיזה מסד מתחבר הפעלה ואילו עמודות קיימות ב־`invitation`.  
 מעקב Drizzle אחרי מיגרציות נמצא ב־**`drizzle.__drizzle_migrations`** (סכמה `drizzle`, לא `public`).  
 אם `DATABASE_URL` בטרמינל שונה מזה של אפליקציית Next — המיגרציה תחול על מסד אחר.  
 ב־Windows, אם הגדרת `DATABASE_URL` (או `PGUSER`) במשתמש/מערכת, הערך הישן היה נטען **לפני** `.env.local` ולא הוחלף; הסקריפטים ב־`scripts/*.cjs` טוענים כעת `.env.local` עם **`override: true`**. ניתן לבדוק ב־PowerShell: `echo $env:DATABASE_URL` ולנקות במידת הצורך את משתנה המערכת.

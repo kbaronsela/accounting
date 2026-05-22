@@ -59,8 +59,8 @@ export function ClientUploadSection({ clients }: Props) {
       <section className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
         <h2 className="text-base font-semibold text-zinc-900">העלאת מסמך</h2>
         <p className="mt-2 text-sm text-zinc-600">
-          כדי להעלות מסמכים צריך תיק משויך. אם קיבלת הזמנה — השלימי הרשמה מקישור
-          ההזמנה.
+          כדי להעלות מסמכים צריך תיק משויך. אם קיבלת הזמנה — יש להשלים הרשמה
+          מקישור ההזמנה.
         </p>
       </section>
     );
@@ -154,7 +154,7 @@ export function ClientUploadSection({ clients }: Props) {
         body: file,
       });
       if (!putRes.ok) {
-        setError("העלאת הקובץ נכשלה. נסי שוב.");
+        setError("העלאת הקובץ נכשלה. יש לנסות שוב.");
         setPending(false);
         return;
       }
@@ -248,7 +248,7 @@ export function ClientUploadSection({ clients }: Props) {
               onChange={(e) => setClientId(e.target.value)}
               className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
             >
-              <option value="">בחרי תיק…</option>
+              <option value="">יש לבחור תיק…</option>
               {clients.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.displayName}
@@ -324,7 +324,7 @@ export function ClientUploadSection({ clients }: Props) {
             </p>
           ) : (
             <p className="text-xs text-zinc-500">
-              טרם נבחר קובץ — השתמשי באחד מהכפתורים למעלה.
+              טרם נבחר קובץ — יש להשתמש באחד מהכפתורים למעלה.
             </p>
           )}
         </div>
@@ -358,7 +358,7 @@ export function ClientUploadSection({ clients }: Props) {
               ) : null}
               {qualityHold.dark ? (
                 <li>
-                  לתאורה טובה יותר: נסי להדליק אור, להניח את הקבלה על רקע בהיר,
+                  לתאורה טובה יותר: מומלץ להדליק אור, להניח את הקבלה על רקע בהיר,
                   או להשתמש במבזק/פנס במצלמה.
                 </li>
               ) : null}
@@ -369,7 +369,7 @@ export function ClientUploadSection({ clients }: Props) {
                 onClick={() => onQualityChooseAnother()}
                 className="rounded-md border border-amber-800 bg-white px-3 py-2 text-sm font-medium text-amber-950 hover:bg-amber-100"
               >
-                אבחר / אצלם תמונה חדשה
+                לבחור תמונה או לצלם תמונה חדשה
               </button>
               <button
                 type="button"

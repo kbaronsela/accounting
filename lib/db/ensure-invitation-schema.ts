@@ -37,7 +37,7 @@ async function runEnsure(pool: pg.Pool): Promise<void> {
   if (!hasInviteeName) {
     if (process.env.NODE_ENV === "production") {
       throw new Error(
-        'חסרה עמודה "inviteeDisplayName" בטבלת invitation. הריצי: npm run db:migrate',
+        'חסרה עמודה "inviteeDisplayName" בטבלת invitation. יש להריץ: npm run db:migrate',
       );
     }
     const client = await pool.connect();
@@ -57,7 +57,7 @@ async function runEnsure(pool: pg.Pool): Promise<void> {
   if (!hasMemberRole) {
     if (process.env.NODE_ENV === "production") {
       throw new Error(
-        'חסרה עמודה "clientMemberRole" בטבלת invitation. הריצי: npm run db:migrate',
+        'חסרה עמודה "clientMemberRole" בטבלת invitation. יש להריץ: npm run db:migrate',
       );
     }
     const client = await pool.connect();

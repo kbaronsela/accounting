@@ -26,14 +26,14 @@ async function runEnsure(pool: pg.Pool): Promise<void> {
 
   if (process.env.NODE_ENV === "production") {
     throw new Error(
-      'חסרה טבלת "user_role" במסד הנתונים. הריצי בשרת: npm run db:migrate',
+      'חסרה טבלת "user_role" במסד הנתונים. יש להריץ בשרת: npm run db:migrate',
     );
   }
 
   const client = await pool.connect();
   try {
     console.warn(
-      '[db] טבלת user_role חסרה — נוצרת אוטומטית (פיתוח). בפרודקשן: הריצי "npm run db:migrate"',
+      '[db] טבלת user_role חסרה — נוצרת אוטומטית (פיתוח). בפרודקשן: יש להריץ "npm run db:migrate"',
     );
     await client.query("BEGIN");
     await client.query(`

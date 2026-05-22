@@ -29,7 +29,7 @@ export async function authorizeCredentials(
   if (!user.passwordHash) {
     if (isDev) {
       console.warn(
-        `[auth] credentials: למשתמש ${email} אין passwordHash (למשל רק OAuth). הריצי npm run db:bootstrap-admin עם אותו מייל.`,
+        `[auth] credentials: למשתמש ${email} אין passwordHash (למשל רק OAuth). יש להריץ npm run db:bootstrap-admin עם אותו מייל.`,
       );
     }
     return null;

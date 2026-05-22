@@ -408,7 +408,7 @@ export function AccountantDocumentsPanel() {
         </p>
       ) : items.length === 0 ? (
         <p className="mt-4 text-sm text-zinc-600">
-          אין מסמכים להצגה (נסי לשנות מסננים).
+          אין מסמכים להצגה (יש לנסות לשנות מסננים).
         </p>
       ) : (
         <>

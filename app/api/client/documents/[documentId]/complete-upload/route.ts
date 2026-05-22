@@ -61,7 +61,7 @@ export async function POST(_request: Request, context: RouteContext) {
     return jsonError(
       400,
       "UPLOAD_SIZE_MISMATCH",
-      `נשמר בשרת קובץ בגודל ${size} בתים, בעוד שנרשם ${doc.byteSize}. העלי מחדש או מחקי את הטיוטה והתחילי מחדש.`,
+      `נשמר בשרת קובץ בגודל ${size} בתים, בעוד שנרשם ${doc.byteSize}. יש להעלות מחדש או למחוק את הטיוטה ולהתחיל מחדש.`,
       { storedBytes: size, declaredBytes: doc.byteSize },
     );
   }

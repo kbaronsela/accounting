@@ -83,7 +83,7 @@ export function DraftUploadResumeButton({ documentId }: { documentId: string }) 
       </button>
       <p className="text-[11px] text-zinc-500">
         «להשלים» עוזר רק כשכבר הגיע הקובץ לשרת והשלב האחרון נקטע.
-        אם מופיעה שגיאה על קובץ חסר — השתמשי במחיקה והעלי מחדש.
+        אם מופיעה שגיאה על קובץ חסר — יש להשתמש במחיקה ולהעלות מחדש.
       </p>
       {message ? (
         <p className="text-xs text-red-600" role="alert">

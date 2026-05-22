@@ -59,7 +59,7 @@ export async function POST(request: Request) {
       return jsonError(
         409,
         "INVITATION_CONFLICT",
-        "ההזמנה כבר נוצלה. נסי להתחבר.",
+        "ההזמנה כבר נוצלה. יש לנסות להתחבר.",
       );
     }
     if (

@@ -23,7 +23,7 @@ export default async function ClientHomePage() {
   const greetingName =
     me.user.name?.trim() ||
     me.user.email?.split("@")[0] ||
-    "משתמשת";
+    "משתמש";
 
   const roles = session.user.roles ?? [];
 

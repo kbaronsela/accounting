@@ -122,7 +122,7 @@ export function ClientDocumentWorkspace({
     setError(null);
     setSubmitErrors(null);
     if (!flushInvoiceDateFromDisplay()) {
-      setError("בדקי את שדה התאריך.");
+      setError("יש לבדוק את שדה התאריך.");
       return;
     }
     setPendingSave(true);
@@ -165,7 +165,7 @@ export function ClientDocumentWorkspace({
     setError(null);
     setSubmitErrors(null);
     if (!flushInvoiceDateFromDisplay()) {
-      setError("בדקי את שדה התאריך לפני ההגשה.");
+      setError("יש לבדוק את שדה התאריך לפני ההגשה.");
       return;
     }
     setPendingSubmit(true);
@@ -263,9 +263,9 @@ export function ClientDocumentWorkspace({
             ההעלאה לא הושלמה אצל השרת
           </p>
           <p className="mt-1 text-xs text-amber-900/90">
-            אם קובץ בכלל לא נשמר בשרת, «להשלים» לא יעזור — מחקי את הטיוטה
-            והעלי מחדש מהטופס בדשבורד. אם הקובץ כבר בשרת ורק שלב האישור
-            האחרון נקטע, השתמשי ב«להשלים».
+            אם קובץ בכלל לא נשמר בשרת, «להשלים» לא יעזור — יש למחוק את הטיוטה
+            ולהעלות מחדש מהטופס בדשבורד. אם הקובץ כבר בשרת ורק שלב האישור
+            האחרון נקטע, יש להשתמש ב«להשלים».
           </p>
           <div className="mt-3">
             <DraftUploadResumeButton documentId={initial.id} />

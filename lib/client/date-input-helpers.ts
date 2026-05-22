@@ -62,7 +62,7 @@ export type FlexibleDateParse =
   | { ok: false; message: string };
 
 /**
- * פרסום בטוח למסגרת הפורמטים המוכרים; אחרת השגיאה לצג המשתמשת.
+ * פרסום בטוח למסגרת הפורמטים המוכרים; אחרת השגיאה לצג המשתמש.
  */
 export function parseFlexibleInvoiceDate(raw: string): FlexibleDateParse {
   const trimmed = raw.trim();
@@ -95,7 +95,7 @@ export function parseFlexibleInvoiceDate(raw: string): FlexibleDateParse {
     return {
       ok: false,
       message:
-        'פורמט לא זוהה בביטחון. למשל: 05.02.2026 — או בחרי מתאריכון ("בחרי תאריך").',
+        'פורמט לא זוהה בביטחון. למשל: 05.02.2026 — או יש לבחור מתאריכון («בחירת תאריך»).',
     };
   }
 
@@ -160,6 +160,6 @@ export function parseFlexibleInvoiceDate(raw: string): FlexibleDateParse {
   return {
     ok: false,
     message:
-      'לא ניתן לפרק את התאריך בצורה בטוחה. דוגמה: 05.02.2026 — או "בחרי תאריך".',
+      'לא ניתן לפרק את התאריך בצורה בטוחה. דוגמה: 05.02.2026 — או "בחירת תאריך" מתאריכון.',
   };
 }

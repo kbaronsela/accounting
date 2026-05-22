@@ -60,13 +60,13 @@ async function main() {
     `);
     if (!tbl[0]?.a) {
       console.error(
-        "טבלת account לא קיימת — נראה כמו מסד ריק. הריצי npm run db:migrate בלי baseline.",
+        "טבלת account לא קיימת — נראה כמו מסד ריק. יש להריץ npm run db:migrate בלי baseline.",
       );
       process.exit(1);
     }
     if (!tbl[0]?.ur && upTo === "0001_multi_role") {
       console.error(
-        "טבלת user_role לא קיימת — הסכמה עדיין לא כוללת 0001. הריצי רק npm run db:migrate (בלי baseline), או תקני את המסד.",
+        "טבלת user_role לא קיימת — הסכמה עדיין לא כוללת 0001. יש להריץ רק npm run db:migrate (בלי baseline), או לתקן את המסד.",
       );
       process.exit(1);
     }
@@ -87,7 +87,7 @@ async function main() {
       console.log("כבר קיימות רשומות ב-drizzle.__drizzle_migrations:");
       console.table(existing);
       console.log(
-        "\nנסי קודם npm run db:migrate. אם נכשל על 'already exists', הריצי:\n  npm run db:baseline -- --force",
+        "\nיש לנסות קודם npm run db:migrate. אם נכשל על 'already exists', יש להריץ:\n  npm run db:baseline -- --force",
       );
       return;
     }

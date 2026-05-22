@@ -16,17 +16,17 @@ function loginAlertMessage(errorCode: string | null): string | null {
     case "OAuthInviteRequired":
       return (
         "כניסה עם גוגל אפשרית רק עם מייל שכבר משויך למשתמש (הזמנה או אדמין). " +
-        "השלימי הרשמה מקישור ההזמנה, ואז ניתן גם עם אותה כתובת ב‑Google."
+        "יש להשלים הרשמה מקישור ההזמנה, ואז ניתן גם עם אותה כתובת ב‑Google."
       );
     case "OAuthMissingEmail":
-      return "ספק גוגל לא החזיר כתובת מייל. נסי חשבון אחר.";
+      return "ספק גוגל לא החזיר כתובת מייל. יש לנסות חשבון אחר.";
     case "OAuthEmailUnverified":
       return "יש לאמת את כתובת המייל בחשבון גוגל לפני ההתחברות.";
     case "AccessDenied":
-      return "ההתחברות נחסמה. ודאי שהמייל בגוגל תואם לחשבון קיים בהזמנה.";
+      return "ההתחברות נחסמה. יש לוודא שהמייל בגוגל תואם לחשבון קיים בהזמנה.";
     default:
       if (errorCode.startsWith("OAuth") || errorCode === "Callback") {
-        return "לא הצליחה ההתחברות עם ספק חיצוני. נסי שוב.";
+        return "ההתחברות עם ספק חיצוני לא הצליחה. יש לנסות שוב.";
       }
       return null;
   }
@@ -70,7 +70,7 @@ function LoginFormFields({ googleOAuthEnabled }: { googleOAuthEnabled: boolean }
       setFieldMessage(
         res.error === "CredentialsSignin"
           ? "אימייל או סיסמה שגויים."
-          : "לא הצלחנו להשלים את ההתחברות (בעיית שרת). בדקי בלוגי הטרמינל — לעיתים חסרה מיגרציה: הריצי npm run db:migrate",
+          : "לא הצלחנו להשלים את ההתחברות (בעיית שרת). יש לבדוק בלוגי הטרמינל — לעיתים חסרה מיגרציה; יש להריץ npm run db:migrate",
       );
       setPending(false);
       return;

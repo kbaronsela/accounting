@@ -101,7 +101,7 @@ export async function runDocumentOcr(documentId: string): Promise<void> {
     if (weakText) {
       patch.qualityNotes = appendQualityNote(
         doc.qualityNotes,
-        "נדלק מעט טקסט — ייתכן מסמך סרוק; ודאי את הנתונים לפני שליחת רו״ח.",
+        "נדלק מעט טקסט — ייתכן מסמך סרוק; יש לוודא את הנתונים לפני שליחת רו״ח.",
       );
     }
 

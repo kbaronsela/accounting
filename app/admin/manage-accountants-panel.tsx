@@ -379,7 +379,7 @@ export function ManageAccountantsPanel({
           </p>
         ) : sortedItems.length === 0 ? (
           <p className="mt-4 text-sm text-zinc-600">
-            טרם הוגדרו רואי חשבון. לחצי על «רואה חשבון חדש» להזמנה.
+            טרם הוגדרו רואי חשבון. יש ללחוץ על «רואה חשבון חדש» להזמנה.
           </p>
         ) : (
           <ul className="mt-4 divide-y divide-zinc-100 border-t border-zinc-100">
@@ -670,7 +670,7 @@ export function ManageAccountantsPanel({
                   לרואה החשבון יש <span>{modalAcct.clientCount}</span> תיקים.
                 </p>
                 <p className="mt-1 text-sm text-zinc-600">
-                  בחרי כיצד לטפל בתיקים לפני הסרת רואה החשבון.
+                  יש לבחור כיצד לטפל בתיקים לפני הסרת רואה החשבון.
                 </p>
 
                 {others.length > 0 ? (
@@ -726,8 +726,8 @@ export function ManageAccountantsPanel({
                       התיקים (בלתי הפיך), או להזמין רואה חשבון נוסף ואז להעביר.
                     </p>
                     <p className="mt-3 text-sm text-zinc-700">
-                      כדי למחוק את התיקים לחצי על באישור ההסרה — יופיע דיאלוג
-                      אישור מהדפדפן.
+                      עם ביצוע ההסרה תוצג תיבת דיאלוג לאישור בדפדפן לפני מחיקת
+                      התיקים.
                     </p>
                   </>
                 )}

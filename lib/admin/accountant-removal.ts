@@ -106,7 +106,7 @@ export async function removeAccountantUser(params: {
             ok: false as const,
             code: "HAS_CLIENTS_AMBIGUOUS" as const,
             message:
-              "לרואה חשבון זה יש לקוחות. בחרי העברת כל התיקים לרואה חשבון אחר או מחיקת הלקוחות.",
+              "לרואה חשבון זה יש לקוחות. יש לבחור בין העברת כל התיקים לרואה חשבון אחר לבין מחיקת הלקוחות.",
           };
         }
         if (resolution.kind === "transfer_clients") {
@@ -214,7 +214,7 @@ export async function removeAccountantUser(params: {
     return {
       ok: false,
       code: "INTERNAL_ERROR",
-      message: "פעולת המערכת נכשלה. נסו שוב או בדקו את הלוג.",
+      message: "פעולת המערכת נכשלה. יש לנסות שוב או לבדוק את הלוג.",
     };
   }
 }

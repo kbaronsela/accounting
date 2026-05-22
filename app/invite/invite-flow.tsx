@@ -100,7 +100,7 @@ function InviteFlowInner() {
 
       if (signRes?.error) {
         setFormError(
-          "החשבון נוצר אך ההתחברות האוטומטית נכשלה. נסי להתחבר מדף ההתחברות.",
+          "החשבון נוצר אך ההתחברות האוטומטית נכשלה. יש לנסות להתחבר מדף ההתחברות.",
         );
         setPending(false);
         router.push("/login");
