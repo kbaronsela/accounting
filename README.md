@@ -16,6 +16,18 @@ cp .env.example .env.local
 # הגדרי AUTH_SECRET (לפחות 32 תווים אקראיים) ו-DATABASE_URL
 ```
 
+### התחברות עם Google (אופציונלי)
+
+כבר מוטמע בקוד (**Auth.js / NextAuth**). להפעלה:
+
+1. ב־[Google Cloud Console](https://console.cloud.google.com/) → **APIs & Services** → **Credentials** → **OAuth 2.0 Client ID** (סוג **Web application**).
+2. **Authorized redirect URIs**: `http://localhost:3000/api/auth/callback/google` (פיתוח) ו־`https://<הדומיין>/api/auth/callback/google` (פרודקשן).
+3. בסביבה: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, וגם **`AUTH_URL`** = כתובת הבסיס הציבורית של האפליקציה (עם `https://` בפרוד).
+
+משתמש שעדיין לא נרשם: קודם **השלמת הזמנה** (או bootstrap אדמין) — אותו **מייל** כמו בחשבון Google. אחרת תוצג שגיאה במסך ההתחברות.
+
+---
+
 החלת סכמה על ה-DB (פיתוח):
 
 ```bash

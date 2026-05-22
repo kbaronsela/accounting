@@ -1,5 +1,8 @@
 import { LoginFooterLink, LoginForm } from "./login-form";
 
+/** משתני סביבה (Railway וכו׳) מתעדכנים בפריסה — לא לקבע כפתור Google לפי זמן build */
+export const dynamic = "force-dynamic";
+
 export default function LoginPage() {
   const googleOAuthEnabled = Boolean(
     process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
