@@ -11,7 +11,10 @@ const crypto = require("crypto");
 const fs = require("fs");
 const path = require("path");
 const { Client } = require("pg");
-require("dotenv").config({ path: path.join(__dirname, "..", ".env.local") });
+require("dotenv").config({
+  path: path.join(__dirname, "..", ".env.local"),
+  override: true,
+});
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 
 const MIGRATIONS_DIR = path.join(__dirname, "..", "lib", "db", "migrations");

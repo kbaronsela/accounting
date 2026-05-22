@@ -6,7 +6,10 @@
  */
 const path = require("path");
 const { Client } = require("pg");
-require("dotenv").config({ path: path.join(__dirname, "..", ".env.local") });
+require("dotenv").config({
+  path: path.join(__dirname, "..", ".env.local"),
+  override: true,
+});
 
 const raw = process.env.DATABASE_URL;
 

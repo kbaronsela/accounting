@@ -43,7 +43,8 @@ npm run db:bootstrap-admin
 
 אם נראה שאין שינוי ב-DB: הריצי **`npm run db:status`** — תראי לאיזה מסד את מחוברת ואילו עמודות קיימות ב־`invitation`.  
 מעקב Drizzle אחרי מיגרציות נמצא ב־**`drizzle.__drizzle_migrations`** (סכמה `drizzle`, לא `public`).  
-אם `DATABASE_URL` בטרמינל שונה מזה של אפליקציית Next — המיגרציה תחול על מסד אחר.
+אם `DATABASE_URL` בטרמינל שונה מזה של אפליקציית Next — המיגרציה תחול על מסד אחר.  
+ב־Windows, אם הגדרת `DATABASE_URL` (או `PGUSER`) במשתמש/מערכת, הערך הישן היה נטען **לפני** `.env.local` ולא הוחלף; הסקריפטים ב־`scripts/*.cjs` טוענים כעת `.env.local` עם **`override: true`**. ניתן לבדוק ב־PowerShell: `echo $env:DATABASE_URL` ולנקות במידת הצורך את משתנה המערכת.
 
 **הזמנות (פיתוח):**
 

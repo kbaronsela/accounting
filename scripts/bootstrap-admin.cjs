@@ -10,7 +10,10 @@ const path = require("path");
 const crypto = require("crypto");
 const { Client } = require("pg");
 const bcrypt = require("bcryptjs");
-require("dotenv").config({ path: path.join(__dirname, "..", ".env.local") });
+require("dotenv").config({
+  path: path.join(__dirname, "..", ".env.local"),
+  override: true,
+});
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 
 const MIN_PASSWORD = 12;

@@ -6,7 +6,10 @@ const path = require("path");
 const { Pool } = require("pg");
 const { drizzle } = require("drizzle-orm/node-postgres");
 const { migrate } = require("drizzle-orm/node-postgres/migrator");
-require("dotenv").config({ path: path.join(__dirname, "..", ".env.local") });
+require("dotenv").config({
+  path: path.join(__dirname, "..", ".env.local"),
+  override: true,
+});
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 
 const url = process.env.DATABASE_URL;
