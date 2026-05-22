@@ -154,7 +154,14 @@ export function ClientUploadSection({ clients }: Props) {
         body: file,
       });
       if (!putRes.ok) {
-        setError("העלאת הקובץ נכשלה. יש לנסות שוב.");
+        let msg = "העלאת הקובץ נכשלה. יש לנסות שוב.";
+        try {
+          const j = (await putRes.json()) as { error?: { message?: string } };
+          if (j.error?.message?.trim()) msg = j.error.message.trim();
+        } catch {
+          msg = `${msg} (קוד ${putRes.status})`;
+        }
+        setError(msg);
         setPending(false);
         return;
       }

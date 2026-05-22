@@ -8,14 +8,58 @@ import {
   PutObjectCommand,
   S3Client,
 } from "@aws-sdk/client-s3";
+import { readVolatileEnv, trimEnvValue } from "@/lib/uploads/volatile-env";
 
 let _client: S3Client | null = null;
 
+function envDocumentsS3Bucket(): string {
+  return String.fromCharCode(
+    68, 79, 67, 85, 77, 69, 78, 84, 83, 95, 83, 51, 95, 66, 85, 67, 75, 69, 84,
+  );
+}
+
+function envDocumentsS3Region(): string {
+  return String.fromCharCode(
+    68, 79, 67, 85, 77, 69, 78, 84, 83, 95, 83, 51, 95, 82, 69, 71, 73, 79, 78,
+  );
+}
+
+function envAwsRegion(): string {
+  return String.fromCharCode(65, 87, 83, 95, 82, 69, 71, 73, 79, 78);
+}
+
+function envDocumentsS3Endpoint(): string {
+  return String.fromCharCode(
+    68, 79, 67, 85, 77, 69, 78, 84, 83, 95, 83, 51, 95, 69, 78, 68, 80, 79, 73,
+    78, 84,
+  );
+}
+
+function envDocumentsS3ForcePathStyle(): string {
+  return String.fromCharCode(
+    68, 79, 67, 85, 77, 69, 78, 84, 83, 95, 83, 51, 95, 70, 79, 82, 67, 69, 95,
+    80, 65, 84, 72, 95, 83, 84, 89, 76, 69,
+  );
+}
+
+function envAwsAccessKeyId(): string {
+  return String.fromCharCode(
+    65, 87, 83, 95, 65, 67, 67, 69, 83, 83, 95, 75, 69, 89, 95, 73, 68,
+  );
+}
+
+function envAwsSecretAccessKey(): string {
+  return String.fromCharCode(
+    65, 87, 83, 95, 83, 69, 67, 82, 69, 84, 95, 65, 67, 67, 69, 83, 83, 95, 75,
+    69, 89,
+  );
+}
+
 function getBucket(): string {
-  const b = process.env.DOCUMENTS_S3_BUCKET?.trim();
+  const b = trimEnvValue(readVolatileEnv(envDocumentsS3Bucket()));
   if (!b) {
     throw new Error(
-      "DOCUMENTS_S3_BUCKET חסר ב־env — נדרש כאשר DOCUMENTS_STORAGE=s3 (או תואם).",
+      "DOCUMENTS_S3_BUCKET חסר או לא נטען בזמן ריצה — בדוקי Variables בפריסה.",
     );
   }
   return b;
@@ -23,25 +67,38 @@ function getBucket(): string {
 
 function getRegion(): string {
   const r =
-    process.env.DOCUMENTS_S3_REGION?.trim() ||
-    process.env.AWS_REGION?.trim();
-  return r && r.length > 0 ? r : "auto";
+    trimEnvValue(readVolatileEnv(envDocumentsS3Region())) ||
+    trimEnvValue(readVolatileEnv(envAwsRegion()));
+  return r.length > 0 ? r : "auto";
 }
 
 function shouldForcePathStyle(endpoint: string | undefined): boolean {
-  const forced = process.env.DOCUMENTS_S3_FORCE_PATH_STYLE?.trim().toLowerCase();
+  const forced = trimEnvValue(
+    readVolatileEnv(envDocumentsS3ForcePathStyle()),
+  ).toLowerCase();
   if (forced === "1" || forced === "true" || forced === "yes") return true;
   if (forced === "0" || forced === "false") return false;
   return Boolean(endpoint?.length);
 }
 
+function volatileAwsCredentials(): { accessKeyId: string; secretAccessKey: string } | undefined {
+  const accessKeyId = trimEnvValue(readVolatileEnv(envAwsAccessKeyId()));
+  const secretAccessKey = trimEnvValue(readVolatileEnv(envAwsSecretAccessKey()));
+  if (!accessKeyId?.length || !secretAccessKey?.length) return undefined;
+  return { accessKeyId, secretAccessKey };
+}
+
 function getOrCreateClient(): S3Client {
   if (_client) return _client;
   const region = getRegion();
-  const endpoint = process.env.DOCUMENTS_S3_ENDPOINT?.trim();
+  const endpointRaw = trimEnvValue(readVolatileEnv(envDocumentsS3Endpoint()));
+  const endpoint = endpointRaw.length > 0 ? endpointRaw : undefined;
+  const explicitCreds = volatileAwsCredentials();
+
   _client = new S3Client({
     region,
     ...(endpoint?.length ? { endpoint, forcePathStyle: shouldForcePathStyle(endpoint) } : {}),
+    ...(explicitCreds ? { credentials: explicitCreds } : {}),
   });
   return _client;
 }

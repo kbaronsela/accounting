@@ -54,7 +54,14 @@ export async function PUT(request: Request, context: RouteContext) {
 
   try {
     await writeUploadedDocumentFile(documentId, doc.storageObjectKey, buf);
-  } catch {
+  } catch (e) {
+    const err = e as Error & { Code?: string; name?: string; $metadata?: unknown };
+    console.error("[document-upload PUT]", documentId, {
+      message: err?.message,
+      name: err?.name,
+      code: err?.Code,
+      metadata: err?.$metadata,
+    });
     return jsonError(500, "UPLOAD_FAILED", "שמירת הקובץ נכשלה.");
   }
 
