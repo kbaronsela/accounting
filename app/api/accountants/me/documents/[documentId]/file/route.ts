@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { jsonError } from "@/lib/api/errors";
 import { hasRole } from "@/lib/auth/roles";
 import { getDocumentStorageForAccountant } from "@/lib/accountant/documents-queries";
-import { readLocalDocumentFile } from "@/lib/uploads/local-store";
+import { readLocalDocumentByStorageMeta } from "@/lib/uploads/local-store";
 
 type RouteContext = { params: Promise<{ documentId: string }> };
 
@@ -18,7 +18,7 @@ export async function GET(_request: Request, context: RouteContext) {
     return jsonError(404, "NOT_FOUND", "מסמך לא נמצא.");
   }
 
-  if (!meta.storageObjectKey.startsWith("local/")) {
+  if (!/^local\//i.test(meta.storageObjectKey)) {
     return jsonError(
       501,
       "NOT_IMPLEMENTED",
@@ -26,7 +26,10 @@ export async function GET(_request: Request, context: RouteContext) {
     );
   }
 
-  const buf = await readLocalDocumentFile(meta.id);
+  const buf = await readLocalDocumentByStorageMeta({
+    id: meta.id,
+    storageObjectKey: meta.storageObjectKey,
+  });
   if (!buf) {
     return jsonError(404, "NOT_FOUND", "הקובץ לא נמצא באחסון.");
   }

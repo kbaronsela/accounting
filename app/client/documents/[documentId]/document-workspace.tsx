@@ -90,6 +90,7 @@ async function loadClientDocumentIntoObjectUrl(documentId: string): Promise<{
 }> {
   const res = await fetch(`/api/client/documents/${documentId}/file`, {
     credentials: "same-origin",
+    cache: "no-store",
   });
   const headerMime =
     res.headers.get("Content-Type")?.split(";")[0]?.trim() ?? "";
@@ -458,7 +459,7 @@ export function ClientDocumentWorkspace({
 
   return (
     <div
-      className="mx-auto max-w-xl space-y-5 px-3 pb-10 pt-6 sm:space-y-6 sm:px-4 sm:pt-10"
+      className="mx-auto w-full min-w-0 max-w-xl space-y-5 px-3 pb-10 pt-6 sm:space-y-6 sm:px-4 sm:pt-10"
       dir="rtl"
     >
       <div>
@@ -547,7 +548,7 @@ export function ClientDocumentWorkspace({
 
       <form
         onSubmit={handleSave}
-        className="space-y-4 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:p-6"
+        className="min-w-0 space-y-4 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:p-6"
       >
         <h2 className="text-base font-semibold text-zinc-900">
           פרטי חשבונית להגשה
@@ -603,11 +604,11 @@ export function ClientDocumentWorkspace({
           ) : null}
         </div>
 
-        <div>
+        <div className="min-w-0">
           <span className="mb-1 block text-sm text-zinc-700">
             תאריך חשבונית (DD.MM.YYYY)
           </span>
-          <div className="flex flex-nowrap items-stretch gap-1">
+          <div className="flex min-w-0 flex-col gap-2 sm:flex-row sm:flex-nowrap sm:items-stretch sm:gap-0">
             <input
               id="d-date-display"
               type="text"
@@ -625,13 +626,13 @@ export function ClientDocumentWorkspace({
                 );
               }}
               onBlur={() => flushInvoiceDateFromDisplay()}
-              className="min-w-0 flex-1 rounded-s-md rounded-e-none border border-zinc-300 border-e-0 px-3 py-2 text-sm disabled:bg-zinc-100"
+              className="min-w-0 w-full rounded-md border border-zinc-300 px-3 py-2 text-sm disabled:bg-zinc-100 sm:flex-1 sm:rounded-s-md sm:rounded-e-none sm:border-e-0"
               aria-invalid={invoiceDateParseError ? true : undefined}
               aria-describedby="d-date-help"
             />
             <span
               className={[
-                "relative inline-flex shrink-0 items-stretch rounded-e-md rounded-s-none border border-zinc-300 border-s-0 bg-white -ms-px",
+                "relative flex h-10 w-full shrink-0 items-stretch rounded-md border border-zinc-300 bg-white sm:h-auto sm:inline-flex sm:w-11 sm:rounded-e-md sm:rounded-s-none sm:border-s-0 sm:-ms-px",
                 !finalEditable ? "opacity-40" : "",
               ].join(" ")}
             >
@@ -655,7 +656,7 @@ export function ClientDocumentWorkspace({
                 className="absolute inset-0 z-10 cursor-pointer opacity-0 disabled:cursor-not-allowed"
               />
               <span
-                className="pointer-events-none inline-flex shrink-0 items-center justify-center px-2.5 py-2 text-zinc-600"
+                className="pointer-events-none inline-flex shrink-0 flex-1 items-center justify-center px-2.5 py-2 text-zinc-600 sm:flex-initial"
                 aria-hidden
               >
                 <CalendarIcon />

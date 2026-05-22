@@ -26,5 +26,7 @@ export default async function ClientLayout({
     redirect("/login?error=forbidden");
   }
 
-  return <div className="flex min-h-full flex-col">{children}</div>;
+  return (
+    <div className="flex min-h-full min-w-0 w-full flex-col">{children}</div>
+  );
 }
