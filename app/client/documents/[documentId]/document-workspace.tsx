@@ -467,7 +467,7 @@ export function ClientDocumentWorkspace({
           href="/client"
           className="text-sm text-blue-700 underline-offset-4 hover:underline"
         >
-          חזרה לדשבורד
+          חזרה לניהול מסמכים
         </Link>
         <h1 className="mt-4 text-lg font-semibold text-zinc-900 sm:text-xl">
           מסמך
