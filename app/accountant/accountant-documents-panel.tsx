@@ -499,7 +499,7 @@ export function AccountantDocumentsPanel() {
                   {d.status !== "draft_uploading" ? (
                     <button
                       type="button"
-                      className="inline-flex text-sm font-medium text-blue-700 underline-offset-4 hover:underline"
+                      className="inline-flex text-sm font-semibold text-teal-800 underline-offset-4 transition hover:text-teal-950 hover:underline"
                       onClick={() =>
                         setViewerDoc({ id: d.id, mimeType: d.mimeType })
                       }
@@ -569,7 +569,7 @@ export function AccountantDocumentsPanel() {
                         {d.status !== "draft_uploading" ? (
                           <button
                             type="button"
-                            className="text-blue-700 underline-offset-4 hover:underline"
+                            className="font-medium text-teal-800 underline-offset-4 transition hover:text-teal-950 hover:underline"
                             onClick={() =>
                               setViewerDoc({
                                 id: d.id,

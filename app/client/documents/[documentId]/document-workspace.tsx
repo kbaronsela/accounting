@@ -246,7 +246,7 @@ export function ClientDocumentWorkspace({
       <div>
         <Link
           href="/client"
-          className="text-sm text-blue-700 underline-offset-4 hover:underline"
+          className="text-sm font-medium text-teal-800 underline-offset-4 transition hover:bg-teal-50/70 hover:text-teal-950 hover:underline"
         >
           חזרה לניהול מסמכים
         </Link>
@@ -285,11 +285,11 @@ export function ClientDocumentWorkspace({
       ) : null}
 
       {showFileLink ? (
-        <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm">
+        <div className="rounded-xl border border-teal-100/90 bg-white/95 p-4 shadow-[0_4px_20px_-8px_rgb(13_148_136_/_0.08)]">
           <button
             type="button"
             onClick={() => setFileViewerOpen(true)}
-            className="text-sm font-medium text-blue-700 underline-offset-4 hover:underline"
+            className="text-sm font-semibold text-teal-800 underline-offset-4 transition hover:text-teal-950 hover:underline"
           >
             הצגת הקובץ
           </button>
@@ -314,7 +314,7 @@ export function ClientDocumentWorkspace({
 
       <form
         onSubmit={handleSave}
-        className="min-w-0 space-y-4 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:p-6"
+        className="min-w-0 space-y-4 rounded-xl border border-teal-100/90 bg-white/95 p-4 shadow-[0_4px_24px_-8px_rgb(13_148_136_/_0.06)] sm:p-6"
       >
         <h2 className="text-base font-semibold text-zinc-900">
           פרטי חשבונית להגשה

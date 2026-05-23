@@ -233,7 +233,7 @@ export function DocumentFileViewerOverlay({
                 href={phase.objectUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex min-h-11 items-center justify-center rounded-full bg-sky-700 px-8 py-3 text-base font-semibold text-white hover:bg-sky-800 active:bg-sky-900"
+                className="inline-flex min-h-11 items-center justify-center rounded-full bg-teal-700 px-8 py-3 text-base font-semibold text-white shadow-lg shadow-teal-900/20 transition hover:bg-teal-800 active:bg-teal-950"
               >
                 פתיחת הקובץ
               </a>

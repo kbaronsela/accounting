@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { workspaceFooterNavLinkClass } from "@/lib/ui/workspace-footer-nav-classes";
 import { useCallback, useEffect, useId, useState } from "react";
 import { SignOutButton } from "../admin/sign-out-button";
 import { AccountantClientsPanel } from "./accountant-clients-panel";
@@ -12,9 +13,6 @@ const NAV: { section: Section; label: string }[] = [
   { section: "documents", label: "מסמכים" },
   { section: "clients", label: "ניהול לקוחות" },
 ];
-
-const linkSecondaryClass =
-  "rounded-lg px-3 py-2 text-start text-sm font-medium text-blue-700 outline-none hover:bg-blue-50/80 focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2";
 
 function AccountantWorkspaceMenuFooter({
   mobile,
@@ -35,14 +33,14 @@ function AccountantWorkspaceMenuFooter({
         <Link
           href="/"
           onClick={mobile ? closeMobileNav : undefined}
-          className={linkSecondaryClass}
+          className={workspaceFooterNavLinkClass(mobile)}
         >
           דף הבית
         </Link>
         <Link
           href="/settings/password"
           onClick={mobile ? closeMobileNav : undefined}
-          className={linkSecondaryClass}
+          className={workspaceFooterNavLinkClass(mobile)}
         >
           ניהול סיסמה
         </Link>
@@ -50,7 +48,7 @@ function AccountantWorkspaceMenuFooter({
           <Link
             href="/admin"
             onClick={mobile ? closeMobileNav : undefined}
-            className={linkSecondaryClass}
+            className={workspaceFooterNavLinkClass(mobile)}
           >
             אדמין
           </Link>
@@ -59,7 +57,7 @@ function AccountantWorkspaceMenuFooter({
           <Link
             href="/client"
             onClick={mobile ? closeMobileNav : undefined}
-            className={linkSecondaryClass}
+            className={workspaceFooterNavLinkClass(mobile)}
           >
             לקוח
           </Link>
@@ -114,7 +112,7 @@ export function AccountantWorkspace({
     >
       <aside
         aria-label="ניווט אזור רואה החשבון"
-        className="fixed inset-y-0 start-0 z-40 hidden w-52 flex-col border-e border-zinc-200 bg-zinc-50 xl:w-56 lg:flex"
+        className="fixed inset-y-0 start-0 z-40 hidden w-52 flex-col border-e border-teal-200/80 bg-gradient-to-b from-teal-50 via-white to-emerald-50/90 shadow-[inset_-1px_0_0_0_rgb(167_243_208_/_0.35)] xl:w-56 lg:flex"
       >
         <div className="flex flex-1 flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto px-3 py-8">
@@ -125,10 +123,10 @@ export function AccountantWorkspace({
                   type="button"
                   onClick={() => select(section)}
                   aria-current={active === section ? "page" : undefined}
-                  className={`rounded-lg px-3 py-2 text-start text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2 ${
+                  className={`rounded-lg px-3 py-2 text-start text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-teal-500/50 focus-visible:ring-offset-2 ${
                     active === section
-                      ? "bg-white text-zinc-900 shadow-sm ring-1 ring-zinc-200"
-                      : "text-zinc-700 hover:bg-zinc-100/80"
+                      ? "bg-white font-semibold text-teal-900 shadow-md shadow-teal-900/10 ring-1 ring-teal-200"
+                      : "text-zinc-700 hover:bg-teal-50/60"
                   }`}
                 >
                   {label}
@@ -136,7 +134,7 @@ export function AccountantWorkspace({
               ))}
             </nav>
           </div>
-          <div className="shrink-0 border-t border-zinc-200 bg-zinc-50 px-3 py-4">
+          <div className="shrink-0 border-t border-teal-200/70 bg-teal-50/40 px-3 py-4 backdrop-blur-[2px]">
             <AccountantWorkspaceMenuFooter
               mobile={false}
               showAdminLink={showAdminLink}
@@ -147,14 +145,14 @@ export function AccountantWorkspace({
       </aside>
 
       <div className="flex min-h-full min-w-0 flex-1 flex-col ps-0 lg:ps-52 xl:ps-56">
-        <div className="sticky top-0 z-30 flex shrink-0 items-center border-b border-zinc-200 bg-white px-3 py-3 sm:px-4 lg:hidden">
+        <div className="sticky top-0 z-30 flex shrink-0 items-center border-b border-teal-100/90 bg-white/90 px-3 py-3 shadow-sm shadow-teal-900/5 backdrop-blur-sm sm:px-4 lg:hidden">
           <button
             type="button"
             aria-expanded={mobileOpen}
             aria-controls={mobileMenuId}
             aria-haspopup="true"
             onClick={() => setMobileOpen(true)}
-            className="touch-manipulation rounded-lg px-3 py-2 text-start outline-none hover:bg-zinc-50 focus-visible:ring-2 focus-visible:ring-zinc-400"
+            className="touch-manipulation rounded-lg px-3 py-2 text-start outline-none hover:bg-teal-50/60 focus-visible:ring-2 focus-visible:ring-teal-400/60"
           >
             <span className="flex items-center gap-2 text-lg font-semibold text-zinc-900">
               <span aria-hidden className="text-zinc-500">
@@ -215,8 +213,8 @@ export function AccountantWorkspace({
                   aria-current={active === section ? "page" : undefined}
                   className={`rounded-lg px-3 py-3 text-start text-sm font-medium ${
                     active === section
-                      ? "bg-zinc-900 text-white"
-                      : "text-zinc-800 hover:bg-zinc-100"
+                      ? "bg-gradient-to-bl from-teal-700 to-emerald-800 font-semibold text-white shadow-md shadow-teal-900/25"
+                      : "text-zinc-800 hover:bg-teal-50/60"
                   }`}
                 >
                   {label}

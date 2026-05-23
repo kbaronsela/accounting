@@ -136,7 +136,7 @@ function InviteFlowInner() {
   return (
     <form
       onSubmit={onSubmit}
-      className="flex w-full max-w-md flex-col gap-4 rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:p-8"
+      className="flex w-full max-w-md flex-col gap-4 rounded-xl border border-teal-100/95 bg-white/95 p-4 shadow-[0_8px_30px_-10px_rgb(13_148_136_/_0.14)] backdrop-blur-sm sm:p-8"
       dir="rtl"
     >
       <h1 className="text-lg font-semibold text-zinc-900">השלמת הרשמה</h1>
@@ -190,7 +190,7 @@ function InviteFlowInner() {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-md bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+        className="rounded-xl bg-gradient-to-bl from-teal-700 to-emerald-900 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-teal-900/25 transition hover:from-teal-800 hover:to-emerald-950 disabled:opacity-60"
       >
         {pending ? "יוצרים חשבון…" : "יצירת חשבון והתחברות"}
       </button>
@@ -202,7 +202,7 @@ export function InviteFlow() {
   return (
     <Suspense
       fallback={
-        <div className="rounded-md border border-zinc-200 bg-white p-8 text-sm text-zinc-600">
+        <div className="rounded-xl border border-teal-100/80 bg-white/90 p-8 text-sm text-zinc-600 shadow-sm backdrop-blur-sm">
           טוען…
         </div>
       }

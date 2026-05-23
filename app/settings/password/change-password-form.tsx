@@ -66,7 +66,10 @@ export function ChangePasswordForm({
   }
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:p-6" dir="rtl">
+    <div
+      className="rounded-xl border border-teal-100/95 bg-white/95 p-4 shadow-[0_8px_30px_-10px_rgb(13_148_136_/_0.12)] sm:p-6"
+      dir="rtl"
+    >
       <h1 className="text-lg font-semibold text-zinc-900">
         {hasExistingPassword ? "החלפת סיסמה" : "הגדרת סיסמה"}
       </h1>
@@ -130,7 +133,7 @@ export function ChangePasswordForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+          className="rounded-xl bg-gradient-to-bl from-teal-700 to-emerald-900 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-teal-900/25 transition hover:from-teal-800 hover:to-emerald-950 disabled:opacity-60"
         >
           {pending ? "שומרים…" : "שמירה"}
         </button>
@@ -139,12 +142,15 @@ export function ChangePasswordForm({
       <p className="mt-6">
         <Link
           href={defaultReturnHref}
-          className="text-sm text-blue-700 underline-offset-4 hover:underline"
+          className="text-sm font-medium text-teal-800 underline-offset-4 transition hover:text-teal-950 hover:underline"
         >
           חזרה לאזור שלי
         </Link>
         {" · "}
-        <Link href="/" className="text-sm text-blue-700 underline-offset-4 hover:underline">
+        <Link
+          href="/"
+          className="text-sm font-medium text-teal-800 underline-offset-4 transition hover:text-teal-950 hover:underline"
+        >
           דף הבית
         </Link>
       </p>

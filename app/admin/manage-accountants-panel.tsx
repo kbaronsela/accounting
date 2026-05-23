@@ -644,7 +644,7 @@ export function ManageAccountantsPanel({
           <p className="mt-2 break-all text-xs text-zinc-900">{inviteUrl}</p>
           <button
             type="button"
-            className="mt-2 text-xs text-blue-700 underline"
+            className="mt-2 text-xs font-medium text-teal-800 underline underline-offset-2 hover:text-teal-950"
             onClick={() => {
               setInviteUrl(null);
               setInviteUrlMsg(null);

@@ -105,7 +105,7 @@ function LoginFormFields({ googleOAuthEnabled }: { googleOAuthEnabled: boolean }
             required
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm text-zinc-900 outline-none focus:border-zinc-500"
+            className="w-full rounded-xl border border-teal-200/90 bg-white px-4 py-2.5 text-sm font-medium text-zinc-900 shadow-sm outline-none transition focus-visible:border-teal-400 focus-visible:ring-2 focus-visible:ring-teal-400/40"
           />
         </div>
         <div>
@@ -129,7 +129,7 @@ function LoginFormFields({ googleOAuthEnabled }: { googleOAuthEnabled: boolean }
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+          className="rounded-xl bg-gradient-to-bl from-teal-700 to-emerald-900 px-4 py-2.5 text-sm font-semibold text-white shadow-md shadow-teal-900/25 transition hover:from-teal-800 hover:to-emerald-950 disabled:opacity-60"
         >
           {pending ? "מתחברים…" : "התחברות"}
         </button>
@@ -154,7 +154,7 @@ function LoginFormFields({ googleOAuthEnabled }: { googleOAuthEnabled: boolean }
                   postLoginHref !== "/" ? postLoginHref : "/login",
               })
             }
-            className="flex w-full items-center justify-center gap-2 rounded-md border border-zinc-300 bg-white px-4 py-2.5 text-sm font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-60"
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-teal-200/90 bg-white px-4 py-2.5 text-sm font-semibold text-zinc-900 shadow-sm transition hover:border-teal-300 hover:bg-teal-50/50 disabled:opacity-60"
           >
             <GoogleGlyph />
             התחברות עם Google
@@ -212,7 +212,7 @@ export function LoginFooterLink() {
   return (
     <Link
       href="/"
-      className="text-sm font-medium text-blue-700 underline-offset-4 hover:underline"
+      className="inline-flex justify-center rounded-lg px-2 py-1.5 text-sm font-medium text-teal-800 underline-offset-4 transition hover:bg-teal-50/80 hover:text-teal-950 hover:underline"
     >
       חזרה לדף הבית
     </Link>
