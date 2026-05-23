@@ -354,7 +354,7 @@ export function ManageAccountantsPanel({
 
     if (dispose === "delete_clients") {
       const ok = window.confirm(
-        `בטוח למחוק ${modalAcct.clientCount} תיקי לקוחות וכל המסמכים מהמערכת? הפעולה בלתי הפיכה.`,
+        `בטוח למחוק ${modalAcct.clientCount} לקוחות וכל המסמכים מהמערכת? הפעולה בלתי הפיכה.`,
       );
       if (!ok) return;
       await executeRemove(modalAcct, { deleteAllClients: true });
@@ -362,7 +362,7 @@ export function ManageAccountantsPanel({
     }
 
     if (!targetId) {
-      setModalErr("יש לבחור רואה חשבון יעד להעברת התיקים.");
+      setModalErr("יש לבחור רואה חשבון יעד להעברת הלקוחות.");
       return;
     }
     await executeRemove(modalAcct, {
@@ -696,16 +696,16 @@ export function ManageAccountantsPanel({
 
             {modalAcct.clientCount === 0 ? (
               <p className="mt-4 text-sm text-zinc-700">
-                למשתמש זה אין תיקי לקוח בבעלותו. ההסרה תמחק את תפקיד רואה החשבון
+                למשתמש זה אין לקוחות בבעלותו. ההסרה תמחק את תפקיד רואה החשבון
                 מהחשבון (אם אין תפקידים נוספים — יימחק משתמש לחלוטין).
               </p>
             ) : (
               <>
                 <p className="mt-4 text-sm font-medium text-zinc-900">
-                  לרואה החשבון יש <span>{modalAcct.clientCount}</span> תיקים.
+                  לרואה החשבון יש <span>{modalAcct.clientCount}</span> לקוחות.
                 </p>
                 <p className="mt-1 text-sm text-zinc-600">
-                  יש לבחור כיצד לטפל בתיקים לפני הסרת רואה החשבון.
+                  יש לבחור כיצד לטפל בלקוחות לפני הסרת רואה החשבון.
                 </p>
 
                 {others.length > 0 ? (
@@ -719,7 +719,7 @@ export function ManageAccountantsPanel({
                           checked={dispose === "transfer"}
                           onChange={() => setDispose("transfer")}
                         />
-                        <span>העבר את כל התיקים לרואה חשבון אחר</span>
+                        <span>העבר את כל הלקוחות לרואה חשבון אחר</span>
                       </label>
                       <label className="flex cursor-pointer items-start gap-2">
                         <input
@@ -730,7 +730,7 @@ export function ManageAccountantsPanel({
                           onChange={() => setDispose("delete_clients")}
                         />
                         <span>
-                          מחק את כל הלקוחות והתיקים (כל המסמכים מהמערכת)
+                          מחק את כל הלקוחות (כל המסמכים מהמערכת)
                         </span>
                       </label>
                     </div>
@@ -758,11 +758,11 @@ export function ManageAccountantsPanel({
                   <>
                     <p className="mt-4 rounded-md bg-amber-50 p-3 text-sm text-amber-950">
                       אין ברשימה רואה חשבון אחר אליו ניתן להעביר. אפשר למחוק את
-                      התיקים (בלתי הפיך), או להזמין רואה חשבון נוסף ואז להעביר.
+                      הלקוחות (בלתי הפיך), או להזמין רואה חשבון נוסף ואז להעביר.
                     </p>
                     <p className="mt-3 text-sm text-zinc-700">
                       עם ביצוע ההסרה תוצג תיבת דיאלוג לאישור בדפדפן לפני מחיקת
-                      התיקים.
+                      הלקוחות.
                     </p>
                   </>
                 )}
