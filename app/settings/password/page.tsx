@@ -1,10 +1,14 @@
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { auth } from "@/auth";
-import { defaultHomePath } from "@/lib/auth/roles";
+import { hasRole } from "@/lib/auth/roles";
 import { db } from "@/lib/db";
 import { users } from "@/lib/db/schema";
 import { ChangePasswordForm } from "./change-password-form";
+import {
+  PasswordSettingsChrome,
+  type PasswordSettingsWorkspace,
+} from "./password-settings-chrome";
 
 export const metadata = {
   title: "סיסמה",
@@ -23,14 +27,26 @@ export default async function PasswordSettingsPage() {
     .limit(1);
 
   const hasExistingPassword = Boolean(user?.passwordHash);
-  const defaultReturnHref = defaultHomePath(session.user.roles ?? []);
+  const roles = session.user.roles ?? [];
+
+  const workspace: PasswordSettingsWorkspace = hasRole(roles, "admin")
+    ? "admin"
+    : hasRole(roles, "accountant")
+      ? "accountant"
+      : "client";
 
   return (
-    <div className="mx-auto max-w-xl px-3 py-8 sm:px-4">
-      <ChangePasswordForm
-        hasExistingPassword={hasExistingPassword}
-        defaultReturnHref={defaultReturnHref}
-      />
+    <div className="flex min-h-full w-full flex-1 flex-col">
+      <PasswordSettingsChrome
+        workspace={workspace}
+        showAdminLink={hasRole(roles, "admin")}
+        showAccountantLink={hasRole(roles, "accountant")}
+        showClientLinkToWorkspace={hasRole(roles, "client")}
+      >
+        <div className="mx-auto w-full max-w-xl">
+          <ChangePasswordForm hasExistingPassword={hasExistingPassword} />
+        </div>
+      </PasswordSettingsChrome>
     </div>
   );
 }

@@ -1,12 +1,33 @@
 import { auth } from "@/auth";
 import { hasRole } from "@/lib/auth/roles";
-import { AccountantWorkspace } from "./accountant-workspace";
+import {
+  AccountantWorkspace,
+  type AccountantWorkspaceSection,
+} from "./accountant-workspace";
 
-export default async function AccountantHomePage() {
+type AccountantPageProps = {
+  searchParams?: Promise<{ section?: string | string[] | undefined }>;
+};
+
+export default async function AccountantHomePage({
+  searchParams,
+}: AccountantPageProps) {
   const session = await auth();
   const roles = session?.user?.roles ?? [];
+
+  let initialSection: AccountantWorkspaceSection = "documents";
+  if (searchParams) {
+    const sp = await searchParams;
+    const raw = sp.section;
+    const one = Array.isArray(raw) ? raw[0] : raw;
+    if (one === "clients") {
+      initialSection = "clients";
+    }
+  }
+
   return (
     <AccountantWorkspace
+      initialSection={initialSection}
       showAdminLink={hasRole(roles, "admin")}
       showClientLink={hasRole(roles, "client")}
     />

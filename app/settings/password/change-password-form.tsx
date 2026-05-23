@@ -1,17 +1,13 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
 import { RequiredFieldMark } from "@/app/client/required-field-mark";
 import { PasswordField } from "@/components/password-field";
 
 export function ChangePasswordForm({
   hasExistingPassword,
-  defaultReturnHref,
 }: {
   hasExistingPassword: boolean;
-  /** דף הנחיתת ברירת מחדל לפי תפקיד */
-  defaultReturnHref: string;
 }) {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -74,12 +70,7 @@ export function ChangePasswordForm({
       <h1 className="text-lg font-semibold text-zinc-900">
         {hasExistingPassword ? "החלפת סיסמה" : "הגדרת סיסמה"}
       </h1>
-      <p className="mt-2 text-sm text-zinc-600">
-        {hasExistingPassword
-          ? "אם נכנסת גם עם גוגל או עם סיסמה, כאן מעדכנים את סיסמת האימות."
-          : "אין לך עדיין סיסמה במערכת (למשל אחרי כניסה עם גוגל). ניתן להגדרת סיסמה לגיבוי והתחברות באימייל."}{" "}
-        מינימום 12 תווים.
-      </p>
+      <p className="mt-2 text-sm text-zinc-600">מינימום 12 תווים</p>
 
       <form className="mt-6 flex max-w-md flex-col gap-3" onSubmit={onSubmit}>
         {hasExistingPassword ? (
@@ -154,22 +145,6 @@ export function ChangePasswordForm({
           {pending ? "שומרים…" : "שמירה"}
         </button>
       </form>
-
-      <p className="mt-6">
-        <Link
-          href={defaultReturnHref}
-          className="text-sm font-medium text-teal-800 underline-offset-4 transition hover:text-teal-950 hover:underline"
-        >
-          חזרה לאזור שלי
-        </Link>
-        {" · "}
-        <Link
-          href="/"
-          className="text-sm font-medium text-teal-800 underline-offset-4 transition hover:text-teal-950 hover:underline"
-        >
-          דף הבית
-        </Link>
-      </p>
     </div>
   );
 }

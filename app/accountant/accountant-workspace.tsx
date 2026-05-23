@@ -1,86 +1,39 @@
 "use client";
 
-import Link from "next/link";
-import { workspaceFooterNavLinkClass } from "@/lib/ui/workspace-footer-nav-classes";
+import { AccountantWorkspaceMenuFooter } from "@/app/workspace-menu-footers";
 import { useCallback, useEffect, useId, useState } from "react";
-import { SignOutButton } from "../admin/sign-out-button";
 import { AccountantClientsPanel } from "./accountant-clients-panel";
 import { AccountantDocumentsPanel } from "./accountant-documents-panel";
 
-type Section = "documents" | "clients";
+export type AccountantWorkspaceSection = "documents" | "clients";
+
+type Section = AccountantWorkspaceSection;
 
 const NAV: { section: Section; label: string }[] = [
   { section: "documents", label: "מסמכים" },
   { section: "clients", label: "ניהול לקוחות" },
 ];
 
-function AccountantWorkspaceMenuFooter({
-  mobile,
-  closeMobileNav,
-  showAdminLink,
-  showClientLink,
-}: {
-  mobile: boolean;
-  /** נקרא בתפריט מובייל לפני ניווט לדף אחר */
-  closeMobileNav?: () => void;
-  showAdminLink: boolean;
-  showClientLink: boolean;
-}) {
-  const wrap = mobile ? "mt-4 border-t border-zinc-100 pt-4" : "";
-  return (
-    <div className={wrap}>
-      <div className="flex flex-col gap-1">
-        <Link
-          href="/"
-          onClick={mobile ? closeMobileNav : undefined}
-          className={workspaceFooterNavLinkClass(mobile)}
-        >
-          דף הבית
-        </Link>
-        <Link
-          href="/settings/password"
-          onClick={mobile ? closeMobileNav : undefined}
-          className={workspaceFooterNavLinkClass(mobile)}
-        >
-          ניהול סיסמה
-        </Link>
-        {showAdminLink ? (
-          <Link
-            href="/admin"
-            onClick={mobile ? closeMobileNav : undefined}
-            className={workspaceFooterNavLinkClass(mobile)}
-          >
-            אדמין
-          </Link>
-        ) : null}
-        {showClientLink ? (
-          <Link
-            href="/client"
-            onClick={mobile ? closeMobileNav : undefined}
-            className={workspaceFooterNavLinkClass(mobile)}
-          >
-            לקוח
-          </Link>
-        ) : null}
-        <SignOutButton className="mt-2 w-full" />
-      </div>
-    </div>
-  );
-}
-
 type AccountantWorkspaceProps = {
   showAdminLink: boolean;
   showClientLink: boolean;
+  /** מקור ראשוני מ־URL ‎`/accountant?section=clients`‎ */
+  initialSection?: Section;
 };
 
 export function AccountantWorkspace({
   showAdminLink,
   showClientLink,
+  initialSection = "documents",
 }: AccountantWorkspaceProps) {
-  const [active, setActive] = useState<Section>("documents");
+  const [active, setActive] = useState<Section>(() => initialSection);
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileMenuId = useId();
   const drawerHeadingId = useId();
+
+  useEffect(() => {
+    setActive(initialSection);
+  }, [initialSection]);
 
   const closeMobile = useCallback(() => setMobileOpen(false), []);
 

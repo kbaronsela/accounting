@@ -1,10 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import { AdminWorkspaceMenuFooter } from "@/app/workspace-menu-footers";
 import type { AccountantListItem } from "@/lib/admin/accountants-types";
-import { workspaceFooterNavLinkClass } from "@/lib/ui/workspace-footer-nav-classes";
 import { useCallback, useEffect, useId, useState } from "react";
-import { SignOutButton } from "./sign-out-button";
 import { ManageAccountantsPanel } from "./manage-accountants-panel";
 
 type Section = "accountants";
@@ -13,69 +11,17 @@ const NAV: { section: Section; label: string }[] = [
   { section: "accountants", label: "ניהול רואי חשבון" },
 ];
 
-function AdminWorkspaceMenuFooter({
-  mobile,
-  closeMobileNav,
-  showAccountantLink,
-  showClientLink,
-}: {
-  mobile: boolean;
-  /** נקרא בתפריט מובייל לפני מעבר בין דפים */
-  closeMobileNav?: () => void;
+type AdminWorkspaceProps = {
   showAccountantLink: boolean;
   showClientLink: boolean;
-}) {
-  const wrap = mobile ? "mt-4 border-t border-zinc-100 pt-4" : "";
-  return (
-    <div className={wrap}>
-      <div className="flex flex-col gap-1">
-        <Link
-          href="/"
-          onClick={mobile ? closeMobileNav : undefined}
-          className={workspaceFooterNavLinkClass(mobile)}
-        >
-          דף הבית
-        </Link>
-        <Link
-          href="/settings/password"
-          onClick={mobile ? closeMobileNav : undefined}
-          className={workspaceFooterNavLinkClass(mobile)}
-        >
-          ניהול סיסמה
-        </Link>
-        {showAccountantLink ? (
-          <Link
-            href="/accountant"
-            onClick={mobile ? closeMobileNav : undefined}
-            className={workspaceFooterNavLinkClass(mobile)}
-          >
-            רואה חשבון
-          </Link>
-        ) : null}
-        {showClientLink ? (
-          <Link
-            href="/client"
-            onClick={mobile ? closeMobileNav : undefined}
-            className={workspaceFooterNavLinkClass(mobile)}
-          >
-            לקוח
-          </Link>
-        ) : null}
-        <SignOutButton className="mt-2 w-full" />
-      </div>
-    </div>
-  );
-}
+  initialAccountants: AccountantListItem[];
+};
 
 export function AdminWorkspace({
   showAccountantLink,
   showClientLink,
   initialAccountants,
-}: {
-  showAccountantLink: boolean;
-  showClientLink: boolean;
-  initialAccountants: AccountantListItem[];
-}) {
+}: AdminWorkspaceProps) {
   const [active] = useState<Section>("accountants");
   const [mobileOpen, setMobileOpen] = useState(false);
   const mobileMenuId = useId();

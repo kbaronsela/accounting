@@ -33,7 +33,7 @@ export function ClientWorkspaceMenuFooter({
           onClick={mobile ? closeMobileNav : undefined}
           className={workspaceFooterNavLinkClass(mobile)}
         >
-          ניהול סיסמה
+          החלפת סיסמה
         </Link>
         {showAdminLink ? (
           <Link
