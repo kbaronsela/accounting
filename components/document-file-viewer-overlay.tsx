@@ -1,6 +1,11 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import {
+  appModalBackdropClass,
+  appModalGhostButtonClass,
+  appModalHeaderClass,
+} from "@/lib/ui/modal-classes";
 
 function isPdfMime(mime: string): boolean {
   const m = mime.trim().toLowerCase();
@@ -166,28 +171,30 @@ export function DocumentFileViewerOverlay({
     >
       <button
         type="button"
-        className="absolute inset-0 bg-black/70"
+        className={appModalBackdropClass}
         aria-label="סגירת תצוגת הקובץ"
         onClick={onClose}
       />
       <div
         dir="rtl"
-        className="relative z-10 flex h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-t-2xl border border-zinc-200 bg-zinc-50 shadow-2xl sm:h-[min(90dvh,920px)] sm:rounded-xl"
+        className="relative z-10 flex h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-t-[1.65rem] border border-teal-100/95 bg-white/95 shadow-[0_-16px_46px_-16px_rgb(13_148_136_/_0.28)] backdrop-blur-sm sm:my-4 sm:h-[min(90dvh,920px)] sm:rounded-2xl sm:shadow-[0_24px_60px_-28px_rgb(13_148_136_/_0.32)]"
       >
-        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-zinc-200 bg-white px-3 py-2.5 sm:px-4">
-          <h2 id="doc-file-viewer-title" className="text-sm font-semibold text-zinc-900">
+        <div
+          className={`${appModalHeaderClass} flex shrink-0 items-center justify-between gap-3 py-2.5`}
+        >
+          <h2 id="doc-file-viewer-title" className="text-sm font-semibold text-teal-950">
             תצוגת המסמך
           </h2>
           <button
             ref={closeBtnRef}
             type="button"
             onClick={onClose}
-            className="rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-sm font-medium text-zinc-900 hover:bg-zinc-50"
+            className="shrink-0 rounded-xl border border-teal-200/90 bg-white px-3 py-1.5 text-sm font-semibold text-teal-900 shadow-sm transition hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/50"
           >
             סגירה
           </button>
         </div>
-        <div className="relative min-h-0 flex-1 bg-zinc-100">
+        <div className="relative min-h-0 flex-1 bg-gradient-to-b from-teal-50/50 to-zinc-50/95">
           {phase.kind === "loading" ? (
             <div className="flex size-full items-center justify-center p-6 text-sm text-zinc-700">
               טוענים את הקובץ…
@@ -201,7 +208,7 @@ export function DocumentFileViewerOverlay({
               </p>
               <button
                 type="button"
-                className="mx-auto rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm hover:bg-zinc-50"
+                className={`mx-auto ${appModalGhostButtonClass}`}
                 onClick={onClose}
               >
                 סגירה

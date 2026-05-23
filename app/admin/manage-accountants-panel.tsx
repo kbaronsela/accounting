@@ -2,6 +2,17 @@
 
 import type { AccountantListItem as AccountantRow } from "@/lib/admin/accountants-types";
 import {
+  appModalBackdropClass,
+  appModalCenteredPaperClass,
+  appModalCloseButtonClass,
+  appModalGhostButtonClass,
+  appModalFullscreenOverlayClass,
+  appModalHeaderClass,
+  appModalInputClass,
+  appModalPanelSurfaceClass,
+  appModalPrimaryButtonClass,
+} from "@/lib/ui/modal-classes";
+import {
   useCallback,
   useEffect,
   useId,
@@ -545,18 +556,20 @@ export function ManageAccountantsPanel({
         >
           <button
             type="button"
-            className="absolute inset-0 bg-zinc-900/50"
+            className={appModalBackdropClass}
             aria-label="סגירה"
             onClick={() => {
               resetNewModal();
               setNewModalOpen(false);
             }}
           />
-          <div className="relative z-10 my-4 flex w-full max-w-lg flex-col rounded-xl border border-zinc-200 bg-white shadow-xl sm:my-6">
-            <div className="relative shrink-0 border-b border-zinc-100 px-4 py-3 sm:px-5">
+          <div
+            className={`${appModalPanelSurfaceClass} max-w-lg`}
+          >
+            <div className={appModalHeaderClass}>
               <button
                 type="button"
-                className="absolute end-3 top-3 rounded-md p-1.5 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800"
+                className={appModalCloseButtonClass}
                 aria-label="סגירה"
                 onClick={() => {
                   resetNewModal();
@@ -569,7 +582,7 @@ export function ManageAccountantsPanel({
               </button>
               <h2
                 id={newModalTitleId}
-                className="text-base font-semibold text-zinc-900 pe-11"
+                className="text-base font-semibold text-teal-950 pe-11"
               >
                 רואה חשבון חדש
               </h2>
@@ -593,7 +606,7 @@ export function ManageAccountantsPanel({
                   required
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                  className={`w-full ${appModalInputClass}`}
                 />
               </div>
 
@@ -610,7 +623,7 @@ export function ManageAccountantsPanel({
                   required
                   value={newEmail}
                   onChange={(e) => setNewEmail(e.target.value)}
-                  className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                  className={`w-full ${appModalInputClass}`}
                 />
               </div>
 
@@ -620,11 +633,11 @@ export function ManageAccountantsPanel({
                 </p>
               ) : null}
 
-              <div className="flex gap-2 border-t border-zinc-100 pt-4">
+              <div className="flex gap-2 border-t border-teal-100/90 pt-4">
                 <button
                   type="submit"
                   disabled={newBusy}
-                  className="flex-1 rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+                  className={`flex-1 ${appModalPrimaryButtonClass}`}
                 >
                   {newBusy ? "יוצרים…" : "יצירת הזמנה"}
                 </button>
@@ -637,7 +650,7 @@ export function ManageAccountantsPanel({
       {inviteUrl ? (
         <div
           role="alert"
-          className="fixed bottom-4 end-4 z-[110] max-w-md rounded-lg border border-zinc-200 bg-white p-3 shadow-xl"
+          className="fixed bottom-4 end-4 z-[110] max-w-md rounded-xl border border-teal-100/95 bg-white/95 p-4 shadow-[0_14px_40px_-22px_rgb(13_148_136_/_0.45)] backdrop-blur-sm"
           dir="rtl"
         >
           <p className="text-sm text-zinc-800">{inviteUrlMsg}</p>
@@ -657,7 +670,7 @@ export function ManageAccountantsPanel({
 
       {modalAcct ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-3"
+          className={appModalFullscreenOverlayClass}
           role="dialog"
           aria-modal="true"
           aria-labelledby="acct-remove-title"
@@ -666,10 +679,10 @@ export function ManageAccountantsPanel({
             if (e.target === e.currentTarget) closeModal();
           }}
         >
-          <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-lg bg-white p-4 shadow-xl sm:p-6">
+          <div className={appModalCenteredPaperClass}>
             <h3
               id="acct-remove-title"
-              className="text-lg font-semibold text-zinc-900"
+              className="text-lg font-semibold text-teal-950"
             >
               הסרת רואה חשבון
             </h3>
@@ -724,7 +737,7 @@ export function ManageAccountantsPanel({
                         <select
                           value={targetId}
                           onChange={(e) => setTargetId(e.target.value)}
-                          className="mt-1 block w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                          className={`mt-1 block w-full ${appModalInputClass}`}
                         >
                           {others.map((o) => (
                             <option key={o.id} value={o.id}>
@@ -764,7 +777,7 @@ export function ManageAccountantsPanel({
                 type="button"
                 onClick={closeModal}
                 disabled={pending}
-                className="rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50 disabled:opacity-50"
+                className={appModalGhostButtonClass}
               >
                 ביטול
               </button>
@@ -782,7 +795,7 @@ export function ManageAccountantsPanel({
                     ? () => void confirmRemoveBare()
                     : () => void confirmWithClients()
                 }
-                className="rounded-md bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50"
+                className="rounded-xl bg-gradient-to-bl from-red-700 to-red-900 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-red-900/25 transition hover:from-red-600 hover:to-red-950 disabled:opacity-50"
               >
                 {pending ? "מריצים…" : "ביצוע ההסרה"}
               </button>

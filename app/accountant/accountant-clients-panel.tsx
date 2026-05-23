@@ -1,6 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import {
+  appModalBackdropClass,
+  appModalCloseButtonClass,
+  appModalGhostButtonClass,
+  appModalHeaderClass,
+  appModalInputClass,
+  appModalPanelSurfaceClass,
+  appModalPrimaryButtonClass,
+  appModalPrimaryButtonXsClass,
+  appModalPrimaryButtonXsWideClass,
+  appModalSecondaryButtonClass,
+} from "@/lib/ui/modal-classes";
 
 type ClientListRow = {
   id: string;
@@ -744,18 +756,18 @@ export function AccountantClientsPanel() {
         <div className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto px-4 pb-10 pt-4 sm:pt-10" dir="rtl">
           <button
             type="button"
-            className="absolute inset-0 bg-zinc-900/50"
+            className={appModalBackdropClass}
             aria-label="סגירה"
             onClick={() => {
               resetNewModal();
               setNewModalOpen(false);
             }}
           />
-          <div className="relative z-10 my-4 flex w-full max-w-lg flex-col rounded-xl border border-zinc-200 bg-white shadow-xl sm:my-6">
-            <div className="relative shrink-0 border-b border-zinc-100 px-4 py-3 sm:px-5">
+          <div className={`${appModalPanelSurfaceClass} max-w-lg`}>
+            <div className={appModalHeaderClass}>
               <button
                 type="button"
-                className="absolute end-3 top-3 rounded-md p-1.5 text-zinc-500 hover:bg-zinc-100 hover:text-zinc-800"
+                className={appModalCloseButtonClass}
                 aria-label="סגירה"
                 onClick={() => {
                   resetNewModal();
@@ -766,7 +778,7 @@ export function AccountantClientsPanel() {
                   ×
                 </span>
               </button>
-              <h2 id={newModalTitleId} className="text-base font-semibold text-zinc-900 pe-11">
+              <h2 id={newModalTitleId} className="text-base font-semibold text-teal-950 pe-11">
                 לקוח חדש
               </h2>
             </div>
@@ -782,18 +794,18 @@ export function AccountantClientsPanel() {
                   autoComplete="off"
                   value={clientNameInput}
                   onChange={(e) => setClientNameInput(e.target.value)}
-                  className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                  className={`w-full ${appModalInputClass}`}
                   required
                 />
               </div>
 
-              <p className="text-sm font-semibold text-zinc-900 border-t border-zinc-100 pt-2">
+              <p className="text-sm font-semibold text-zinc-900 border-t border-teal-100/90 pt-2">
                 משתמשים
               </p>
 
               <div className="flex flex-col gap-5">
                 {newUsers.map((row, idx) => (
-                  <div key={`nu-${idx}`} className="rounded-lg border border-zinc-100 bg-zinc-50/70 p-3">
+                  <div key={`nu-${idx}`} className="rounded-xl border border-teal-100/80 bg-teal-50/40 p-3">
                     <div className="mb-3">
                       <label className="mb-1 block text-xs text-zinc-600">
                         שם תצוגה למשתמש
@@ -809,7 +821,7 @@ export function AccountantClientsPanel() {
                             ),
                           );
                         }}
-                        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                        className={`w-full ${appModalInputClass}`}
                       />
                     </div>
                     <div>
@@ -827,7 +839,7 @@ export function AccountantClientsPanel() {
                             ),
                           );
                         }}
-                        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                        className={`w-full ${appModalInputClass}`}
                       />
                     </div>
                   </div>
@@ -837,7 +849,7 @@ export function AccountantClientsPanel() {
               {newUsers.length < 4 ? (
                 <button
                   type="button"
-                  className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-50"
+                  className={`w-full ${appModalGhostButtonClass}`}
                   onClick={() =>
                     setNewUsers((rows) => [...rows, { displayName: "", email: "" }])
                   }
@@ -856,11 +868,11 @@ export function AccountantClientsPanel() {
                 </p>
               ) : null}
 
-              <div className="flex gap-2 border-t border-zinc-100 pt-4">
+              <div className="flex gap-2 border-t border-teal-100/90 pt-4">
                 <button
                   type="submit"
                   disabled={submitBusy}
-                  className="flex-1 rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+                  className={`flex-1 ${appModalPrimaryButtonClass}`}
                 >
                   {submitBusy ? "מריצים…" : "בצע"}
                 </button>
@@ -878,15 +890,17 @@ export function AccountantClientsPanel() {
           >
             <button
               type="button"
-              className="absolute inset-0 bg-zinc-900/50"
+              className={appModalBackdropClass}
               aria-label="סגירה"
               onClick={closeDetailModal}
             />
-            <div className="relative z-10 my-4 flex w-full max-w-lg flex-col rounded-xl border border-zinc-200 bg-white shadow-xl sm:my-6 max-h-[min(100vh-2rem,40rem)] sm:max-h-[min(100vh-4rem,48rem)]">
-            <div className="relative shrink-0 border-b border-zinc-100 px-4 py-3 sm:px-5">
+            <div
+              className={`${appModalPanelSurfaceClass} max-w-lg max-h-[min(100vh-2rem,40rem)] sm:max-h-[min(100vh-4rem,48rem)]`}
+            >
+            <div className={appModalHeaderClass}>
               <button
                 type="button"
-                className="absolute end-3 top-3 rounded-md p-1.5 text-zinc-500 hover:bg-zinc-100"
+                className={appModalCloseButtonClass}
                 aria-label="סגירה"
                 onClick={closeDetailModal}
               >
@@ -923,13 +937,13 @@ export function AccountantClientsPanel() {
                                 cancelClientDisplayNameEdit();
                               }
                             }}
-                            className="min-w-0 flex-1 rounded-md border border-zinc-300 px-3 py-1.5 text-sm outline-none focus:border-zinc-500 disabled:bg-zinc-100 sm:max-w-[min(100%,28rem)]"
+                            className={`min-w-0 flex-1 sm:max-w-[min(100%,28rem)] ${appModalInputClass}`}
                           />
                           <div className="flex shrink-0 gap-2">
                             <button
                               type="button"
                               disabled={clientDisplayNameSaving}
-                              className="rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-800 shadow-sm hover:bg-zinc-50 disabled:opacity-50"
+                              className={appModalSecondaryButtonClass}
                               onClick={cancelClientDisplayNameEdit}
                             >
                               ביטול
@@ -937,7 +951,7 @@ export function AccountantClientsPanel() {
                             <button
                               type="button"
                               disabled={clientDisplayNameSaving}
-                              className="rounded-md bg-zinc-900 px-2.5 py-1 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+                              className={appModalPrimaryButtonXsClass}
                               onClick={() => void saveClientDisplayName()}
                             >
                               {clientDisplayNameSaving ? "שומרים…" : "שמור"}
@@ -955,7 +969,7 @@ export function AccountantClientsPanel() {
                         </h2>
                         <button
                           type="button"
-                          className="shrink-0 rounded-md border border-zinc-300 bg-white px-2.5 py-1 text-xs font-medium text-zinc-900 shadow-sm hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+                          className={`shrink-0 ${appModalSecondaryButtonClass} focus-visible:ring-2 focus-visible:ring-teal-400/40`}
                           onClick={() => {
                             setDetailErr(null);
                             setClientDisplayNameDraft(detail.client.displayName);
@@ -996,7 +1010,7 @@ export function AccountantClientsPanel() {
                           resetAddMemberModal();
                           setAddMemberModalOpen(true);
                         }}
-                        className="shrink-0 rounded-md border border-zinc-300 bg-white px-3 py-1.5 text-xs font-medium text-zinc-900 shadow-sm hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400"
+                        className="shrink-0 rounded-lg border border-teal-200/90 bg-white px-3 py-1.5 text-xs font-semibold text-teal-900 shadow-sm transition hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/40"
                       >
                         הוספת משתמש
                       </button>
@@ -1062,7 +1076,7 @@ export function AccountantClientsPanel() {
                                           [key]: { ...draft, name: e.target.value },
                                         }))
                                       }
-                                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                                      className={`w-full ${appModalInputClass}`}
                                     />
                                   </div>
                                 ) : null}
@@ -1078,7 +1092,7 @@ export function AccountantClientsPanel() {
                                           [key]: { ...draft, email: e.target.value },
                                         }))
                                       }
-                                      className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                                      className={`mt-1 w-full ${appModalInputClass}`}
                                     />
                                   ) : (
                                     <p className="mt-1 break-all text-sm text-zinc-800">{draft.email}</p>
@@ -1122,7 +1136,7 @@ export function AccountantClientsPanel() {
                                   <button
                                     type="button"
                                     disabled={bus}
-                                    className="rounded-md bg-zinc-900 px-2 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+                                    className={appModalPrimaryButtonXsWideClass}
                                     onClick={() => patchMember(detail.client.id, key, m.userId)}
                                   >
                                     שמור שינויים
@@ -1187,7 +1201,7 @@ export function AccountantClientsPanel() {
                                           },
                                         }))
                                       }
-                                      className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                                      className={`w-full ${appModalInputClass}`}
                                     />
                                   </div>
                                 ) : null}
@@ -1206,7 +1220,7 @@ export function AccountantClientsPanel() {
                                           },
                                         }))
                                       }
-                                      className="mt-1 w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                                      className={`mt-1 w-full ${appModalInputClass}`}
                                     />
                                   ) : (
                                     <p className="mt-1 break-all text-sm text-zinc-800">{draft.email}</p>
@@ -1253,7 +1267,7 @@ export function AccountantClientsPanel() {
                                   <button
                                     type="button"
                                     disabled={bus}
-                                    className="rounded-md bg-zinc-900 px-2 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+                                    className={appModalPrimaryButtonXsWideClass}
                                     onClick={() =>
                                       patchInvite(detail.client.id, key, inv.invitationId)
                                     }
@@ -1269,10 +1283,10 @@ export function AccountantClientsPanel() {
                     </ul>
                   </div>
 
-                  <div className="border-t border-zinc-100 pt-4">
+                  <div className="border-t border-teal-100/90 pt-4">
                     <button
                       type="button"
-                      className="w-full rounded-md border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-800 hover:bg-red-50"
+                      className="w-full rounded-xl border border-red-200 bg-white px-3 py-2 text-sm font-semibold text-red-800 shadow-sm transition hover:bg-red-50"
                       onClick={() => deleteClient(detail.client.id)}
                     >
                       מחק לקוח
@@ -1288,18 +1302,18 @@ export function AccountantClientsPanel() {
             <div className="fixed inset-0 z-[106] flex items-start justify-center overflow-y-auto px-4 pb-10 pt-4 sm:pt-10">
               <button
                 type="button"
-                className="absolute inset-0 bg-zinc-900/55"
+                className={appModalBackdropClass}
                 aria-label="סגירה"
                 onClick={() => {
                   resetAddMemberModal();
                   setAddMemberModalOpen(false);
                 }}
               />
-              <div className="relative z-10 my-4 flex w-full max-w-md flex-col rounded-xl border border-zinc-200 bg-white shadow-xl">
-                <div className="relative shrink-0 border-b border-zinc-100 px-4 py-3 sm:px-5">
+              <div className={`${appModalPanelSurfaceClass} max-w-md`}>
+                <div className={appModalHeaderClass}>
                   <button
                     type="button"
-                    className="absolute end-3 top-3 rounded-md p-1.5 text-zinc-500 hover:bg-zinc-100"
+                    className={appModalCloseButtonClass}
                     aria-label="סגירה"
                     onClick={() => {
                       resetAddMemberModal();
@@ -1312,7 +1326,7 @@ export function AccountantClientsPanel() {
                   </button>
                   <h3
                     id={addMemberModalTitleId}
-                    className="text-base font-semibold text-zinc-900 pe-11"
+                    className="text-base font-semibold text-teal-950 pe-11"
                   >
                     משתמש ללקוח «{detail.client.displayName}»
                   </h3>
@@ -1339,7 +1353,7 @@ export function AccountantClientsPanel() {
                       autoComplete="off"
                       value={addMemberName}
                       onChange={(e) => setAddMemberName(e.target.value)}
-                      className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                      className={`w-full ${appModalInputClass}`}
                     />
                   </div>
                   <div>
@@ -1356,7 +1370,7 @@ export function AccountantClientsPanel() {
                       autoComplete="off"
                       value={addMemberEmail}
                       onChange={(e) => setAddMemberEmail(e.target.value)}
-                      className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm outline-none focus:border-zinc-500"
+                      className={`w-full ${appModalInputClass}`}
                     />
                   </div>
                   {addMemberErr ? (
@@ -1364,11 +1378,11 @@ export function AccountantClientsPanel() {
                       {addMemberErr}
                     </p>
                   ) : null}
-                  <div className="border-t border-zinc-100 pt-4">
+                  <div className="border-t border-teal-100/90 pt-4">
                     <button
                       type="submit"
                       disabled={addMemberBusy}
-                      className="w-full rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60"
+                      className={`w-full ${appModalPrimaryButtonClass}`}
                     >
                       {addMemberBusy ? "מריצים…" : "שליחת הזמנה"}
                     </button>
