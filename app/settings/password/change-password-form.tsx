@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { RequiredFieldMark } from "@/app/client/required-field-mark";
 import { PasswordField } from "@/components/password-field";
 
 export function ChangePasswordForm({
@@ -83,36 +84,51 @@ export function ChangePasswordForm({
       <form className="mt-6 flex max-w-md flex-col gap-3" onSubmit={onSubmit}>
         {hasExistingPassword ? (
           <div>
-            <label htmlFor="cur-pw" className="mb-1 block text-sm text-zinc-700">
+            <label
+              htmlFor="cur-pw"
+              className="mb-1 flex flex-wrap items-center gap-0 text-sm text-zinc-700"
+            >
               סיסמה נוכחית
+              <RequiredFieldMark />
             </label>
             <PasswordField
               id="cur-pw"
               autoComplete="current-password"
+              required
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
             />
           </div>
         ) : null}
         <div>
-          <label htmlFor="new-pw" className="mb-1 block text-sm text-zinc-700">
+          <label
+            htmlFor="new-pw"
+            className="mb-1 flex flex-wrap items-center gap-0 text-sm text-zinc-700"
+          >
             סיסמה חדשה
+            <RequiredFieldMark />
           </label>
           <PasswordField
             id="new-pw"
             autoComplete="new-password"
+            required
             minLength={12}
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
           />
         </div>
         <div>
-          <label htmlFor="new-pw2" className="mb-1 block text-sm text-zinc-700">
+          <label
+            htmlFor="new-pw2"
+            className="mb-1 flex flex-wrap items-center gap-0 text-sm text-zinc-700"
+          >
             אימות סיסמה חדשה
+            <RequiredFieldMark />
           </label>
           <PasswordField
             id="new-pw2"
             autoComplete="new-password"
+            required
             minLength={12}
             value={newPassword2}
             onChange={(e) => setNewPassword2(e.target.value)}

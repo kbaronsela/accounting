@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { RequiredFieldMark } from "@/app/client/required-field-mark";
 import type { ClientMeClientRow } from "@/lib/client/queries";
 import {
   assessImagePreUploadQuality,
@@ -248,9 +249,10 @@ export function ClientUploadSection({ clients }: Props) {
           <div>
             <label
               htmlFor="upload-client"
-              className="mb-1 block text-sm text-zinc-700"
+              className="mb-1 flex flex-wrap items-center gap-0 text-sm text-zinc-700"
             >
               תיק
+              <RequiredFieldMark />
             </label>
             <select
               id="upload-client"
@@ -272,9 +274,10 @@ export function ClientUploadSection({ clients }: Props) {
         <div className="hidden sm:block">
           <label
             htmlFor="upload-file-desktop"
-            className="mb-1 block text-sm text-zinc-700"
+            className="mb-1 flex flex-wrap items-center gap-0 text-sm text-zinc-700"
           >
             קובץ
+            <RequiredFieldMark />
           </label>
           <input
             ref={desktopFileInputRef}
@@ -292,7 +295,10 @@ export function ClientUploadSection({ clients }: Props) {
 
         {/* מובייל (מתחת ל־640px): צילום או בחירת קובץ */}
         <div className="space-y-2 sm:hidden">
-          <span className="block text-sm text-zinc-700">קבלה / מסמך</span>
+          <span className="flex flex-wrap items-center gap-0 text-sm text-zinc-700">
+            קבלה / מסמך
+            <RequiredFieldMark />
+          </span>
           <input
             ref={mobileCameraInputRef}
             type="file"

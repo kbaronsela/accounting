@@ -321,7 +321,7 @@ export function ClientDocumentWorkspace({
         </h2>
 
         <div>
-          <label htmlFor="d-amt" className="mb-1 inline-flex flex-wrap items-baseline gap-0 text-sm text-zinc-700">
+          <label htmlFor="d-amt" className="mb-1 inline-flex flex-wrap items-center gap-0 text-sm text-zinc-700">
             סכום סופי
             <RequiredFieldMark />
           </label>
@@ -343,7 +343,7 @@ export function ClientDocumentWorkspace({
         </div>
 
         <div>
-          <label htmlFor="d-curr" className="mb-1 inline-flex flex-wrap items-baseline gap-0 text-sm text-zinc-700">
+          <label htmlFor="d-curr" className="mb-1 inline-flex flex-wrap items-center gap-0 text-sm text-zinc-700">
             מטבע
             <RequiredFieldMark />
           </label>
@@ -371,7 +371,7 @@ export function ClientDocumentWorkspace({
         </div>
 
         <div className="min-w-0">
-          <label htmlFor="d-date-display" className="mb-1 inline-flex flex-wrap items-baseline gap-0 text-sm text-zinc-700">
+          <label htmlFor="d-date-display" className="mb-1 inline-flex flex-wrap items-center gap-0 text-sm text-zinc-700">
             תאריך חשבונית (DD.MM.YYYY)
             <RequiredFieldMark />
           </label>
@@ -446,7 +446,7 @@ export function ClientDocumentWorkspace({
         </div>
 
         <div>
-          <label htmlFor="d-vendor" className="mb-1 inline-flex flex-wrap items-baseline gap-0 text-sm text-zinc-700">
+          <label htmlFor="d-vendor" className="mb-1 inline-flex flex-wrap items-center gap-0 text-sm text-zinc-700">
             ספק / שם העסק
             <RequiredFieldMark />
           </label>
@@ -467,7 +467,7 @@ export function ClientDocumentWorkspace({
         </div>
         <div>
           <label htmlFor="d-note" className="mb-1 block text-sm text-zinc-700">
-            הערה (אופציונלי)
+            הערה
           </label>
           <textarea
             id="d-note"

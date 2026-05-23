@@ -3,6 +3,7 @@
 import { signIn } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import { RequiredFieldMark } from "@/app/client/required-field-mark";
 import { PasswordField } from "@/components/password-field";
 
 type LookupOk = {
@@ -154,8 +155,9 @@ function InviteFlowInner() {
         {lookup.email}
       </p>
       <div>
-        <label htmlFor="password" className="mb-1 block text-sm text-zinc-700">
+        <label htmlFor="password" className="mb-1 flex flex-wrap items-center gap-0 text-sm text-zinc-700">
           סיסמה (לפחות 12 תווים)
+          <RequiredFieldMark />
         </label>
         <PasswordField
           id="password"
@@ -167,11 +169,9 @@ function InviteFlowInner() {
         />
       </div>
       <div>
-        <label
-          htmlFor="password2"
-          className="mb-1 block text-sm text-zinc-700"
-        >
+        <label htmlFor="password2" className="mb-1 flex flex-wrap items-center gap-0 text-sm text-zinc-700">
           אימות סיסמה
+          <RequiredFieldMark />
         </label>
         <PasswordField
           id="password2"

@@ -1,11 +1,11 @@
-/** כוכבית חובה (ליד תוויות שדות) */
+/** כוכבית חובה (ליד תוויות שדות) — מיושרת לגובה מרכז שורת הטקסט */
 export function RequiredFieldMark() {
   return (
-    <sup
-      className="ms-1 translate-y-px text-base font-bold leading-none text-red-600"
+    <span
+      className="ms-1 inline-flex h-[1lh] shrink-0 items-center self-center align-middle leading-none"
       aria-hidden
     >
-      *
-    </sup>
+      <span className="text-[1.125em] font-bold leading-none text-red-600">*</span>
+    </span>
   );
 }

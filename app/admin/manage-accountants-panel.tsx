@@ -1,5 +1,6 @@
 "use client";
 
+import { RequiredFieldMark } from "@/app/client/required-field-mark";
 import type { AccountantListItem as AccountantRow } from "@/lib/admin/accountants-types";
 import {
   appModalBackdropClass,
@@ -595,9 +596,10 @@ export function ManageAccountantsPanel({
               <div>
                 <label
                   htmlFor="admin-new-acct-name"
-                  className="mb-1 block text-sm font-medium text-zinc-700"
+                  className="mb-1 flex flex-wrap items-center gap-0 text-sm font-medium text-zinc-700"
                 >
                   שם
+                  <RequiredFieldMark />
                 </label>
                 <input
                   id="admin-new-acct-name"
@@ -613,9 +615,10 @@ export function ManageAccountantsPanel({
               <div>
                 <label
                   htmlFor="admin-new-acct-email"
-                  className="mb-1 block text-sm font-medium text-zinc-700"
+                  className="mb-1 flex flex-wrap items-center gap-0 text-sm font-medium text-zinc-700"
                 >
                   אימייל
+                  <RequiredFieldMark />
                 </label>
                 <input
                   id="admin-new-acct-email"

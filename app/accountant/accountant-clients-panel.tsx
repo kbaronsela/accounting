@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { RequiredFieldMark } from "@/app/client/required-field-mark";
 import {
   appModalBackdropClass,
   appModalCloseButtonClass,
@@ -785,8 +786,12 @@ export function AccountantClientsPanel() {
 
             <form onSubmit={submitNewClient} className="flex flex-col gap-4 px-4 py-4 sm:px-5">
               <div>
-                <label htmlFor="cpa-new-client-display" className="mb-1 block text-sm font-medium text-zinc-700">
+                <label
+                  htmlFor="cpa-new-client-display"
+                  className="mb-1 flex flex-wrap items-center gap-0 text-sm font-medium text-zinc-700"
+                >
                   שם הלקוח
+                  <RequiredFieldMark />
                 </label>
                 <input
                   id="cpa-new-client-display"
@@ -825,8 +830,9 @@ export function AccountantClientsPanel() {
                       />
                     </div>
                     <div>
-                      <label className="mb-1 block text-xs text-zinc-600">
+                      <label className="mb-1 flex flex-wrap items-center gap-0 text-xs text-zinc-600">
                         כתובת אימייל
+                        {idx === 0 ? <RequiredFieldMark /> : null}
                       </label>
                       <input
                         type="email"
@@ -917,9 +923,10 @@ export function AccountantClientsPanel() {
                       <div className="space-y-2">
                         <label
                           htmlFor={detailRenameFieldId}
-                          className="text-xs font-medium text-zinc-600"
+                          className="flex flex-wrap items-center gap-0 text-xs font-medium text-zinc-600"
                         >
                           שם הלקוח
+                          <RequiredFieldMark />
                         </label>
                         <div className="flex flex-wrap items-center gap-2">
                           <input
@@ -1345,7 +1352,7 @@ export function AccountantClientsPanel() {
                       htmlFor="cpa-add-member-name"
                       className="mb-1 block text-sm font-medium text-zinc-700"
                     >
-                      שם תצוגה (אופציונלי)
+                      שם תצוגה
                     </label>
                     <input
                       id="cpa-add-member-name"
@@ -1359,9 +1366,10 @@ export function AccountantClientsPanel() {
                   <div>
                     <label
                       htmlFor="cpa-add-member-email"
-                      className="mb-1 block text-sm font-medium text-zinc-700"
+                      className="mb-1 flex flex-wrap items-center gap-0 text-sm font-medium text-zinc-700"
                     >
                       אימייל
+                      <RequiredFieldMark />
                     </label>
                     <input
                       id="cpa-add-member-email"

@@ -300,8 +300,6 @@ export function AccountantSubmittedInvoiceEditDialog({
                 <span className="font-medium text-zinc-800">
                   {payload.clientDisplayName}
                 </span>
-                {" · "}
-                מזהה: <span className="font-mono text-xs">{payload.id}</span>
               </p>
             </div>
 
@@ -309,7 +307,7 @@ export function AccountantSubmittedInvoiceEditDialog({
               <div>
                 <label
                   htmlFor="acct-ed-amt"
-                  className="mb-1 inline-flex flex-wrap items-baseline gap-0 text-sm text-zinc-700"
+                  className="mb-1 inline-flex flex-wrap items-center gap-0 text-sm text-zinc-700"
                 >
                   סכום סופי
                   <RequiredFieldMark />
@@ -334,7 +332,7 @@ export function AccountantSubmittedInvoiceEditDialog({
               <div>
                 <label
                   htmlFor="acct-ed-curr"
-                  className="mb-1 inline-flex flex-wrap items-baseline gap-0 text-sm text-zinc-700"
+                  className="mb-1 inline-flex flex-wrap items-center gap-0 text-sm text-zinc-700"
                 >
                   מטבע
                   <RequiredFieldMark />
@@ -365,7 +363,7 @@ export function AccountantSubmittedInvoiceEditDialog({
               <div className="min-w-0">
                 <label
                   htmlFor="acct-ed-date-display"
-                  className="mb-1 inline-flex flex-wrap items-baseline gap-0 text-sm text-zinc-700"
+                  className="mb-1 inline-flex flex-wrap items-center gap-0 text-sm text-zinc-700"
                 >
                   תאריך חשבונית (DD.MM.YYYY)
                   <RequiredFieldMark />
@@ -429,7 +427,7 @@ export function AccountantSubmittedInvoiceEditDialog({
               <div>
                 <label
                   htmlFor="acct-ed-vendor"
-                  className="mb-1 inline-flex flex-wrap items-baseline gap-0 text-sm text-zinc-700"
+                  className="mb-1 inline-flex flex-wrap items-center gap-0 text-sm text-zinc-700"
                 >
                   ספק / שם העסק
                   <RequiredFieldMark />
@@ -455,7 +453,7 @@ export function AccountantSubmittedInvoiceEditDialog({
                   htmlFor="acct-ed-note"
                   className="mb-1 block text-sm text-zinc-700"
                 >
-                  הערת לקוח (אופציונלי)
+                  הערת לקוח
                 </label>
                 <textarea
                   id="acct-ed-note"

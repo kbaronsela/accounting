@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Suspense, useMemo, useState } from "react";
 import { PasswordField } from "@/components/password-field";
+import { RequiredFieldMark } from "@/app/client/required-field-mark";
 
 function loginAlertMessage(errorCode: string | null): string | null {
   if (!errorCode) return null;
@@ -94,8 +95,9 @@ function LoginFormFields({ googleOAuthEnabled }: { googleOAuthEnabled: boolean }
 
       <form className="flex flex-col gap-4" onSubmit={onSubmit}>
         <div>
-          <label htmlFor="email" className="mb-1 block text-sm text-zinc-700">
+          <label htmlFor="email" className="mb-1 flex flex-wrap items-center gap-0 text-sm text-zinc-700">
             אימייל
+            <RequiredFieldMark />
           </label>
           <input
             id="email"
@@ -109,8 +111,9 @@ function LoginFormFields({ googleOAuthEnabled }: { googleOAuthEnabled: boolean }
           />
         </div>
         <div>
-          <label htmlFor="password" className="mb-1 block text-sm text-zinc-700">
+          <label htmlFor="password" className="mb-1 flex flex-wrap items-center gap-0 text-sm text-zinc-700">
             סיסמה
+            <RequiredFieldMark />
           </label>
           <PasswordField
             id="password"
