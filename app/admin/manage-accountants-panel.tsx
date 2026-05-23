@@ -353,7 +353,7 @@ export function ManageAccountantsPanel({
 
     if (dispose === "delete_clients") {
       const ok = window.confirm(
-        `בטוח למחוק ${modalAcct.clientCount} תיקי לקוחות וכל המסמכים מהמערכת? הפעולה בלתי הפיכית.`,
+        `בטוח למחוק ${modalAcct.clientCount} תיקי לקוחות וכל המסמכים מהמערכת? הפעולה בלתי הפיכה.`,
       );
       if (!ok) return;
       await executeRemove(modalAcct, { deleteAllClients: true });

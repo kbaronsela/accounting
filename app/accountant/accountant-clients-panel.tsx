@@ -663,7 +663,7 @@ export function AccountantClientsPanel() {
   async function deleteClient(clientId: string) {
     if (
       !window.confirm(
-        `למחוק את הלקוח «${detail?.client.displayName ?? ""}» ואת כל המסמכים שלו? הפעולה בלתי הפיכית.`,
+        `למחוק את הלקוח «${detail?.client.displayName ?? ""}» ואת כל המסמכים שלו? הפעולה בלתי הפיכה.`,
       )
     ) {
       return;
