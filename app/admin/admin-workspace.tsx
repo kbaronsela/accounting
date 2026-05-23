@@ -93,14 +93,12 @@ export function AdminWorkspace({
             aria-expanded={mobileOpen}
             aria-controls={mobileMenuId}
             aria-haspopup="true"
+            aria-label="פתיחת תפריט"
             onClick={() => setMobileOpen(true)}
-            className="touch-manipulation rounded-lg px-3 py-2 text-start outline-none hover:bg-teal-50/60 focus-visible:ring-2 focus-visible:ring-teal-400/60"
+            className="touch-manipulation flex items-center justify-center rounded-lg px-3 py-2 outline-none hover:bg-teal-50/60 focus-visible:ring-2 focus-visible:ring-teal-400/60"
           >
-            <span className="flex items-center gap-2 text-lg font-semibold text-zinc-900">
-              <span aria-hidden className="text-zinc-500">
-                ☰
-              </span>
-              אזור אדמין
+            <span aria-hidden className="text-xl leading-none text-zinc-600">
+              ☰
             </span>
           </button>
         </div>
