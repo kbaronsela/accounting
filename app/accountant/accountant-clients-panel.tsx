@@ -44,8 +44,24 @@ type ClientDetailPayload = {
   pendingInvitations: DetailInvite[];
 };
 
-function initialUserRows() {
-  return [{ displayName: "", email: "" }];
+type NewClientUserDraft = {
+  draftKey: string;
+  displayName: string;
+  email: string;
+};
+
+let newClientUserDraftKeySeq = 0;
+function nextNewClientUserDraftKey() {
+  newClientUserDraftKeySeq += 1;
+  return `ncu-${newClientUserDraftKeySeq}`;
+}
+
+function createNewClientUserDraft(): NewClientUserDraft {
+  return { draftKey: nextNewClientUserDraftKey(), displayName: "", email: "" };
+}
+
+function initialUserRows(): NewClientUserDraft[] {
+  return [createNewClientUserDraft()];
 }
 
 async function fetchClientList(
@@ -810,7 +826,26 @@ export function AccountantClientsPanel() {
 
               <div className="flex flex-col gap-5">
                 {newUsers.map((row, idx) => (
-                  <div key={`nu-${idx}`} className="rounded-xl border border-teal-100/80 bg-teal-50/40 p-3">
+                  <div
+                    key={row.draftKey}
+                    className="relative rounded-xl border border-teal-100/80 bg-teal-50/40 p-3"
+                  >
+                    {idx > 0 ? (
+                      <button
+                        type="button"
+                        className="absolute left-2 top-2 z-10 inline-flex h-6 w-6 items-center justify-center rounded-md text-sm leading-none text-zinc-500 transition hover:bg-red-100/90 hover:text-red-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/40"
+                        aria-label="הסר משתמש"
+                        onClick={() =>
+                          setNewUsers((rows) =>
+                            rows.filter((r) => r.draftKey !== row.draftKey),
+                          )
+                        }
+                      >
+                        <span aria-hidden className="text-base font-light">
+                          ×
+                        </span>
+                      </button>
+                    ) : null}
                     <div className="mb-3">
                       <label className="mb-1 block text-xs text-zinc-600">
                         שם תצוגה למשתמש
@@ -857,7 +892,7 @@ export function AccountantClientsPanel() {
                   type="button"
                   className={`w-full ${appModalGhostButtonClass}`}
                   onClick={() =>
-                    setNewUsers((rows) => [...rows, { displayName: "", email: "" }])
+                    setNewUsers((rows) => [...rows, createNewClientUserDraft()])
                   }
                 >
                   הוסף משתמש ללקוח
