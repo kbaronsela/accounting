@@ -1,7 +1,15 @@
 "use client";
 
 import { createPortal } from "react-dom";
-import { useCallback, useEffect, useId, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useId,
+  useMemo,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 import { AccountantSubmittedInvoiceEditDialog } from "@/components/accountant-submitted-invoice-edit-dialog";
 import { DocumentFileViewerOverlay } from "@/components/document-file-viewer-overlay";
 import { canAccountantEditSubmittedInvoiceFields } from "@/lib/accountant/document-edit-policy";
@@ -41,6 +49,185 @@ function statusLabel(status: string): string {
   return STATUS_LABELS[status] ?? status;
 }
 
+type AccountantDocsSortKey =
+  | "client"
+  | "status"
+  | "amount"
+  | "vendor"
+  | "submitted"
+  | "uploadedBy";
+
+type AccountantDocsSortState = {
+  key: AccountantDocsSortKey;
+  dir: "asc" | "desc";
+};
+
+/** מיון דיפולט: נשלח — יורד (הכי מאוחר ראשון) */
+const DEFAULT_ACCOUNTANT_DOCS_SORT: AccountantDocsSortState = {
+  key: "submitted",
+  dir: "desc",
+};
+
+/** כיוון ראשון בלחיצה על עמודה חדשה */
+function accountantDocsDefaultDirForKey(
+  key: AccountantDocsSortKey,
+): "asc" | "desc" {
+  if (key === "submitted" || key === "amount") return "desc";
+  return "asc";
+}
+
+/** למיין מספרים/חותמות זמן; חסר (null) תמיד בסוף */
+function cmpNumericOrTs(
+  av: number | null,
+  bv: number | null,
+  dir: "asc" | "desc",
+): number {
+  if (av === null && bv === null) return 0;
+  if (av === null) return 1;
+  if (bv === null) return -1;
+  if (av === bv) return 0;
+  if (dir === "asc") return av < bv ? -1 : 1;
+  return av > bv ? -1 : 1;
+}
+
+function cmpStrings(a: string, b: string, dir: "asc" | "desc"): number {
+  const mul = dir === "asc" ? 1 : -1;
+  return a.localeCompare(b, "he", { sensitivity: "base" }) * mul;
+}
+
+function submittedTs(row: DocRow): number | null {
+  const s = row.submittedAt?.trim();
+  if (!s) return null;
+  const t = Date.parse(s);
+  return Number.isNaN(t) ? null : t;
+}
+
+function amountNumeric(row: DocRow): number | null {
+  const s = row.finalAmount?.trim();
+  if (!s) return null;
+  const n = Number.parseFloat(s.replace(",", "."));
+  return Number.isFinite(n) ? n : null;
+}
+
+function vendorSortKey(row: DocRow): string {
+  return (row.finalVendor ?? "").toLocaleLowerCase("he");
+}
+
+function uploadedBySortKey(row: DocRow): string {
+  return (row.uploadedByDisplayName ?? "").trim();
+}
+
+function sortAccountantDocs(
+  list: DocRow[],
+  sort: AccountantDocsSortState,
+): DocRow[] {
+  const sorted = [...list];
+  sorted.sort((a, b) => {
+    let c = 0;
+    switch (sort.key) {
+      case "client":
+        c = cmpStrings(
+          a.clientDisplayName.trim(),
+          b.clientDisplayName.trim(),
+          sort.dir,
+        );
+        break;
+      case "status":
+        c = cmpStrings(
+          `${a.status}\u0000${a.id}`,
+          `${b.status}\u0000${b.id}`,
+          sort.dir,
+        );
+        break;
+      case "amount":
+        c = cmpNumericOrTs(amountNumeric(a), amountNumeric(b), sort.dir);
+        break;
+      case "vendor":
+        c = cmpStrings(vendorSortKey(a), vendorSortKey(b), sort.dir);
+        break;
+      case "submitted":
+        c = cmpNumericOrTs(submittedTs(a), submittedTs(b), sort.dir);
+        break;
+      case "uploadedBy":
+        c = cmpStrings(uploadedBySortKey(a), uploadedBySortKey(b), sort.dir);
+        break;
+      default:
+        return 0;
+    }
+    if (c !== 0) return c;
+    return cmpStrings(a.id, b.id, "asc");
+  });
+  return sorted;
+}
+
+function SortCue({ active, dir }: { active: boolean; dir: "asc" | "desc" }) {
+  if (!active) {
+    return (
+      <span className="ms-1 text-zinc-300" aria-hidden>
+        ↕
+      </span>
+    );
+  }
+  return (
+    <span className="ms-1 text-zinc-600" aria-hidden>
+      {dir === "asc" ? "↑" : "↓"}
+    </span>
+  );
+}
+
+function AccountantDocumentsMobileSortBar({
+  sort,
+  onSortChange,
+}: {
+  sort: AccountantDocsSortState;
+  onSortChange: Dispatch<SetStateAction<AccountantDocsSortState>>;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5 md:hidden">
+      <span className="text-xs text-zinc-500">מיון</span>
+      <label htmlFor="acct-docs-mobile-sort-key" className="sr-only">
+        מיון לפי שדה
+      </label>
+      <select
+        id="acct-docs-mobile-sort-key"
+        className="max-w-[12rem] rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs text-zinc-900 shadow-sm"
+        value={sort.key}
+        onChange={(e) => {
+          const key = e.target.value as AccountantDocsSortKey;
+          onSortChange({ key, dir: accountantDocsDefaultDirForKey(key) });
+        }}
+      >
+        <option value="client">לקוח</option>
+        <option value="status">סטטוס</option>
+        <option value="amount">סכום</option>
+        <option value="vendor">ספק</option>
+        <option value="submitted">נשלח</option>
+        <option value="uploadedBy">הועלה ע״י</option>
+      </select>
+      <button
+        type="button"
+        className="inline-flex shrink-0 items-center gap-0.5 rounded-md border border-zinc-200 bg-white px-2 py-1 text-xs font-medium text-zinc-700 shadow-sm hover:bg-zinc-100"
+        onClick={() =>
+          onSortChange((prev) => ({
+            ...prev,
+            dir: prev.dir === "asc" ? "desc" : "asc",
+          }))
+        }
+        aria-label={
+          sort.dir === "asc"
+            ? "מיון עולה — לחץ להפוך ליורד"
+            : "מיון יורד — לחץ להפוך לעולה"
+        }
+      >
+        <span aria-hidden className="tabular-nums">
+          {sort.dir === "asc" ? "↑" : "↓"}
+        </span>
+        {sort.dir === "asc" ? "עולה" : "יורד"}
+      </button>
+    </div>
+  );
+}
+
 async function fetchClients(): Promise<ClientOption[]> {
   const res = await fetch("/api/accountants/me/clients");
   const data = (await res.json()) as {
@@ -77,6 +264,9 @@ export function AccountantDocumentsPanel() {
   const [listError, setListError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
+  const [sort, setSort] = useState<AccountantDocsSortState>(
+    DEFAULT_ACCOUNTANT_DOCS_SORT,
+  );
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [viewerDoc, setViewerDoc] = useState<{
     id: string;
@@ -227,6 +417,23 @@ export function AccountantDocumentsPanel() {
     }
   }, [loadDocs]);
 
+  const toggleSort = useCallback((key: AccountantDocsSortKey) => {
+    setSort((prev) => {
+      if (prev.key === key) {
+        return { key, dir: prev.dir === "asc" ? "desc" : "asc" };
+      }
+      return { key, dir: accountantDocsDefaultDirForKey(key) };
+    });
+  }, []);
+
+  const sortedItems = useMemo(
+    () => sortAccountantDocs(items, sort),
+    [items, sort],
+  );
+
+  const sortButtonClass =
+    "inline-flex items-center gap-0.5 rounded-sm px-1 py-0.5 text-xs font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900";
+
   useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -260,7 +467,7 @@ export function AccountantDocumentsPanel() {
         ו/או <span className="font-medium text-zinc-800">תאריך חשבונית</span> (ערך סופי או מתוצאות
         חילוץ), ו־<span className="font-medium text-zinc-800">סכום סופי</span> במסמך (מספר בלבד;
         מטבעות שונים — לפרש בזהירות). ברירת המחדל: «נשלח לרואה החשבון». לחצו על «סינון» לפתיחת
-        המסננים.
+        המסננים. ניתן למיין את הטבלה לפי עמודות (חיצים בכותרות; במובייל — בוחר וכיוון).
       </p>
 
       {filterPanelOpen ? (
@@ -458,8 +665,14 @@ export function AccountantDocumentsPanel() {
         </p>
       ) : (
         <>
+          <div className="mt-4 md:hidden">
+            <AccountantDocumentsMobileSortBar
+              sort={sort}
+              onSortChange={setSort}
+            />
+          </div>
           <ul className="mt-4 divide-y divide-zinc-200 md:hidden">
-            {items.map((d) => (
+            {sortedItems.map((d) => (
               <li key={d.id} className="py-4 first:pt-0 last:pb-0">
                 <div className="font-medium text-zinc-900">{d.clientDisplayName}</div>
                 <dl className="mt-2 space-y-1.5 text-sm text-zinc-600">
@@ -537,20 +750,157 @@ export function AccountantDocumentsPanel() {
             ))}
           </ul>
           <div className="mt-4 hidden overflow-x-auto md:block">
-            <table className="w-full min-w-[44rem] text-right text-sm">
+            <table
+              className="w-full min-w-[44rem] text-right text-sm"
+              dir="rtl"
+            >
               <thead>
                 <tr className="border-b border-zinc-200 text-xs text-zinc-500">
-                  <th className="pb-2 font-medium">לקוח</th>
-                  <th className="pb-2 font-medium">סטטוס</th>
-                  <th className="pb-2 font-medium">סכום</th>
-                  <th className="pb-2 font-medium">ספק</th>
-                  <th className="pb-2 font-medium">נשלח</th>
-                  <th className="pb-2 font-medium">הועלה ע״י</th>
-                  <th className="pb-2 font-medium">פעולות</th>
+                  <th
+                    scope="col"
+                    className="pb-2 pe-3 font-normal"
+                    aria-sort={
+                      sort.key === "client"
+                        ? sort.dir === "asc"
+                          ? "ascending"
+                          : "descending"
+                        : undefined
+                    }
+                  >
+                    <button
+                      type="button"
+                      className={sortButtonClass}
+                      onClick={() => toggleSort("client")}
+                    >
+                      לקוח
+                      <SortCue
+                        active={sort.key === "client"}
+                        dir={sort.dir}
+                      />
+                    </button>
+                  </th>
+                  <th
+                    scope="col"
+                    className="pb-2 pe-3 font-normal"
+                    aria-sort={
+                      sort.key === "status"
+                        ? sort.dir === "asc"
+                          ? "ascending"
+                          : "descending"
+                        : undefined
+                    }
+                  >
+                    <button
+                      type="button"
+                      className={sortButtonClass}
+                      onClick={() => toggleSort("status")}
+                    >
+                      סטטוס
+                      <SortCue
+                        active={sort.key === "status"}
+                        dir={sort.dir}
+                      />
+                    </button>
+                  </th>
+                  <th
+                    scope="col"
+                    className="pb-2 pe-3 font-normal"
+                    aria-sort={
+                      sort.key === "amount"
+                        ? sort.dir === "asc"
+                          ? "ascending"
+                          : "descending"
+                        : undefined
+                    }
+                  >
+                    <button
+                      type="button"
+                      className={sortButtonClass}
+                      onClick={() => toggleSort("amount")}
+                    >
+                      סכום
+                      <SortCue
+                        active={sort.key === "amount"}
+                        dir={sort.dir}
+                      />
+                    </button>
+                  </th>
+                  <th
+                    scope="col"
+                    className="pb-2 pe-3 font-normal"
+                    aria-sort={
+                      sort.key === "vendor"
+                        ? sort.dir === "asc"
+                          ? "ascending"
+                          : "descending"
+                        : undefined
+                    }
+                  >
+                    <button
+                      type="button"
+                      className={sortButtonClass}
+                      onClick={() => toggleSort("vendor")}
+                    >
+                      ספק
+                      <SortCue
+                        active={sort.key === "vendor"}
+                        dir={sort.dir}
+                      />
+                    </button>
+                  </th>
+                  <th
+                    scope="col"
+                    className="pb-2 pe-3 font-normal"
+                    aria-sort={
+                      sort.key === "submitted"
+                        ? sort.dir === "asc"
+                          ? "ascending"
+                          : "descending"
+                        : undefined
+                    }
+                  >
+                    <button
+                      type="button"
+                      className={sortButtonClass}
+                      onClick={() => toggleSort("submitted")}
+                    >
+                      נשלח
+                      <SortCue
+                        active={sort.key === "submitted"}
+                        dir={sort.dir}
+                      />
+                    </button>
+                  </th>
+                  <th
+                    scope="col"
+                    className="pb-2 pe-3 font-normal"
+                    aria-sort={
+                      sort.key === "uploadedBy"
+                        ? sort.dir === "asc"
+                          ? "ascending"
+                          : "descending"
+                        : undefined
+                    }
+                  >
+                    <button
+                      type="button"
+                      className={sortButtonClass}
+                      onClick={() => toggleSort("uploadedBy")}
+                    >
+                      הועלה ע״י
+                      <SortCue
+                        active={sort.key === "uploadedBy"}
+                        dir={sort.dir}
+                      />
+                    </button>
+                  </th>
+                  <th scope="col" className="pb-2 font-normal">
+                    פעולות
+                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-zinc-100">
-                {items.map((d) => (
+                {sortedItems.map((d) => (
                   <tr key={d.id} className="text-zinc-800">
                     <td className="py-2.5 font-medium text-zinc-900">
                       {d.clientDisplayName}
