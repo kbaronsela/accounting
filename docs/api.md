@@ -447,6 +447,8 @@
   "clientNote": "טקסט",
   "extracted": {},
   "submittedAt": "2026-01-12T10:00:00.000Z",
+  "mimeType": "image/jpeg",
+  "editableInvoiceFields": true,
   "file": {
     "mimeType": "image/jpeg",
     "downloadUrl": "https://...presigned...",
@@ -454,6 +456,22 @@
   }
 }
 ```
+
+- `editableInvoiceFields`: `true` כאשר הרו״ח רשאי לעדכן את שדות החשבונית (לאחר הגשה — בעיקר במצבים `submitted`, `archived`).
+
+---
+
+### `PATCH /accountants/me/documents/:documentId`
+
+גוף זהה ל־`PATCH /client/documents/:documentId` (שדות `finalAmount`, `finalCurrency`, `finalDate` בפורמט ISO, `finalVendor`, `clientNote`).
+
+זמין רק כאשר המסמך במצב שמאפשר עריכה אצל הרו״ח (כפי ש־`GET` מציין ב־`editableInvoiceFields`). ולידציית השדות כמו בהגשה לקוחית (סכום, מטבע, תאריך וספק חובה).
+
+---
+
+### `DELETE /accountants/me/documents/:documentId`
+
+מחיקה מלאה של המסמך (אחסון + רשומה) — רק למסמכים של לקוח המשוייך לרו״ח.
 
 ---
 

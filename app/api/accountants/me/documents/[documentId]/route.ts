@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { auth } from "@/auth";
+import { canAccountantEditSubmittedInvoiceFields } from "@/lib/accountant/document-edit-policy";
 import {
   getDocumentDeletionContextForAccountant,
   getDocumentDetailForAccountant,
@@ -7,13 +8,28 @@ import {
 import { jsonError } from "@/lib/api/errors";
 import { hasRole } from "@/lib/auth/roles";
 import { canonicalizeCurrency } from "@/lib/client/currency-canonical";
+import {
+  hasSubmitFieldErrors,
+  validateDocumentForSubmit,
+} from "@/lib/client/document-submit-validation";
 import { db } from "@/lib/db";
 import { auditEvents, documents } from "@/lib/db/schema";
 import { getPublicAppOrigin } from "@/lib/invitations/public-invite-url";
 import { deleteUploadedDocumentAfterDbChange } from "@/lib/uploads/document-storage";
 import { eq } from "drizzle-orm";
+import { z } from "zod";
 
 type RouteContext = { params: Promise<{ documentId: string }> };
+
+const accountantPatchBodySchema = z
+  .object({
+    finalAmount: z.string().max(60).optional(),
+    finalCurrency: z.string().max(12).optional(),
+    finalDate: z.string().max(32).optional(),
+    finalVendor: z.string().max(500).optional(),
+    clientNote: z.union([z.string().max(4000), z.null()]).optional(),
+  })
+  .strict();
 
 export async function GET(_request: Request, context: RouteContext) {
   const session = await auth();
@@ -44,8 +60,148 @@ export async function GET(_request: Request, context: RouteContext) {
     clientNote: row.clientNote,
     extracted: row.extracted ?? null,
     submittedAt: row.submittedAt,
+    mimeType: row.mimeType,
+    editableInvoiceFields: canAccountantEditSubmittedInvoiceFields(row.status),
     file: {
       mimeType: row.mimeType,
+      downloadUrl,
+      expiresAt,
+    },
+  });
+}
+
+/** עדכון שדות חשבונית למסמך שכבר הוגש לרו״ח */
+export async function PATCH(request: Request, context: RouteContext) {
+  const session = await auth();
+  if (!session?.user?.id || !hasRole(session.user.roles, "accountant")) {
+    return jsonError(403, "FORBIDDEN", "נדרשת הרשאת רואה חשבון.");
+  }
+
+  const { documentId } = await context.params;
+  const row = await getDocumentDetailForAccountant(session.user.id, documentId);
+  if (!row) {
+    return jsonError(404, "NOT_FOUND", "מסמך לא נמצא.");
+  }
+  if (!canAccountantEditSubmittedInvoiceFields(row.status)) {
+    return jsonError(
+      409,
+      "CONFLICT",
+      "עריכת שדות החשבונית זמינה רק למסמכים שכבר נשלחו לרואה החשבון.",
+    );
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return jsonError(400, "VALIDATION_ERROR", "גוף הבקשה אינו JSON תקין.");
+  }
+
+  const parsed = accountantPatchBodySchema.safeParse(body);
+  if (!parsed.success) {
+    return jsonError(
+      400,
+      "VALIDATION_ERROR",
+      parsed.error.issues.map((i) => i.message).join("; "),
+    );
+  }
+
+  const p = parsed.data;
+  const now = new Date();
+  const patch: Partial<typeof documents.$inferInsert> = { updatedAt: now };
+
+  if (p.finalAmount !== undefined) {
+    patch.finalAmount =
+      p.finalAmount.trim().length > 0 ? p.finalAmount.trim() : null;
+  }
+  if (p.finalCurrency !== undefined) {
+    patch.finalCurrency =
+      p.finalCurrency.trim().length > 0
+        ? canonicalizeCurrency(p.finalCurrency.trim())
+        : null;
+  }
+  if (p.finalDate !== undefined) {
+    patch.finalDate =
+      p.finalDate.trim().length > 0 ? p.finalDate.trim() : null;
+  }
+  if (p.finalVendor !== undefined) {
+    patch.finalVendor =
+      p.finalVendor.trim().length > 0 ? p.finalVendor.trim() : null;
+  }
+  if (p.clientNote !== undefined) {
+    patch.clientNote =
+      p.clientNote === null ? null : p.clientNote.trim() || null;
+  }
+
+  const merged = {
+    finalAmount:
+      patch.finalAmount !== undefined ? patch.finalAmount : row.finalAmount,
+    finalCurrency:
+      patch.finalCurrency !== undefined
+        ? patch.finalCurrency
+        : row.finalCurrency,
+    finalDate:
+      patch.finalDate !== undefined ? patch.finalDate : row.finalDate,
+    finalVendor:
+      patch.finalVendor !== undefined ? patch.finalVendor : row.finalVendor,
+  };
+
+  const fieldErrors = validateDocumentForSubmit(merged);
+  if (hasSubmitFieldErrors(fieldErrors)) {
+    return jsonError(
+      422,
+      "VALIDATION_ERROR",
+      "בדקו את השדות — נדרשים סכום, מטבע, תאריך בסיסמה ISO וספק.",
+      { fields: fieldErrors },
+    );
+  }
+
+  const [updated] = await db
+    .update(documents)
+    .set(patch)
+    .where(eq(documents.id, documentId))
+    .returning();
+
+  if (!updated) {
+    return jsonError(500, "INTERNAL", "עדכון נכשל.");
+  }
+
+  await db.insert(auditEvents).values({
+    id: randomUUID(),
+    actorUserId: session.user.id,
+    action: "accountant_patch_submitted_document",
+    entityType: "document",
+    entityId: documentId,
+    payloadJson: {
+      clientId: row.clientId,
+      previousStatus: row.status,
+      fieldsUpdated: Object.keys(patch).filter((k) => k !== "updatedAt"),
+    },
+  });
+
+  const base = getPublicAppOrigin();
+  const ttlMs = 15 * 60 * 1000;
+  const expiresAt = new Date(Date.now() + ttlMs).toISOString();
+  const downloadUrl = `${base}/api/accountants/me/documents/${documentId}/file`;
+
+  return Response.json({
+    id: updated.id,
+    clientId: updated.clientId,
+    clientDisplayName: row.clientDisplayName,
+    status: updated.status,
+    finalAmount: updated.finalAmount,
+    finalCurrency: canonicalizeCurrency(updated.finalCurrency),
+    finalDate: updated.finalDate,
+    finalVendor: updated.finalVendor,
+    clientNote: updated.clientNote,
+    extracted: row.extracted ?? null,
+    submittedAt: updated.submittedAt?.toISOString() ?? null,
+    mimeType: updated.mimeType,
+    editableInvoiceFields: canAccountantEditSubmittedInvoiceFields(
+      updated.status,
+    ),
+    file: {
+      mimeType: updated.mimeType,
       downloadUrl,
       expiresAt,
     },

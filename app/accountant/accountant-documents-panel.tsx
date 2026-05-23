@@ -2,7 +2,9 @@
 
 import { createPortal } from "react-dom";
 import { useCallback, useEffect, useId, useState } from "react";
+import { AccountantSubmittedInvoiceEditDialog } from "@/components/accountant-submitted-invoice-edit-dialog";
 import { DocumentFileViewerOverlay } from "@/components/document-file-viewer-overlay";
+import { canAccountantEditSubmittedInvoiceFields } from "@/lib/accountant/document-edit-policy";
 
 type ClientOption = {
   id: string;
@@ -80,6 +82,7 @@ export function AccountantDocumentsPanel() {
     id: string;
     mimeType: string;
   } | null>(null);
+  const [editingDocId, setEditingDocId] = useState<string | null>(null);
   const filterPanelId = useId();
 
   useEffect(() => {
@@ -309,6 +312,7 @@ export function AccountantDocumentsPanel() {
               <option value="needs_review">דורש בדיקה</option>
               <option value="ocr_processing">עיבוד OCR</option>
               <option value="ocr_failed">כשל OCR</option>
+              <option value="archived">בארכיון</option>
             </select>
           </div>
           <label className="flex cursor-pointer flex-wrap items-start gap-2 py-1 text-sm text-zinc-700 md:items-center">
@@ -509,6 +513,15 @@ export function AccountantDocumentsPanel() {
                   ) : (
                     <span className="text-sm text-zinc-400">אין קובץ מוכן</span>
                   )}
+                  {canAccountantEditSubmittedInvoiceFields(d.status) ? (
+                    <button
+                      type="button"
+                      className="inline-flex text-sm font-semibold text-teal-800 underline-offset-4 transition hover:text-teal-950 hover:underline"
+                      onClick={() => setEditingDocId(d.id)}
+                    >
+                      עריכה
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     disabled={deletingId === d.id}
@@ -582,6 +595,15 @@ export function AccountantDocumentsPanel() {
                         ) : (
                           <span className="text-zinc-400">—</span>
                         )}
+                        {canAccountantEditSubmittedInvoiceFields(d.status) ? (
+                          <button
+                            type="button"
+                            className="font-medium text-teal-800 underline-offset-4 transition hover:text-teal-950 hover:underline"
+                            onClick={() => setEditingDocId(d.id)}
+                          >
+                            עריכה
+                          </button>
+                        ) : null}
                         <button
                           type="button"
                           disabled={deletingId === d.id}
@@ -601,6 +623,17 @@ export function AccountantDocumentsPanel() {
           </div>
         </>
       )}
+
+      {editingDocId
+        ? createPortal(
+            <AccountantSubmittedInvoiceEditDialog
+              documentId={editingDocId}
+              onClose={() => setEditingDocId(null)}
+              onSaved={() => void loadDocs()}
+            />,
+            document.body,
+          )
+        : null}
 
       {viewerDoc
         ? createPortal(
