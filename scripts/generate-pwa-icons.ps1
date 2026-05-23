@@ -5,6 +5,16 @@ $root = Resolve-Path (Join-Path $PSScriptRoot "..")
 $outDir = Join-Path $root "public\icons"
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 
+# צבעי אפליקציה (תואמים theme_color / manifest / כפתורי טיל)
+$Bg = [System.Drawing.Color]::FromArgb(255, 244, 250, 249)      # #f4faf9 — כמו background_color ב־manifest
+$Paper = [System.Drawing.Color]::FromArgb(255, 255, 255, 255)
+$PaperBorder = [System.Drawing.Color]::FromArgb(255, 45, 212, 191) # teal-400
+$Teal700 = [System.Drawing.Color]::FromArgb(255, 15, 118, 110)     # #0f766e
+$Emerald900 = [System.Drawing.Color]::FromArgb(255, 6, 78, 59)    # #064e3b
+$Teal100 = [System.Drawing.Color]::FromArgb(255, 204, 251, 241)
+$Teal300 = [System.Drawing.Color]::FromArgb(255, 94, 234, 212)
+$Line = [System.Drawing.Color]::FromArgb(255, 153, 246, 232)      # teal-200
+
 function New-RoundedRectPath([float]$x, [float]$y, [float]$w, [float]$h, [float]$radius) {
   $d = [Math]::Min([float]$radius * 2, [Math]::Min($w, $h))
   $r = [float]($d / 2)
@@ -25,9 +35,7 @@ foreach ($sz in @(192, 512)) {
   $bmp = New-Object System.Drawing.Bitmap $sz, $sz
   $g = [System.Drawing.Graphics]::FromImage($bmp)
   $g.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::AntiAlias
-
-  # רקע zinc-950 (מתאים ל־manifest theme)
-  $g.Clear([System.Drawing.Color]::FromArgb(255, 24, 24, 27))
+  $g.Clear($Bg)
 
   $pad = [Math]::Max([int]($sz * 0.14), 4)
   $innerW = [float]$sz - (2 * $pad)
@@ -40,26 +48,33 @@ foreach ($sz in @(192, 512)) {
   $cornerR = [Math]::Max([int]($sz * 0.028), 2)
 
   $paperPath = New-RoundedRectPath $px $py ([float]$pw) ([float]$ph) ([float]$cornerR)
-  $paperFill = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255, 250, 251, 252))
+  $paperFill = New-Object System.Drawing.SolidBrush $Paper
 
   try {
     $g.FillPath($paperFill, $paperPath)
 
-    $borderW = [Math]::Max([float]$sz / 192.0 * 1.25, 1.0)
-    $paperBorder = New-Object System.Drawing.Pen ([System.Drawing.Color]::FromArgb(255, 203, 213, 225), $borderW)
-    $paperBorder.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
-    $g.DrawPath($paperBorder, $paperPath)
+    $borderW = [Math]::Max([float]$sz / 192.0 * 1.35, 1.0)
+    $paperBorderPen = New-Object System.Drawing.Pen $PaperBorder, $borderW
+    $paperBorderPen.LineJoin = [System.Drawing.Drawing2D.LineJoin]::Round
+    $g.DrawPath($paperBorderPen, $paperPath)
 
-    # פרטי תוכן (כותרת, קיפול, שורות) — בתוך גבולות המסמך
     $headH = [Math]::Max([int]($ph * 0.16), 6)
     $regionPaper = New-Object System.Drawing.Region $paperPath
     try {
       $g.SetClip($regionPaper, [System.Drawing.Drawing2D.CombineMode]::Intersect)
 
-      $headBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255, 51, 65, 85))
-    try {
       $headRect = New-Object System.Drawing.RectangleF $px, $py, $pw, $headH
-      $g.FillRectangle($headBrush, $headRect)
+      $headGrad = New-Object System.Drawing.Drawing2D.LinearGradientBrush(
+        $headRect,
+        $Teal700,
+        $Emerald900,
+        [System.Drawing.Drawing2D.LinearGradientMode]::Vertical
+      )
+      try {
+        $g.FillRectangle($headGrad, $headRect)
+      } finally {
+        $headGrad.Dispose()
+      }
 
       $foldSize = [Math]::Min($pw * 0.095, [Math]::Min([float]$innerH * 0.075, [float]$ph * 0.075))
       if ($foldSize -gt 2) {
@@ -71,20 +86,21 @@ foreach ($sz in @(192, 512)) {
             [System.Drawing.PointF]::new($px + $pw, $fy),
             [System.Drawing.PointF]::new($fx, $py)
           ))
-        $foldBrush = New-Object System.Drawing.SolidBrush ([System.Drawing.Color]::FromArgb(255, 226, 232, 240))
+        $foldBrush = New-Object System.Drawing.SolidBrush $Teal100
         $g.FillPath($foldBrush, $foldPath)
-        $foldPen = New-Object System.Drawing.Pen ([System.Drawing.Color]::FromArgb(255, 148, 163, 184), $borderW)
+        $foldBrush.Dispose()
+
+        $foldPen = New-Object System.Drawing.Pen $Teal300, $borderW
         $g.DrawLines($foldPen, @(
             [System.Drawing.PointF]::new($fx, $py),
             [System.Drawing.PointF]::new($px + $pw, $fy),
             [System.Drawing.PointF]::new($px + $pw, $py)
           ))
         $foldPen.Dispose()
-        $foldBrush.Dispose()
         $foldPath.Dispose()
       }
 
-      $linePen = New-Object System.Drawing.Pen ([System.Drawing.Color]::FromArgb(255, 203, 213, 225), [Math]::Max([float]$sz / 192.0, 1.0))
+      $linePen = New-Object System.Drawing.Pen $Line, ([Math]::Max([float]$sz / 220.0, 1.0))
       try {
         $lineLeft = [float]$px + $pw * 0.09
         $lineRight = [float]$px + $pw * 0.91
@@ -102,14 +118,11 @@ foreach ($sz in @(192, 512)) {
         $linePen.Dispose()
       }
     } finally {
-      $headBrush.Dispose()
-    }
-    } finally {
       $g.ResetClip()
       $regionPaper.Dispose()
     }
 
-    $paperBorder.Dispose()
+    $paperBorderPen.Dispose()
   } finally {
     $paperFill.Dispose()
     $paperPath.Dispose()
