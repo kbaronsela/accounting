@@ -50,6 +50,13 @@
       "when": 1779800000000,
       "tag": "0006_document_invoice_number",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1779900000000,
+      "tag": "0007_fix_document_migration_chain",
+      "breakpoints": true
     }
   ]
 }

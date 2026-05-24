@@ -2,8 +2,12 @@ import { auth } from "@/auth";
 import { getDocumentForAccountantAccess } from "@/lib/accountant/documents-queries";
 import { jsonError } from "@/lib/api/errors";
 import { hasRole } from "@/lib/auth/roles";
+import { db } from "@/lib/db";
+import { documents } from "@/lib/db/schema";
+import { UPLOAD_MAX_BYTES } from "@/lib/uploads/config";
 import { writeUploadedDocumentFile } from "@/lib/uploads/document-storage";
 import { safeS3UpstreamSummary } from "@/lib/uploads/s3-upload-error";
+import { eq } from "drizzle-orm";
 
 type RouteContext = { params: Promise<{ documentId: string }> };
 
@@ -45,12 +49,25 @@ export async function PUT(request: Request, context: RouteContext) {
     return jsonError(400, "VALIDATION_ERROR", "לא ניתן לקרוא את גוף הבקשה.");
   }
 
-  if (buf.length !== doc.byteSize) {
+  if (buf.length === 0) {
     return jsonError(
       400,
       "VALIDATION_ERROR",
-      `גודל הקובץ שהתקבל (${buf.length}) אינו תואם לגודל המוצהר (${doc.byteSize}).`,
+      "לא התקבל תוכן קובץ.",
     );
+  }
+  if (buf.length > UPLOAD_MAX_BYTES) {
+    return jsonError(
+      400,
+      "VALIDATION_ERROR",
+      `הקובץ חורג מהגודל המרבי (${Math.floor(UPLOAD_MAX_BYTES / (1024 * 1024))} מ״ב).`,
+    );
+  }
+  if (buf.length !== doc.byteSize) {
+    await db
+      .update(documents)
+      .set({ byteSize: buf.length, updatedAt: new Date() })
+      .where(eq(documents.id, documentId));
   }
 
   try {

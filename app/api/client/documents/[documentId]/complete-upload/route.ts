@@ -61,13 +61,14 @@ export async function POST(_request: Request, context: RouteContext) {
       { declaredBytes: doc.byteSize },
     );
   }
+
   if (size !== doc.byteSize) {
-    return jsonError(
-      400,
-      "UPLOAD_SIZE_MISMATCH",
-      `נשמר בשרת קובץ בגודל ${size} בתים, בעוד שנרשם ${doc.byteSize}. יש להעלות מחדש או למחוק את הטיוטה ולהתחיל מחדש.`,
-      { storedBytes: size, declaredBytes: doc.byteSize },
-    );
+    /** קובץ בפועל ↔ נרשם ב־DB — מיושר כדי שהשערים לא נתקעו (פער במובייל / העלאות לפני תיקון) */
+    const nowAlign = new Date();
+    await db
+      .update(documents)
+      .set({ byteSize: size, updatedAt: nowAlign })
+      .where(eq(documents.id, documentId));
   }
 
   const now = new Date();

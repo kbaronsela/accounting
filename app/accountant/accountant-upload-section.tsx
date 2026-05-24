@@ -9,6 +9,7 @@ import {
 } from "@/lib/client/image-pre-upload-quality";
 import { completeUploadRobustAccountant } from "@/lib/accountant/upload-complete-robust";
 import { isAllowedUploadMime } from "@/lib/uploads/config";
+import { parseJsonBodyFromFetchResponse } from "@/lib/client/fetch-response-json";
 
 const FILE_ACCEPT_HINT =
   ".pdf,.jpg,.jpeg,.png,.webp,application/pdf,image/jpeg,image/png,image/webp";
@@ -26,6 +27,37 @@ function guessMime(file: File): string | null {
 
 function fileFingerprint(file: File): string {
   return `${file.name}-${file.size}-${file.lastModified}`;
+}
+
+type UploadsCreateJson = {
+  documentId?: string;
+  upload?: {
+    url: string;
+    method: string;
+    headers: Record<string, string>;
+  };
+  error?: { message?: string };
+};
+
+type UploadErrorEnvelope = {
+  error?: {
+    message?: string;
+    details?: { upstream?: string };
+  };
+};
+
+function messageForFailedUploadStep(
+  res: Response,
+  apiMessage: string | null | undefined,
+  fallbackShort: string,
+): string {
+  const trimmed =
+    typeof apiMessage === "string" ? apiMessage.trim() : "";
+  if (trimmed.length > 0) return trimmed;
+  if (res.status === 413) {
+    return "הקובץ גדול מדי בשביל נתיב השרת הנוכחי. נסו קובץ קטן יותר או Wi‑Fi/רשת יציבה.";
+  }
+  return `${fallbackShort} (קוד ${res.status}).`;
 }
 
 export type AccountantUploadClientOption = {
@@ -134,23 +166,23 @@ export function AccountantUploadSection({
           byteSize: file.size,
         }),
       });
-      const createData = (await createRes.json()) as {
-        documentId?: string;
-        upload?: {
-          url: string;
-          method: string;
-          headers: Record<string, string>;
-        };
-        error?: { message?: string };
-      };
+      const { json: createData } =
+        await parseJsonBodyFromFetchResponse<UploadsCreateJson>(createRes);
+
       if (!createRes.ok) {
-        setError(createData.error?.message ?? "יצירת מסמך נכשלה.");
+        setError(
+          messageForFailedUploadStep(
+            createRes,
+            createData?.error?.message,
+            "יצירת מסמך נכשלה",
+          ),
+        );
         setPending(false);
         return;
       }
-      const upload = createData.upload;
-      const documentId = createData.documentId;
-      if (!upload || !documentId) {
+      const upload = createData?.upload;
+      const documentId = createData?.documentId;
+      if (!upload || !documentId || !createData) {
         setError("תגובת שרת לא צפויה.");
         setPending(false);
         return;
@@ -163,18 +195,16 @@ export function AccountantUploadSection({
         headers: upload.headers || { "Content-Type": mimeType },
         body: file,
       });
+      const { json: putJson } =
+        await parseJsonBodyFromFetchResponse<UploadErrorEnvelope>(putRes);
       if (!putRes.ok) {
-        let msg = "העלאת הקובץ נכשלה. יש לנסות שוב.";
-        try {
-          const j = (await putRes.json()) as {
-            error?: { message?: string; details?: { upstream?: string } };
-          };
-          if (j.error?.message?.trim()) msg = j.error.message.trim();
-          const up = j.error?.details?.upstream?.trim();
-          if (up) msg = `${msg} (${up})`;
-        } catch {
-          msg = `${msg} (קוד ${putRes.status})`;
-        }
+        let msg = messageForFailedUploadStep(
+          putRes,
+          putJson?.error?.message,
+          "העלאת הקובץ נכשלה",
+        );
+        const up = putJson?.error?.details?.upstream?.trim();
+        if (up) msg = `${msg} (${up})`;
         setError(msg);
         setPending(false);
         return;
@@ -197,8 +227,16 @@ export function AccountantUploadSection({
       resetAllFileInputs();
       onSuccessfulUpload?.(chosenClientId);
       router.refresh();
-    } catch {
-      setError("שגיאת רשת.");
+    } catch (err: unknown) {
+      const aborted =
+        typeof err === "object" &&
+        err !== null &&
+        (err as { name?: string }).name === "AbortError";
+      setError(
+        aborted
+          ? "העלאה בוטלה."
+          : "שגיאת רשת או הפסקת החיבור. בדקו את הרשת ונסו שוב; עם קבצים גדולים השתמשו ב‑Wi‑Fi יציב.",
+      );
     }
     setPending(false);
   }
