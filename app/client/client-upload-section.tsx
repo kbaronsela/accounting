@@ -54,6 +54,8 @@ export function ClientUploadSection({ clients }: Props) {
     blur: boolean;
     dark: boolean;
   } | null>(null);
+  /** עומק כניסה/יציאה מגרירה — מפחית „הבהוב” עם אלמנטים פנימיים */
+  const [desktopDragDepth, setDesktopDragDepth] = useState(0);
 
   if (clients.length === 0) {
     return (
@@ -214,9 +216,43 @@ export function ClientUploadSection({ clients }: Props) {
   }
 
   function resetAllFileInputs() {
+    setDesktopDragDepth(0);
     if (desktopFileInputRef.current) desktopFileInputRef.current.value = "";
     if (mobilePickInputRef.current) mobilePickInputRef.current.value = "";
     if (mobileCameraInputRef.current) mobileCameraInputRef.current.value = "";
+  }
+
+  function assignDesktopDroppedFile(next: File | null) {
+    qualityBypassRef.current.clear();
+    setQualityHold(null);
+    setDesktopDragDepth(0);
+    setFile(next);
+    if (desktopFileInputRef.current) desktopFileInputRef.current.value = "";
+  }
+
+  function onDesktopDragEnter(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDesktopDragDepth((d) => d + 1);
+  }
+
+  function onDesktopDragLeave(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    setDesktopDragDepth((d) => Math.max(0, d - 1));
+  }
+
+  function onDesktopDragOver(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = "copy";
+  }
+
+  function onDesktopDrop(e: React.DragEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    const dropped = e.dataTransfer.files?.[0];
+    assignDesktopDroppedFile(dropped ?? null);
   }
 
   function onMobilePickChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -270,7 +306,7 @@ export function ClientUploadSection({ clients }: Props) {
             </select>
           </div>
         ) : null}
-        {/* דסקטופ (מ־640px ומעלה): בורר קבצים בלבד, בלי מאפיין capture */}
+        {/* דסקטופ (מ־640px ומעלה): בורר קבצים וגרירה מהמחשב */}
         <div className="hidden sm:block">
           <label
             htmlFor="upload-file-desktop"
@@ -279,18 +315,41 @@ export function ClientUploadSection({ clients }: Props) {
             קובץ
             <RequiredFieldMark />
           </label>
-          <input
-            ref={desktopFileInputRef}
-            id="upload-file-desktop"
-            type="file"
-            accept={FILE_ACCEPT_HINT}
-            className="block w-full text-sm text-zinc-600 file:me-3 file:rounded-md file:border-0 file:bg-zinc-100 file:px-3 file:py-2 file:font-medium file:text-zinc-800"
-            onChange={(e) => {
-              qualityBypassRef.current.clear();
-              setQualityHold(null);
-              setFile(e.target.files?.[0] ?? null);
-            }}
-          />
+          <div
+            role="presentation"
+            onDragEnter={onDesktopDragEnter}
+            onDragLeave={onDesktopDragLeave}
+            onDragOver={onDesktopDragOver}
+            onDrop={onDesktopDrop}
+            className={`mt-1 rounded-lg border-2 border-dashed px-4 py-6 transition-colors ${
+              desktopDragDepth > 0
+                ? "border-emerald-600 bg-emerald-50/80"
+                : "border-zinc-200 bg-zinc-50/60"
+            }`}
+          >
+            <input
+              ref={desktopFileInputRef}
+              id="upload-file-desktop"
+              type="file"
+              accept={FILE_ACCEPT_HINT}
+              className="block w-full text-sm text-zinc-600 file:me-3 file:rounded-md file:border-0 file:bg-zinc-100 file:px-3 file:py-2 file:font-medium file:text-zinc-800"
+              onChange={(e) => {
+                qualityBypassRef.current.clear();
+                setQualityHold(null);
+                setFile(e.target.files?.[0] ?? null);
+              }}
+            />
+            <p className="mt-3 text-xs text-zinc-500">
+              אפשר לגרור לכאן קובץ מהמחשב (למשל מתיקייה או משולחן העבודה), או
+              לבחור מתוך הדף.
+            </p>
+            {file ? (
+              <p className="mt-2 text-xs text-zinc-600">
+                נבחר:{" "}
+                <span className="font-medium text-zinc-800">{file.name}</span>
+              </p>
+            ) : null}
+          </div>
         </div>
 
         {/* מובייל (מתחת ל־640px): צילום או בחירת קובץ */}
