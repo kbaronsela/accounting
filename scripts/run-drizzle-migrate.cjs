@@ -12,10 +12,30 @@ require("dotenv").config({
 });
 require("dotenv").config({ path: path.join(__dirname, "..", ".env") });
 
-const url = process.env.DATABASE_URL;
+/** מהמחשב המקומי: נסו Postgres TCP ציבורי מ‑Railway. ראו DATABASE_MIGRATE_URL ב‑.env.example */
+const url =
+  process.env.DATABASE_MIGRATE_URL?.trim() ||
+  process.env.DATABASE_PUBLIC_URL?.trim() ||
+  process.env.DATABASE_URL?.trim();
 if (!url) {
-  console.error("חסר DATABASE_URL ב-.env.local");
+  console.error(
+    "חסר connection string למסד: הגדירו DATABASE_URL או DATABASE_MIGRATE_URL ב־.env.local",
+  );
   process.exit(1);
+}
+
+try {
+  const h = new URL(url).hostname;
+  if (/\.railway\.internal$/i.test(h)) {
+    console.warn(
+      `\n⚠ ה־URL מצביע על ${h} — זה DNS פנימי של Railway. מהמחשב הביתי זה לא יעבוד (ENOTFOUND).\n` +
+        "  • בשרות Postgres של Railway פתחו Connect / משתנה מסוג התחברות ציבורית (TCP proxy).\n" +
+        "  • שמו את כתובת ה־connection ב־DATABASE_MIGRATE_URL ב־.env.local (לא לפרסם).\n" +
+        "  • אלטרנטיבה: מתוך Shell של פריסת Railway הריצו שם את npm run db:migrate עם DATABASE_URL הפנימי.\n",
+    );
+  }
+} catch {
+  /* URL לא בסגנון http(s)—נתפרש לְpg connection string הרגיל */
 }
 
 const migrationsFolder = path.join(__dirname, "..", "lib", "db", "migrations");
