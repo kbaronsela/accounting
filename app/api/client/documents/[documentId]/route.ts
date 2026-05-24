@@ -35,11 +35,11 @@ function fileBlock(documentId: string, mimeType: string, status: string) {
 
 const patchBodySchema = z
   .object({
-    finalAmount: z.string().max(60).optional(),
-    finalCurrency: z.string().max(12).optional(),
-    finalDate: z.string().max(32).optional(),
-    finalVendor: z.string().max(500).optional(),
-    finalInvoiceNumber: z.string().max(80).optional(),
+    finalAmount: z.union([z.string().max(60), z.null()]).optional(),
+    finalCurrency: z.union([z.string().max(12), z.null()]).optional(),
+    finalDate: z.union([z.string().max(32), z.null()]).optional(),
+    finalVendor: z.union([z.string().max(500), z.null()]).optional(),
+    finalInvoiceNumber: z.union([z.string().max(80), z.null()]).optional(),
     clientNote: z.union([z.string().max(4000), z.null()]).optional(),
   })
   .strict();
@@ -119,27 +119,35 @@ export async function PATCH(request: Request, context: RouteContext) {
   const patch: Partial<typeof documents.$inferInsert> = { updatedAt: now };
 
   if (p.finalAmount !== undefined) {
-    patch.finalAmount = p.finalAmount.trim().length > 0 ? p.finalAmount.trim() : null;
+    patch.finalAmount =
+      p.finalAmount === null || p.finalAmount.trim().length === 0
+        ? null
+        : p.finalAmount.trim();
   }
   if (p.finalCurrency !== undefined) {
     patch.finalCurrency =
-      p.finalCurrency.trim().length > 0
-        ? canonicalizeCurrency(p.finalCurrency.trim())
-        : null;
+      p.finalCurrency === null || p.finalCurrency.trim().length === 0
+        ? null
+        : canonicalizeCurrency(p.finalCurrency.trim());
   }
   if (p.finalDate !== undefined) {
     patch.finalDate =
-      p.finalDate.trim().length > 0 ? p.finalDate.trim() : null;
+      p.finalDate === null || p.finalDate.trim().length === 0
+        ? null
+        : p.finalDate.trim();
   }
   if (p.finalVendor !== undefined) {
     patch.finalVendor =
-      p.finalVendor.trim().length > 0 ? p.finalVendor.trim() : null;
+      p.finalVendor === null || p.finalVendor.trim().length === 0
+        ? null
+        : p.finalVendor.trim();
   }
   if (p.finalInvoiceNumber !== undefined) {
     patch.finalInvoiceNumber =
-      p.finalInvoiceNumber.trim().length > 0
-        ? p.finalInvoiceNumber.trim()
-        : null;
+      p.finalInvoiceNumber === null ||
+      p.finalInvoiceNumber.trim().length === 0
+        ? null
+        : p.finalInvoiceNumber.trim();
   }
   if (p.clientNote !== undefined) {
     patch.clientNote = p.clientNote === null ? null : p.clientNote.trim() || null;
