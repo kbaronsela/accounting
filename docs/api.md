@@ -27,7 +27,7 @@
 | `404` | משאב לא קיים או אין גישה (מומלץ לא לחשוף הפרדה) |
 | `409` | קונפליקט (למשל מייל כבר רשום, ההזמנה כבר נוצלה) |
 | `410` | טוקן פג תוקף / בוטל |
-| `422` | כלל עסקי (למשל submit ללא שדות חובה) |
+| `422` | כלל עסקי (למשל פורמט שדות לא תקין ב-submit או PATCH) |
 
 ---
 
@@ -469,9 +469,9 @@
 
 ### `PATCH /accountants/me/documents/:documentId`
 
-גוף זהה ל־`PATCH /client/documents/:documentId` (כולל `finalInvoiceNumber` אופציונלי, `finalAmount`, `finalCurrency`, `finalDate` בפורמט ISO, `finalVendor`, `clientNote`).
+גוף זהה ל־`PATCH /client/documents/:documentId` (כולל `finalInvoiceNumber` אופציונלי, `finalAmount`, `finalCurrency`, `finalDate` בפורמט ISO, `finalVendor`, `clientNote`; ערך ריק בשדות מותאמים מתורגם ל־`null` בהתאמה).
 
-זמין רק כאשר המסמך במצב שמאפשר עריכה אצל הרו״ח (כפי ש־`GET` מציין ב־`editableInvoiceFields`). ולידציית השדות כמו בהגשה לקוחית (סכום, מטבע, תאריך וספק חובה).
+זמין רק כאשר המסמך במצב שמאפשר עריכה אצל הרו״ח (כפי ש־`GET` מציין ב־`editableInvoiceFields`). כמו בשליחה לקוחית: **אין** שדות חובה; אם משהו צוין — ולידציית פורמט זהה.
 
 ---
 
@@ -598,7 +598,7 @@
 
 ### 5.8 `POST /client/documents/:documentId/submit`
 
-**ולידציה**: שדות חובה מלאים (ראו `architecture.md` §7).
+**ולידציה**: כל השדות אופציונליים. אם הלקוח ממלא ערך — נדרשת התאמה לפורמט (ראו `architecture.md` §7); שדות ריקים אינם גורמים ל־422.
 
 **Response 200**
 

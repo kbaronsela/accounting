@@ -49,7 +49,7 @@ export async function POST(_request: Request, context: RouteContext) {
     return jsonError(
       422,
       "VALIDATION_ERROR",
-      "בדקו את השדות החובה לפני ההגשה.",
+      "יש לתקן את השדות לפי ההודעות.",
       { fields },
     );
   }

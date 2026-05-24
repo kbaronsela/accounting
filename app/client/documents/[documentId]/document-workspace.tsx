@@ -6,7 +6,6 @@ import { useCallback, useState } from "react";
 import { createPortal } from "react-dom";
 import { DocumentFileViewerOverlay } from "@/components/document-file-viewer-overlay";
 import { DraftUploadResumeButton } from "@/app/client/draft-upload-resume-button";
-import { RequiredFieldMark } from "@/app/client/required-field-mark";
 import { SHEKEL_DISPLAY } from "@/lib/client/currency-canonical";
 import {
   isoDateToDisplay,
@@ -79,8 +78,8 @@ export function ClientDocumentWorkspace({
   const [finalAmount, setFinalAmount] = useState(initial.finalAmount ?? "");
 
   const [invoiceDate, setInvoiceDate] = useState(() => {
-    const iso =
-      parseStoredIsoDate(initial.finalDate) ?? todayIsoLocal();
+    const iso = parseStoredIsoDate(initial.finalDate);
+    if (!iso) return { iso: "", display: "" };
     return { iso, display: isoDateToDisplay(iso) };
   });
   const [invoiceDateParseError, setInvoiceDateParseError] = useState<
@@ -107,6 +106,12 @@ export function ClientDocumentWorkspace({
   const closeFileViewer = useCallback(() => setFileViewerOpen(false), []);
 
   function flushInvoiceDateFromDisplay(): boolean {
+    const d = invoiceDate.display.trim();
+    if (!d) {
+      setInvoiceDateParseError(null);
+      setInvoiceDate({ iso: "", display: "" });
+      return true;
+    }
     const parsed = parseFlexibleInvoiceDate(invoiceDate.display);
     if (!parsed.ok) {
       setInvoiceDateParseError(parsed.message);
@@ -115,6 +120,19 @@ export function ClientDocumentWorkspace({
     setInvoiceDateParseError(null);
     setInvoiceDate({ iso: parsed.iso, display: parsed.displayNormalized });
     return true;
+  }
+
+  function buildPatchBody() {
+    const amt = finalAmount.trim();
+    return {
+      finalAmount: amt === "" ? null : amt,
+      finalCurrency: amt ? SHEKEL_DISPLAY : null,
+      finalDate: invoiceDate.iso.trim() === "" ? null : invoiceDate.iso,
+      finalVendor: finalVendor.trim() === "" ? null : finalVendor.trim(),
+      finalInvoiceNumber:
+        finalInvoiceNumber.trim() === "" ? null : finalInvoiceNumber.trim(),
+      clientNote: clientNote.trim() === "" ? null : clientNote.trim(),
+    };
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -131,15 +149,7 @@ export function ClientDocumentWorkspace({
       const res = await fetch(`/api/client/documents/${initial.id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          finalAmount: finalAmount.trim(),
-          finalCurrency: SHEKEL_DISPLAY,
-          finalDate: invoiceDate.iso,
-          finalVendor: finalVendor.trim(),
-          finalInvoiceNumber:
-            finalInvoiceNumber.trim() === "" ? null : finalInvoiceNumber.trim(),
-          clientNote: clientNote.trim() === "" ? null : clientNote.trim(),
-        }),
+        body: JSON.stringify(buildPatchBody()),
       });
       const data = (await res.json()) as {
         status?: string;
@@ -172,15 +182,7 @@ export function ClientDocumentWorkspace({
       return;
     }
     setPendingSubmit(true);
-    const patchPayload = {
-      finalAmount: finalAmount.trim(),
-      finalCurrency: SHEKEL_DISPLAY,
-      finalDate: invoiceDate.iso,
-      finalVendor: finalVendor.trim(),
-      finalInvoiceNumber:
-        finalInvoiceNumber.trim() === "" ? null : finalInvoiceNumber.trim(),
-      clientNote: clientNote.trim() === "" ? null : clientNote.trim(),
-    };
+    const patchPayload = buildPatchBody();
     try {
       const patchRes = await fetch(`/api/client/documents/${initial.id}`, {
         method: "PATCH",
@@ -309,19 +311,22 @@ export function ClientDocumentWorkspace({
         className="min-w-0 space-y-4 rounded-xl border border-teal-100/90 bg-white/95 p-4 shadow-[0_4px_24px_-8px_rgb(13_148_136_/_0.06)] sm:p-6"
       >
         <h2 className="text-base font-semibold text-zinc-900">
-          פרטי חשבונית להגשה
+          פרטי חשבונית לשליחה
         </h2>
+        <p className="text-xs text-zinc-500">
+          כל השדות למטה אופציונליים — ניתן לשלוח לרואה החשבון גם בלי מילוי,
+          עם קובץ המצורף ועם עריכה מאוחרת אצלה או אצל הרו״ח.
+        </p>
 
         <div>
-          <label htmlFor="d-amt" className="mb-1 inline-flex flex-wrap items-center gap-0 text-sm text-zinc-700">
+          <label htmlFor="d-amt" className="mb-1 block text-sm text-zinc-700">
             סכום סופי
-            <RequiredFieldMark />
+            <span className="ms-1 font-normal text-zinc-500">(אופציונלי)</span>
           </label>
           <input
             id="d-amt"
             type="text"
             inputMode="decimal"
-            aria-required="true"
             value={finalAmount}
             disabled={!finalEditable}
             onChange={(e) => setFinalAmount(e.target.value)}
@@ -335,19 +340,18 @@ export function ClientDocumentWorkspace({
         </div>
 
         <p className="rounded-md bg-zinc-50 px-3 py-2 text-sm text-zinc-700">
-          המערכת מטפלת רק בשקלים — הסכום מוצג ב־{SHEKEL_DISPLAY}.
+          כשנרשם סכום הוא נשמר ב־{SHEKEL_DISPLAY}.
         </p>
 
         <div className="min-w-0">
-          <label htmlFor="d-date-display" className="mb-1 inline-flex flex-wrap items-center gap-0 text-sm text-zinc-700">
+          <label htmlFor="d-date-display" className="mb-1 block text-sm text-zinc-700">
             תאריך חשבונית (DD.MM.YYYY)
-            <RequiredFieldMark />
+            <span className="ms-1 font-normal text-zinc-500">(אופציונלי)</span>
           </label>
           <div className="flex min-w-0 flex-row flex-nowrap items-stretch gap-0">
             <input
               id="d-date-display"
               type="text"
-              aria-required="true"
               placeholder={`למשל ${isoDateToDisplay(todayIsoLocal())}`}
               inputMode="numeric"
               autoComplete="off"
@@ -356,6 +360,10 @@ export function ClientDocumentWorkspace({
               onChange={(e) => {
                 setInvoiceDateParseError(null);
                 const v = e.target.value;
+                if (!v.trim()) {
+                  setInvoiceDate({ iso: "", display: "" });
+                  return;
+                }
                 const parsed = parseFlexibleInvoiceDate(v);
                 setInvoiceDate((p) =>
                   parsed.ok ? { iso: parsed.iso, display: v } : { ...p, display: v },
@@ -382,7 +390,11 @@ export function ClientDocumentWorkspace({
                 disabled={!finalEditable}
                 onChange={(e) => {
                   const v = e.target.value;
-                  if (!v) return;
+                  if (!v) {
+                    setInvoiceDateParseError(null);
+                    setInvoiceDate({ iso: "", display: "" });
+                    return;
+                  }
                   setInvoiceDateParseError(null);
                   setInvoiceDate({
                     iso: v,
@@ -414,14 +426,13 @@ export function ClientDocumentWorkspace({
         </div>
 
         <div>
-          <label htmlFor="d-vendor" className="mb-1 inline-flex flex-wrap items-center gap-0 text-sm text-zinc-700">
+          <label htmlFor="d-vendor" className="mb-1 block text-sm text-zinc-700">
             ספק / שם העסק
-            <RequiredFieldMark />
+            <span className="ms-1 font-normal text-zinc-500">(אופציונלי)</span>
           </label>
           <input
             id="d-vendor"
             type="text"
-            aria-required="true"
             value={finalVendor}
             disabled={!finalEditable}
             onChange={(e) => setFinalVendor(e.target.value)}

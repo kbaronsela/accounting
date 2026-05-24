@@ -160,7 +160,7 @@ export async function PATCH(request: Request, context: RouteContext) {
     return jsonError(
       422,
       "VALIDATION_ERROR",
-      "בדקו את השדות — נדרשים סכום, מטבע, תאריך בסיסמה ISO וספק.",
+      "יש לתקן את השדות לפי ההודעות.",
       { fields: fieldErrors },
     );
   }

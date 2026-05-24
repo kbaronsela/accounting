@@ -1,10 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useState } from "react";
-import { RequiredFieldMark } from "@/app/client/required-field-mark";
-import {
-  SHEKEL_DISPLAY,
-} from "@/lib/client/currency-canonical";
+import { SHEKEL_DISPLAY } from "@/lib/client/currency-canonical";
 import {
   isoDateToDisplay,
   parseFlexibleInvoiceDate,
@@ -78,10 +75,7 @@ export function AccountantSubmittedInvoiceEditDialog({
   );
 
   const [finalAmount, setFinalAmount] = useState("");
-  const [invoiceDate, setInvoiceDate] = useState({
-    iso: todayIsoLocal(),
-    display: isoDateToDisplay(todayIsoLocal()),
-  });
+  const [invoiceDate, setInvoiceDate] = useState({ iso: "", display: "" });
   const [invoiceDateParseError, setInvoiceDateParseError] = useState<
     string | null
   >(null);
@@ -143,9 +137,12 @@ export function AccountantSubmittedInvoiceEditDialog({
         if (!cancelled) {
           setPayload(row);
           setFinalAmount(row.finalAmount ?? "");
-          const iso =
-            parseStoredIsoDate(row.finalDate) ?? todayIsoLocal();
-          setInvoiceDate({ iso, display: isoDateToDisplay(iso) });
+          const iso = parseStoredIsoDate(row.finalDate);
+          setInvoiceDate(
+            iso
+              ? { iso, display: isoDateToDisplay(iso) }
+              : { iso: "", display: "" },
+          );
           setFinalVendor(row.finalVendor ?? "");
           setFinalInvoiceNumber(row.finalInvoiceNumber ?? "");
           setClientNote(row.clientNote ?? "");
@@ -161,6 +158,12 @@ export function AccountantSubmittedInvoiceEditDialog({
   }, [documentId]);
 
   const flushInvoiceDateFromDisplay = useCallback((): boolean => {
+    const d = invoiceDate.display.trim();
+    if (!d) {
+      setInvoiceDateParseError(null);
+      setInvoiceDate({ iso: "", display: "" });
+      return true;
+    }
     const parsed = parseFlexibleInvoiceDate(invoiceDate.display);
     if (!parsed.ok) {
       setInvoiceDateParseError(parsed.message);
@@ -180,11 +183,12 @@ export function AccountantSubmittedInvoiceEditDialog({
       return;
     }
 
+    const amt = finalAmount.trim();
     const body = {
-      finalAmount: finalAmount.trim(),
-      finalCurrency: SHEKEL_DISPLAY,
-      finalDate: invoiceDate.iso,
-      finalVendor: finalVendor.trim(),
+      finalAmount: amt === "" ? null : amt,
+      finalCurrency: amt ? SHEKEL_DISPLAY : null,
+      finalDate: invoiceDate.iso.trim() === "" ? null : invoiceDate.iso,
+      finalVendor: finalVendor.trim() === "" ? null : finalVendor.trim(),
       finalInvoiceNumber:
         finalInvoiceNumber.trim() === "" ? null : finalInvoiceNumber.trim(),
       clientNote: clientNote.trim() === "" ? null : clientNote.trim(),
@@ -288,6 +292,10 @@ export function AccountantSubmittedInvoiceEditDialog({
                   {payload.clientDisplayName}
                 </span>
               </p>
+              <p className="mt-3 text-sm text-zinc-600">
+                כל השדות למטה אופציונליים — ניתן לשמור עם שדות ריקים או למלא
+                בהדרגה. אם משהו מוזן, יבוצע תיקון לפורמט לפני השמירה.
+              </p>
             </div>
 
             <form onSubmit={(e) => void handleSubmit(e)} className="mt-6 space-y-4">
@@ -297,13 +305,12 @@ export function AccountantSubmittedInvoiceEditDialog({
                   className="mb-1 inline-flex flex-wrap items-center gap-0 text-sm text-zinc-700"
                 >
                   סכום סופי
-                  <RequiredFieldMark />
+                  <span className="ms-1 font-normal text-zinc-500">(אופציונלי)</span>
                 </label>
                 <input
                   id="acct-ed-amt"
                   type="text"
                   inputMode="decimal"
-                  aria-required="true"
                   value={finalAmount}
                   onChange={(e) => setFinalAmount(e.target.value)}
                   disabled={saving}
@@ -326,13 +333,12 @@ export function AccountantSubmittedInvoiceEditDialog({
                   className="mb-1 inline-flex flex-wrap items-center gap-0 text-sm text-zinc-700"
                 >
                   תאריך חשבונית (DD.MM.YYYY)
-                  <RequiredFieldMark />
+                  <span className="ms-1 font-normal text-zinc-500">(אופציונלי)</span>
                 </label>
                 <div className="flex min-w-0 flex-row flex-nowrap items-stretch gap-0">
                   <input
                     id="acct-ed-date-display"
                     type="text"
-                    aria-required="true"
                     placeholder={`למשל ${isoDateToDisplay(todayIsoLocal())}`}
                     inputMode="numeric"
                     autoComplete="off"
@@ -358,7 +364,11 @@ export function AccountantSubmittedInvoiceEditDialog({
                       disabled={saving}
                       onChange={(e) => {
                         const v = e.target.value;
-                        if (!v) return;
+                        if (!v) {
+                          setInvoiceDateParseError(null);
+                          setInvoiceDate({ iso: "", display: "" });
+                          return;
+                        }
                         setInvoiceDateParseError(null);
                         setInvoiceDate({
                           iso: v,
@@ -390,12 +400,11 @@ export function AccountantSubmittedInvoiceEditDialog({
                   className="mb-1 inline-flex flex-wrap items-center gap-0 text-sm text-zinc-700"
                 >
                   ספק / שם העסק
-                  <RequiredFieldMark />
+                  <span className="ms-1 font-normal text-zinc-500">(אופציונלי)</span>
                 </label>
                 <input
                   id="acct-ed-vendor"
                   type="text"
-                  aria-required="true"
                   value={finalVendor}
                   disabled={saving}
                   onChange={(e) => setFinalVendor(e.target.value)}
