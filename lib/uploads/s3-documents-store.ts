@@ -282,3 +282,120 @@ export async function deleteS3DocumentByStorageKey(
   const client = getOrCreateClient();
   await client.send(new DeleteObjectCommand({ Bucket: getBucket(), Key: key }));
 }
+
+const SHARE_TEMP_PREFIX = "share-staging";
+
+const STAGING_ID_SAFE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+function assertShareStagingSegments(userId: string, stagingId: string): void {
+  if (!STAGING_ID_SAFE.test(userId) || !STAGING_ID_SAFE.test(stagingId)) {
+    throw new Error("מזהה staging לא תקין.");
+  }
+}
+
+function s3ShareBlobKey(userId: string, stagingId: string): string {
+  return `${SHARE_TEMP_PREFIX}/${userId}/${stagingId}/blob`;
+}
+
+function s3ShareMetaKey(userId: string, stagingId: string): string {
+  return `${SHARE_TEMP_PREFIX}/${userId}/${stagingId}/meta.json`;
+}
+
+export async function writeS3ShareStaging(
+  userId: string,
+  stagingId: string,
+  blob: Buffer,
+  metaJsonUtf8: string,
+): Promise<void> {
+  assertShareStagingSegments(userId, stagingId);
+  const client = getOrCreateClient();
+  const bucket = getBucket();
+  await client.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: s3ShareBlobKey(userId, stagingId),
+      Body: blob,
+      ContentType: "application/octet-stream",
+    }),
+  );
+  await client.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: s3ShareMetaKey(userId, stagingId),
+      Body: metaJsonUtf8,
+      ContentType: "application/json; charset=utf-8",
+    }),
+  );
+}
+
+export async function readS3ShareStagingMetaText(
+  userId: string,
+  stagingId: string,
+): Promise<string | null> {
+  assertShareStagingSegments(userId, stagingId);
+  const client = getOrCreateClient();
+  try {
+    const out = await client.send(
+      new GetObjectCommand({
+        Bucket: getBucket(),
+        Key: s3ShareMetaKey(userId, stagingId),
+      }),
+    );
+    const buf = await s3PayloadToBuffer(out.Body);
+    if (!buf?.length) return null;
+    return buf.toString("utf8");
+  } catch (e: unknown) {
+    const err = e as { name?: string; $metadata?: { httpStatusCode?: number } };
+    const code404 =
+      err.name === "NoSuchKey" ||
+      err.name === "NotFound" ||
+      err.$metadata?.httpStatusCode === 404;
+    if (code404) return null;
+    throw e;
+  }
+}
+
+export async function readS3ShareStagingBlob(
+  userId: string,
+  stagingId: string,
+): Promise<Buffer | null> {
+  assertShareStagingSegments(userId, stagingId);
+  const client = getOrCreateClient();
+  try {
+    const out = await client.send(
+      new GetObjectCommand({
+        Bucket: getBucket(),
+        Key: s3ShareBlobKey(userId, stagingId),
+      }),
+    );
+    const buf = await s3PayloadToBuffer(out.Body);
+    return buf?.length ? buf : null;
+  } catch (e: unknown) {
+    const err = e as { name?: string; $metadata?: { httpStatusCode?: number } };
+    const code404 =
+      err.name === "NoSuchKey" ||
+      err.name === "NotFound" ||
+      err.$metadata?.httpStatusCode === 404;
+    if (code404) return null;
+    throw e;
+  }
+}
+
+export async function deleteS3ShareStagingBundle(
+  userId: string,
+  stagingId: string,
+): Promise<void> {
+  assertShareStagingSegments(userId, stagingId);
+  const client = getOrCreateClient();
+  const bucket = getBucket();
+  for (const key of [
+    s3ShareBlobKey(userId, stagingId),
+    s3ShareMetaKey(userId, stagingId),
+  ]) {
+    try {
+      await client.send(new DeleteObjectCommand({ Bucket: bucket, Key: key }));
+    } catch {
+      /* אידומפוטנטיות */
+    }
+  }
+}

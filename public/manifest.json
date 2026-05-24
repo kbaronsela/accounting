@@ -12,6 +12,24 @@
   "lang": "he",
   "dir": "rtl",
   "prefer_related_applications": false,
+  "share_target": {
+    "action": "/receive-share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "files": [
+        {
+          "name": "shared_file",
+          "accept": [
+            "application/pdf",
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+          ]
+        }
+      ]
+    }
+  },
   "icons": [
     {
       "src": "/icons/icon-192.png",
