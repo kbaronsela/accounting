@@ -293,8 +293,8 @@ export function ClientDocumentsList({
               onClick={() => handleRowActivate(d.id)}
               onKeyDown={(e) => onRowKeyDown(e, d.id)}
             >
-              <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm text-zinc-800">
-                <div className="col-span-2 font-medium leading-snug">
+              <div className="flex flex-col gap-2 text-sm text-zinc-800">
+                <div className="font-medium leading-snug">
                   <span className="text-zinc-500">ספק:</span>{" "}
                   <span
                     className={
@@ -304,15 +304,15 @@ export function ClientDocumentsList({
                     {listVendor(d) ?? "לא צוין"}
                   </span>
                 </div>
-                <div>
-                  <span className="text-zinc-500">סכום:</span>{" "}
-                  {formatAmount(d)}
-                </div>
-                <div>
+                <div className="leading-snug">
                   <span className="text-zinc-500">תאריך חשבונית:</span>{" "}
                   {invoiceDateDisplay(d) ?? "—"}
                 </div>
-                <div className="col-span-2">
+                <div className="leading-snug">
+                  <span className="text-zinc-500">סכום:</span>{" "}
+                  {formatAmount(d)}
+                </div>
+                <div className="leading-snug">
                   <span className="text-zinc-500">סטטוס:</span>{" "}
                   {statusLabel(d.status)}
                 </div>
@@ -357,26 +357,6 @@ export function ClientDocumentsList({
                 scope="col"
                 className="pb-2 pe-3 font-normal"
                 aria-sort={
-                  sort.key === "amount"
-                    ? sort.dir === "asc"
-                      ? "ascending"
-                      : "descending"
-                    : undefined
-                }
-              >
-                <button
-                  type="button"
-                  className={sortButtonClass}
-                  onClick={() => toggleSort("amount")}
-                >
-                  סכום
-                  <SortCue active={sort.key === "amount"} dir={sort.dir} />
-                </button>
-              </th>
-              <th
-                scope="col"
-                className="pb-2 pe-3 font-normal"
-                aria-sort={
                   sort.key === "date"
                     ? sort.dir === "asc"
                       ? "ascending"
@@ -391,6 +371,26 @@ export function ClientDocumentsList({
                 >
                   תאריך חשבונית
                   <SortCue active={sort.key === "date"} dir={sort.dir} />
+                </button>
+              </th>
+              <th
+                scope="col"
+                className="pb-2 pe-3 font-normal"
+                aria-sort={
+                  sort.key === "amount"
+                    ? sort.dir === "asc"
+                      ? "ascending"
+                      : "descending"
+                    : undefined
+                }
+              >
+                <button
+                  type="button"
+                  className={sortButtonClass}
+                  onClick={() => toggleSort("amount")}
+                >
+                  סכום
+                  <SortCue active={sort.key === "amount"} dir={sort.dir} />
                 </button>
               </th>
               <th
@@ -446,11 +446,11 @@ export function ClientDocumentsList({
                     </span>
                   ) : null}
                 </td>
-                <td className="whitespace-nowrap py-3 align-middle text-zinc-700">
-                  {formatAmount(d)}
-                </td>
                 <td className="whitespace-nowrap py-3 align-middle tabular-nums text-zinc-700">
                   {invoiceDateDisplay(d) ?? "—"}
+                </td>
+                <td className="whitespace-nowrap py-3 align-middle text-zinc-700">
+                  {formatAmount(d)}
                 </td>
                 <td className="py-3 align-middle text-zinc-600">
                   {statusLabel(d.status)}

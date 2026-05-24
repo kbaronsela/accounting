@@ -24,6 +24,7 @@ import {
   appModalHeaderClass,
 } from "@/lib/ui/modal-classes";
 import { documentStatusRowSurfaceClass } from "@/lib/ui/document-status-row-classes";
+import { isoDateToDisplay } from "@/lib/client/date-input-helpers";
 
 type ClientOption = {
   id: string;
@@ -38,6 +39,7 @@ type DocRow = {
   mimeType: string;
   finalAmount: string | null;
   finalCurrency: string | null;
+  finalDate: string | null;
   finalVendor: string | null;
   submittedAt: string | null;
   uploadedByDisplayName: string | null;
@@ -66,6 +68,7 @@ type AccountantDocsSortKey =
   | "status"
   | "amount"
   | "vendor"
+  | "invoiceDate"
   | "submitted"
   | "uploadedBy";
 
@@ -84,7 +87,9 @@ const DEFAULT_ACCOUNTANT_DOCS_SORT: AccountantDocsSortState = {
 function accountantDocsDefaultDirForKey(
   key: AccountantDocsSortKey,
 ): "asc" | "desc" {
-  if (key === "submitted" || key === "amount") return "desc";
+  if (key === "submitted" || key === "amount" || key === "invoiceDate") {
+    return "desc";
+  }
   return "asc";
 }
 
@@ -125,6 +130,27 @@ function vendorSortKey(row: DocRow): string {
   return (row.finalVendor ?? "").toLocaleLowerCase("he");
 }
 
+function accountantInvoiceIso(row: DocRow): string | null {
+  const s = row.finalDate?.trim();
+  return s && s.length > 0 ? s : null;
+}
+
+/** תצוגת DD.MM.YYYY לפי finalDate מהשרת */
+function accountantInvoiceDateDisplay(row: DocRow): string {
+  const iso = accountantInvoiceIso(row);
+  if (!iso) return "—";
+  return isoDateToDisplay(iso) || iso;
+}
+
+function accountantInvoiceTs(row: DocRow): number | null {
+  const iso = accountantInvoiceIso(row);
+  if (!iso) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) return null;
+  const t = Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return Number.isNaN(t) ? null : t;
+}
+
 function uploadedBySortKey(row: DocRow): string {
   return (row.uploadedByDisplayName ?? "").trim();
 }
@@ -156,6 +182,13 @@ function sortAccountantDocs(
         break;
       case "vendor":
         c = cmpStrings(vendorSortKey(a), vendorSortKey(b), sort.dir);
+        break;
+      case "invoiceDate":
+        c = cmpNumericOrTs(
+          accountantInvoiceTs(a),
+          accountantInvoiceTs(b),
+          sort.dir,
+        );
         break;
       case "submitted":
         c = cmpNumericOrTs(submittedTs(a), submittedTs(b), sort.dir);
@@ -211,8 +244,9 @@ function AccountantDocumentsMobileSortBar({
       >
         <option value="client">לקוח</option>
         <option value="status">סטטוס</option>
-        <option value="amount">סכום</option>
         <option value="vendor">ספק</option>
+        <option value="invoiceDate">תאריך חשבונית</option>
+        <option value="amount">סכום</option>
         <option value="submitted">נשלח</option>
         <option value="uploadedBy">הועלה ע״י</option>
       </select>
@@ -820,27 +854,42 @@ export function AccountantDocumentsPanel() {
                     documentStatusRowSurfaceClass(d.status),
                   ].join(" ")}
                 >
-                  <div className="font-medium text-zinc-900">
-                    {d.clientDisplayName}
+                  <div className="font-medium leading-snug text-zinc-900">
+                    <span className="text-zinc-500">ספק:</span>{" "}
+                    <span
+                      className={
+                        d.finalVendor?.trim()
+                          ? ""
+                          : "font-normal text-zinc-400"
+                      }
+                    >
+                      {d.finalVendor?.trim() ? d.finalVendor : "לא צוין"}
+                    </span>
+                  </div>
+                  <div className="mt-2 flex flex-wrap justify-between gap-x-3 gap-y-0.5 text-sm text-zinc-600">
+                    <span className="text-zinc-500">תאריך חשבונית</span>
+                    <span className="tabular-nums font-medium text-zinc-800">
+                      {accountantInvoiceDateDisplay(d)}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5 text-sm text-zinc-600">
+                    <span className="text-zinc-500">סכום</span>
+                    <span className="font-medium text-zinc-800">
+                      {d.finalAmount
+                        ? `${d.finalAmount}${d.finalCurrency ? ` ${d.finalCurrency}` : ""}`
+                        : "—"}
+                    </span>
+                  </div>
+                  <div className="mt-3 flex flex-wrap justify-between gap-x-3 gap-y-1 border-t border-zinc-100/90 pt-2 text-sm">
+                    <span className="shrink-0 text-zinc-500">לקוח</span>
+                    <span className="min-w-0 font-medium text-zinc-900">
+                      {d.clientDisplayName}
+                    </span>
                   </div>
                   <dl className="mt-2 space-y-1.5 text-sm text-zinc-600">
                     <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
                       <dt className="text-zinc-500">סטטוס</dt>
                       <dd>{statusLabel(d.status)}</dd>
-                    </div>
-                    <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
-                      <dt className="text-zinc-500">סכום</dt>
-                      <dd>
-                        {d.finalAmount
-                          ? `${d.finalAmount}${d.finalCurrency ? ` ${d.finalCurrency}` : ""}`
-                          : "—"}
-                      </dd>
-                    </div>
-                    <div className="flex flex-wrap justify-between gap-x-3 gap-y-1">
-                      <dt className="shrink-0 text-zinc-500">ספק</dt>
-                      <dd className="min-w-0 break-words text-end">
-                        {d.finalVendor ?? "—"}
-                      </dd>
                     </div>
                     <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
                       <dt className="text-zinc-500">נשלח</dt>
@@ -949,7 +998,7 @@ export function AccountantDocumentsPanel() {
                     scope="col"
                     className="pb-2 pe-3 font-normal"
                     aria-sort={
-                      sort.key === "status"
+                      sort.key === "vendor"
                         ? sort.dir === "asc"
                           ? "ascending"
                           : "descending"
@@ -959,11 +1008,34 @@ export function AccountantDocumentsPanel() {
                     <button
                       type="button"
                       className={sortButtonClass}
-                      onClick={() => toggleSort("status")}
+                      onClick={() => toggleSort("vendor")}
                     >
-                      סטטוס
+                      ספק
                       <SortCue
-                        active={sort.key === "status"}
+                        active={sort.key === "vendor"}
+                        dir={sort.dir}
+                      />
+                    </button>
+                  </th>
+                  <th
+                    scope="col"
+                    className="pb-2 pe-3 font-normal"
+                    aria-sort={
+                      sort.key === "invoiceDate"
+                        ? sort.dir === "asc"
+                          ? "ascending"
+                          : "descending"
+                        : undefined
+                    }
+                  >
+                    <button
+                      type="button"
+                      className={sortButtonClass}
+                      onClick={() => toggleSort("invoiceDate")}
+                    >
+                      תאריך חשבונית
+                      <SortCue
+                        active={sort.key === "invoiceDate"}
                         dir={sort.dir}
                       />
                     </button>
@@ -995,7 +1067,7 @@ export function AccountantDocumentsPanel() {
                     scope="col"
                     className="pb-2 pe-3 font-normal"
                     aria-sort={
-                      sort.key === "vendor"
+                      sort.key === "status"
                         ? sort.dir === "asc"
                           ? "ascending"
                           : "descending"
@@ -1005,11 +1077,11 @@ export function AccountantDocumentsPanel() {
                     <button
                       type="button"
                       className={sortButtonClass}
-                      onClick={() => toggleSort("vendor")}
+                      onClick={() => toggleSort("status")}
                     >
-                      ספק
+                      סטטוס
                       <SortCue
-                        active={sort.key === "vendor"}
+                        active={sort.key === "status"}
                         dir={sort.dir}
                       />
                     </button>
@@ -1077,16 +1149,28 @@ export function AccountantDocumentsPanel() {
                     <td className="py-2.5 font-medium text-zinc-900">
                       {d.clientDisplayName}
                     </td>
-                    <td className="py-2.5 text-zinc-600">
-                      {statusLabel(d.status)}
+                    <td className="max-w-[12rem] py-2.5">
+                      <span
+                        className={
+                          d.finalVendor?.trim()
+                            ? "block truncate font-medium text-zinc-900"
+                            : "text-zinc-400"
+                        }
+                        title={d.finalVendor?.trim() ?? undefined}
+                      >
+                        {d.finalVendor?.trim() ? d.finalVendor : "לא צוין"}
+                      </span>
+                    </td>
+                    <td className="whitespace-nowrap py-2.5 tabular-nums text-zinc-600">
+                      {accountantInvoiceDateDisplay(d)}
                     </td>
                     <td className="py-2.5 text-zinc-600">
                       {d.finalAmount
                         ? `${d.finalAmount}${d.finalCurrency ? ` ${d.finalCurrency}` : ""}`
                         : "—"}
                     </td>
-                    <td className="max-w-[12rem] truncate py-2.5 text-zinc-600">
-                      {d.finalVendor ?? "—"}
+                    <td className="py-2.5 text-zinc-600">
+                      {statusLabel(d.status)}
                     </td>
                     <td className="whitespace-nowrap py-2.5 text-zinc-500">
                       {d.submittedAt
