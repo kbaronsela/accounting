@@ -16,6 +16,11 @@ import {
   canAccountantApproveDocument,
   canAccountantEditSubmittedInvoiceFields,
 } from "@/lib/accountant/document-edit-policy";
+import {
+  appModalCloseButtonClass,
+  appModalGhostButtonClass,
+  appModalHeaderClass,
+} from "@/lib/ui/modal-classes";
 import { documentStatusRowSurfaceClass } from "@/lib/ui/document-status-row-classes";
 
 type ClientOption = {
@@ -279,6 +284,8 @@ export function AccountantDocumentsPanel() {
   } | null>(null);
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
   const filterPanelId = useId();
+  const filterModalTitleId = useId();
+  const filterModalDescriptionId = useId();
 
   useEffect(() => {
     let cancelled = false;
@@ -483,6 +490,22 @@ export function AccountantDocumentsPanel() {
     };
   }, [loadDocs]);
 
+  useEffect(() => {
+    if (!filterPanelOpen) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") setFilterPanelOpen(false);
+    }
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [filterPanelOpen]);
+
+  const closeFilterModal = useCallback(() => setFilterPanelOpen(false), []);
+
   return (
     <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -491,197 +514,273 @@ export function AccountantDocumentsPanel() {
           type="button"
           className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-zinc-300 bg-white px-3 py-2 text-sm font-medium text-zinc-800 shadow-sm hover:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2"
           aria-expanded={filterPanelOpen}
-          aria-controls={filterPanelId}
+          aria-haspopup="dialog"
+          aria-controls={filterPanelOpen ? filterPanelId : undefined}
           onClick={() => setFilterPanelOpen((open) => !open)}
         >
           סינון
-          <span className="text-zinc-500" aria-hidden>
-            {filterPanelOpen ? "▲" : "▼"}
-          </span>
         </button>
       </div>
-      <p className="mt-1 text-sm text-zinc-600">
-        מסננים לפי לקוח, סטטוס, <span className="font-medium text-zinc-800">תאריך הגשה</span>
-        ו/או <span className="font-medium text-zinc-800">תאריך חשבונית</span> (ערך סופי או מתוצאות
-        חילוץ), ו־<span className="font-medium text-zinc-800">סכום סופי</span> במסמך (מספר בלבד;
-        מטבעות שונים — לפרש בזהירות). ברירת המחדל: «נשלח לרואה החשבון». לחצו על «סינון» לפתיחת
-        המסננים. ניתן למיין את הטבלה לפי עמודות (חיצים בכותרות; במובייל — בוחר וכיוון).
-      </p>
 
-      {filterPanelOpen ? (
-        <div
-        id={filterPanelId}
-        className="mt-4 space-y-3 rounded-md border border-zinc-100 bg-zinc-50 p-4"
-        dir="rtl"
-      >
-        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-          <div className="min-w-[11rem] flex-1">
-            <label
-              htmlFor="acct-docs-client"
-              className="mb-1 block text-xs font-medium text-zinc-700"
+      {filterPanelOpen
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-[115] flex items-start justify-center overflow-y-auto bg-teal-950/45 px-4 py-6 backdrop-blur-[2px] sm:items-center sm:px-3 sm:py-10"
+              role="presentation"
+              onMouseDown={(e) => {
+                if (e.target === e.currentTarget) closeFilterModal();
+              }}
             >
-              לקוח
-            </label>
-            <select
-              id="acct-docs-client"
-              value={clientIdFilter}
-              onChange={(e) => setClientIdFilter(e.target.value)}
-              className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
-            >
-              <option value="">כל הלקוחות</option>
-              {clients.map((c) => (
-                <option key={c.id} value={c.id}>
-                  {c.displayName}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="min-w-[11rem]">
-            <label
-              htmlFor="acct-docs-status"
-              className="mb-1 block text-xs font-medium text-zinc-700"
-            >
-              סטטוס
-            </label>
-            <select
-              id="acct-docs-status"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
-            >
-              <option value="submitted">נשלח לרואה החשבון (ברירת מחדל)</option>
-              <option value="approved">אושר על ידי רואה החשבון</option>
-              <option value="">כל הסטטוסים (למעט טעינת קובץ)</option>
-              <option value="all">הכל כולל טיוטות</option>
-              <option value="uploaded">הועלה</option>
-              <option value="ready_to_submit">מוכן לשליחה לרו״ח</option>
-              <option value="needs_review">דורש בדיקה</option>
-              <option value="ocr_processing">עיבוד OCR</option>
-              <option value="ocr_failed">כשל OCR</option>
-              <option value="archived">בארכיון</option>
-            </select>
-          </div>
-        </div>
+              <div
+                id={filterPanelId}
+                className="relative z-10 my-auto flex max-h-[calc(100dvh-6rem)] w-full max-w-2xl flex-col gap-0 overflow-hidden rounded-2xl border border-teal-100/95 bg-white/95 shadow-[0_24px_60px_-28px_rgb(13_148_136_/_0.32)] backdrop-blur-sm"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={filterModalTitleId}
+                aria-describedby={filterModalDescriptionId}
+                dir="rtl"
+              >
+                <div className={`${appModalHeaderClass} min-h-[3.25rem] pe-12`}>
+                  <h3
+                    id={filterModalTitleId}
+                    className="max-w-[90%] text-base font-semibold text-zinc-900"
+                  >
+                    סינון מסמכים
+                  </h3>
+                  <button
+                    type="button"
+                    className={appModalCloseButtonClass}
+                    aria-label="סגירת חלון הסינון"
+                    onClick={closeFilterModal}
+                  >
+                    <span aria-hidden className="text-lg leading-none">
+                      ×
+                    </span>
+                  </button>
+                </div>
+                <p
+                  id={filterModalDescriptionId}
+                  className="shrink-0 border-b border-teal-100/90 bg-white/80 px-4 py-3 text-sm leading-relaxed text-zinc-600 sm:px-5"
+                >
+                  מסננים לפי לקוח, סטטוס,{" "}
+                  <span className="font-medium text-zinc-800">תאריך הגשה</span>
+                  {" "}ו/או{" "}
+                  <span className="font-medium text-zinc-800">תאריך חשבונית</span>{" "}
+                  (ערך סופי או מתוצאות חילוץ), ו־
+                  <span className="font-medium text-zinc-800">סכום סופי</span> במסמך (מספר בלבד;
+                  מטבעות שונים — לפרש בזהירות). ברירת המחדל: «נשלח לרואה החשבון». ניתן למיין את
+                  הרשימה לפי עמודות (חיצים בכותרות; במובייל — בוחר וכיוון).
+                </p>
+                <div className="max-h-[min(32rem,calc(100dvh-10rem))] space-y-3 overflow-y-auto bg-zinc-50/85 px-4 py-4 sm:px-5">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+                    <div className="min-w-[11rem] flex-1">
+                      <label
+                        htmlFor="acct-docs-client"
+                        className="mb-1 block text-xs font-medium text-zinc-700"
+                      >
+                        לקוח
+                      </label>
+                      <select
+                        id="acct-docs-client"
+                        value={clientIdFilter}
+                        onChange={(e) => setClientIdFilter(e.target.value)}
+                        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                      >
+                        <option value="">כל הלקוחות</option>
+                        {clients.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.displayName}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="min-w-[11rem]">
+                      <label
+                        htmlFor="acct-docs-status"
+                        className="mb-1 block text-xs font-medium text-zinc-700"
+                      >
+                        סטטוס
+                      </label>
+                      <select
+                        id="acct-docs-status"
+                        value={statusFilter}
+                        onChange={(e) =>
+                          setStatusFilter(e.target.value)
+                        }
+                        className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                      >
+                        <option value="submitted">
+                          נשלח לרואה החשבון (ברירת מחדל)
+                        </option>
+                        <option value="approved">
+                          אושר על ידי רואה החשבון
+                        </option>
+                        <option value="">
+                          כל הסטטוסים (למעט טעינת קובץ)
+                        </option>
+                        <option value="all">הכל כולל טיוטות</option>
+                        <option value="uploaded">הועלה</option>
+                        <option value="ready_to_submit">
+                          מוכן לשליחה לרו״ח
+                        </option>
+                        <option value="needs_review">דורש בדיקה</option>
+                        <option value="ocr_processing">עיבוד OCR</option>
+                        <option value="ocr_failed">כשל OCR</option>
+                        <option value="archived">בארכיון</option>
+                      </select>
+                    </div>
+                  </div>
 
-        <div className="border-t border-zinc-200 pt-3">
-          <p className="mb-2 text-xs font-medium text-zinc-600">תאריך הגשה לרואה החשבון</p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:items-end">
-            <div>
-              <label
-                htmlFor="acct-docs-from"
-                className="mb-1 block text-xs font-medium text-zinc-700"
-              >
-                הגשה מתאריך
-              </label>
-              <input
-                id="acct-docs-from"
-                type="date"
-                value={submittedFrom}
-                onChange={(e) => setSubmittedFrom(e.target.value)}
-                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="acct-docs-to"
-                className="mb-1 block text-xs font-medium text-zinc-700"
-              >
-                הגשה עד תאריך
-              </label>
-              <input
-                id="acct-docs-to"
-                type="date"
-                value={submittedTo}
-                onChange={(e) => setSubmittedTo(e.target.value)}
-                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
-              />
-            </div>
-          </div>
-        </div>
+                  <div className="border-t border-zinc-200 pt-3">
+                    <p className="mb-2 text-xs font-medium text-zinc-600">
+                      תאריך הגשה לרואה החשבון
+                    </p>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:items-end">
+                      <div>
+                        <label
+                          htmlFor="acct-docs-from"
+                          className="mb-1 block text-xs font-medium text-zinc-700"
+                        >
+                          הגשה מתאריך
+                        </label>
+                        <input
+                          id="acct-docs-from"
+                          type="date"
+                          value={submittedFrom}
+                          onChange={(e) =>
+                            setSubmittedFrom(e.target.value)
+                          }
+                          className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="acct-docs-to"
+                          className="mb-1 block text-xs font-medium text-zinc-700"
+                        >
+                          הגשה עד תאריך
+                        </label>
+                        <input
+                          id="acct-docs-to"
+                          type="date"
+                          value={submittedTo}
+                          onChange={(e) =>
+                            setSubmittedTo(e.target.value)
+                          }
+                          className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-        <div className="border-t border-zinc-200 pt-3">
-          <p className="mb-2 text-xs font-medium text-zinc-600">תאריך חשבונית</p>
-          <p className="mb-2 text-xs text-zinc-500">
-            לפי תאריך סופי במסמך; אם אין — לפי תאריך שחולץ אוטומטית. מסמכים בלי תאריך חשבונית לא
-            ייכללו בטווח.
-          </p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:items-end">
-            <div>
-              <label
-                htmlFor="acct-docs-inv-from"
-                className="mb-1 block text-xs font-medium text-zinc-700"
-              >
-                חשבונית מתאריך
-              </label>
-              <input
-                id="acct-docs-inv-from"
-                type="date"
-                value={invoiceFrom}
-                onChange={(e) => setInvoiceFrom(e.target.value)}
-                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="acct-docs-inv-to"
-                className="mb-1 block text-xs font-medium text-zinc-700"
-              >
-                חשבונית עד תאריך
-              </label>
-              <input
-                id="acct-docs-inv-to"
-                type="date"
-                value={invoiceTo}
-                onChange={(e) => setInvoiceTo(e.target.value)}
-                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
-              />
-            </div>
-          </div>
-        </div>
+                  <div className="border-t border-zinc-200 pt-3">
+                    <p className="mb-2 text-xs font-medium text-zinc-600">
+                      תאריך חשבונית
+                    </p>
+                    <p className="mb-2 text-xs text-zinc-500">
+                      לפי תאריך סופי במסמך; אם אין — לפי תאריך שחולץ
+                      אוטומטית. מסמכים בלי תאריך חשבונית לא ייכללו בטווח.
+                    </p>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:items-end">
+                      <div>
+                        <label
+                          htmlFor="acct-docs-inv-from"
+                          className="mb-1 block text-xs font-medium text-zinc-700"
+                        >
+                          חשבונית מתאריך
+                        </label>
+                        <input
+                          id="acct-docs-inv-from"
+                          type="date"
+                          value={invoiceFrom}
+                          onChange={(e) =>
+                            setInvoiceFrom(e.target.value)
+                          }
+                          className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="acct-docs-inv-to"
+                          className="mb-1 block text-xs font-medium text-zinc-700"
+                        >
+                          חשבונית עד תאריך
+                        </label>
+                        <input
+                          id="acct-docs-inv-to"
+                          type="date"
+                          value={invoiceTo}
+                          onChange={(e) =>
+                            setInvoiceTo(e.target.value)
+                          }
+                          className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
 
-        <div className="border-t border-zinc-200 pt-3">
-          <p className="mb-2 text-xs font-medium text-zinc-600">טווח סכומים (סכום סופי במסמך)</p>
-          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-            <div>
-              <label
-                htmlFor="acct-docs-min-amt"
-                className="mb-1 block text-xs font-medium text-zinc-700"
-              >
-                סכום מינימום
-              </label>
-              <input
-                id="acct-docs-min-amt"
-                type="text"
-                inputMode="decimal"
-                placeholder="למשל 100"
-                autoComplete="off"
-                value={minAmount}
-                onChange={(e) => setMinAmount(e.target.value)}
-                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
-              />
-            </div>
-            <div>
-              <label
-                htmlFor="acct-docs-max-amt"
-                className="mb-1 block text-xs font-medium text-zinc-700"
-              >
-                סכום מקסימום
-              </label>
-              <input
-                id="acct-docs-max-amt"
-                type="text"
-                inputMode="decimal"
-                placeholder="למשל 5000"
-                autoComplete="off"
-                value={maxAmount}
-                onChange={(e) => setMaxAmount(e.target.value)}
-                className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
-              />
-            </div>
-          </div>
-        </div>
-        </div>
-        ) : null}
+                  <div className="border-t border-zinc-200 pt-3">
+                    <p className="mb-2 text-xs font-medium text-zinc-600">
+                      טווח סכומים (סכום סופי במסמך)
+                    </p>
+                    <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                      <div>
+                        <label
+                          htmlFor="acct-docs-min-amt"
+                          className="mb-1 block text-xs font-medium text-zinc-700"
+                        >
+                          סכום מינימום
+                        </label>
+                        <input
+                          id="acct-docs-min-amt"
+                          type="text"
+                          inputMode="decimal"
+                          placeholder="למשל 100"
+                          autoComplete="off"
+                          value={minAmount}
+                          onChange={(e) =>
+                            setMinAmount(e.target.value)
+                          }
+                          className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label
+                          htmlFor="acct-docs-max-amt"
+                          className="mb-1 block text-xs font-medium text-zinc-700"
+                        >
+                          סכום מקסימום
+                        </label>
+                        <input
+                          id="acct-docs-max-amt"
+                          type="text"
+                          inputMode="decimal"
+                          placeholder="למשל 5000"
+                          autoComplete="off"
+                          value={maxAmount}
+                          onChange={(e) =>
+                            setMaxAmount(e.target.value)
+                          }
+                          className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex shrink-0 justify-end gap-2 border-t border-teal-100/90 bg-white/95 px-4 py-3 sm:px-5">
+                  <button
+                    type="button"
+                    className={`${appModalGhostButtonClass} text-sm`}
+                    onClick={closeFilterModal}
+                  >
+                    סגירה
+                  </button>
+                </div>
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
 
       {loading ? (
         <p className="mt-4 text-sm text-zinc-600">טוענים…</p>
