@@ -1,14 +1,18 @@
 "use client";
 
 import { signOut } from "next-auth/react";
+import { workspaceFooterNavLinkClass } from "@/lib/ui/workspace-footer-nav-classes";
 
 type SignOutButtonProps = {
   className?: string;
+  /** תואם לפוטר דסקטופ / מגירת מובייל (אותו סגנון כמו שאר קישורי התפריט) */
+  mobile?: boolean;
 };
 
-export function SignOutButton({ className }: SignOutButtonProps) {
-  const base =
-    "rounded-lg bg-gradient-to-bl from-teal-700 to-emerald-900 px-4 py-2 text-sm font-semibold text-white shadow-md shadow-teal-900/20 transition hover:from-teal-800 hover:to-emerald-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400 focus-visible:ring-offset-2 disabled:opacity-60";
+export function SignOutButton({
+  className,
+  mobile = false,
+}: SignOutButtonProps) {
   return (
     <button
       type="button"
@@ -16,7 +20,13 @@ export function SignOutButton({ className }: SignOutButtonProps) {
         await signOut({ redirect: false });
         window.location.assign("/");
       }}
-      className={[base, className].filter(Boolean).join(" ")}
+      className={[
+        workspaceFooterNavLinkClass(mobile),
+        "w-full cursor-pointer border-0 bg-transparent",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
     >
       התנתקות
     </button>

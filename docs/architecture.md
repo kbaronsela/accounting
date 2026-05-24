@@ -58,7 +58,7 @@
 
 ### 5.1 `user` (משתמש — Auth.js + אפליקציה)
 
-- `id`, `email` (ייחודי), `passwordHash` (nullable אם רק OAuth), `locale`, `lastDocumentsSeenAt` (לרואה חשבון — “חדש מאז”)
+- `id`, `email` (ייחודי), `passwordHash` (nullable אם רק OAuth), `locale`, `lastDocumentsSeenAt` (אופציונלי — שמור לשימוש עתידי)
 - **אין** עמודת `role` בודדת — ראו `user_role`.
 
 ### 5.1.1 `user_role` (תפקידים — כמה לכל משתמש)
@@ -140,13 +140,11 @@
 
 שדות חובה ריקים אחרי OCR — **חוסמים שליחה** עד מילוי. Confidence נמוך: סימון ויזואלי; אופציונלי דיאלוג אישור.
 
-## 8. “חדש” אצל רואה החשבון
+## 8. “חדש” אצל רואה החשבון (עתידי)
 
-**MVP (פשוט):** שדה `users.last_documents_seen_at` לרואה החשבון.  
-“חדש” = מסמכים ב-`submitted` עם `submitted_at > last_documents_seen_at`.  
-עדכון הסמן בכניסה לדשבורד (או לפי כלל מוצר מפורש).
+ב־MVP **אין** בממשק סינון «רק מסמכים חדשים». שדה `users.lastDocumentsSeenAt` נשמר בסכימה לשימוש עתידי אפשרי (למשל סימון «נקרא» או דשבורד).
 
-**דיוק עתידי (אופציונלי):** טבלת `document_views` לפי `document_id` + `accountant_user_id`.
+**אפשרות עתידית:** מסמכים ב־`submitted` עם `submitted_at > last_documents_seen_at`, או טבלת `document_views` לפי `document_id` + `accountant_user_id`.
 
 ## 9. API — קווים מנחים (REST)
 

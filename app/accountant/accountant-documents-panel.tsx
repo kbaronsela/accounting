@@ -253,7 +253,6 @@ export function AccountantDocumentsPanel() {
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [clientIdFilter, setClientIdFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("submitted");
-  const [onlyNew, setOnlyNew] = useState(false);
   const [submittedFrom, setSubmittedFrom] = useState("");
   const [submittedTo, setSubmittedTo] = useState("");
   const [invoiceFrom, setInvoiceFrom] = useState("");
@@ -345,7 +344,6 @@ export function AccountantDocumentsPanel() {
     const params: Record<string, string> = { limit: "50" };
     if (clientIdFilter.trim()) params.clientId = clientIdFilter.trim();
     if (statusFilter.trim()) params.status = statusFilter.trim();
-    if (onlyNew) params.onlyNew = "true";
     if (fromD) params.from = fromD;
     if (toD) params.to = toD;
     if (invFrom) params.invoiceFrom = invFrom;
@@ -374,7 +372,6 @@ export function AccountantDocumentsPanel() {
   }, [
     clientIdFilter,
     statusFilter,
-    onlyNew,
     submittedFrom,
     submittedTo,
     invoiceFrom,
@@ -522,15 +519,6 @@ export function AccountantDocumentsPanel() {
               <option value="archived">בארכיון</option>
             </select>
           </div>
-          <label className="flex cursor-pointer flex-wrap items-start gap-2 py-1 text-sm text-zinc-700 md:items-center">
-            <input
-              type="checkbox"
-              checked={onlyNew}
-              onChange={(e) => setOnlyNew(e.target.checked)}
-              className="rounded border-zinc-400"
-            />
-            רק חדשים (אחרי «נראה לאחרונה» במסך)
-          </label>
         </div>
 
         <div className="border-t border-zinc-200 pt-3">

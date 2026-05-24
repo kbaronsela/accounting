@@ -53,7 +53,7 @@ export function ClientWorkspaceMenuFooter({
             רואה חשבון
           </Link>
         ) : null}
-        <SignOutButton className="mt-2 w-full" />
+        <SignOutButton mobile={mobile} />
       </div>
     </div>
   );

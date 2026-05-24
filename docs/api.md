@@ -402,7 +402,6 @@
 | `minAmount` / `maxAmount` | עשרוני — על `finalAmount` |
 | `currency` | למשל `ש״ח` (פרמטרים כמו `ILS`/`NIS` מתקבלים ומנורמלים) |
 | `status` | ברירת מחדל: `submitted` לרשימת “שליחות”; אפשר להרחיץ לטיפול פנימי |
-| `onlyNew` | `true` — מסנן לפי `submitted_at > last_documents_seen_at` |
 | `cursor` / `limit` | עימוד |
 
 **Response 200**

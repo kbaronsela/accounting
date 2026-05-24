@@ -12,6 +12,7 @@ import {
   appModalInputClass,
   appModalPanelSurfaceClass,
   appModalPrimaryButtonClass,
+  appModalPrimaryButtonXsWideClass,
 } from "@/lib/ui/modal-classes";
 import {
   useCallback,
@@ -535,7 +536,7 @@ export function ManageAccountantsPanel({
                         <button
                           type="button"
                           disabled={bus}
-                          className="rounded-md bg-zinc-900 px-2 py-1.5 text-xs font-medium text-white hover:bg-zinc-800 disabled:opacity-50"
+                          className={appModalPrimaryButtonXsWideClass}
                           onClick={() => void patchAccountant(id)}
                         >
                           {bus ? "שומרים…" : "שמור שינויים"}

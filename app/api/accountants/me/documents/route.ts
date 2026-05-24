@@ -70,9 +70,6 @@ export async function GET(request: Request) {
     maxAmount = n;
   }
 
-  const onlyNew =
-    searchParams.get("onlyNew") === "true" || searchParams.get("onlyNew") === "1";
-
   const items = await listDocumentsForAccountant(session.user.id, {
     clientId: clientId || null,
     status,
@@ -83,7 +80,6 @@ export async function GET(request: Request) {
     currency: currency || null,
     minAmount,
     maxAmount,
-    onlyNew,
     limit,
   });
 

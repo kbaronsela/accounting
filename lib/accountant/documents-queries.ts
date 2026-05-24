@@ -5,7 +5,6 @@ import {
   and,
   desc,
   eq,
-  gt,
   isNotNull,
   ne,
   sql,
@@ -107,7 +106,6 @@ export async function listDocumentsForAccountant(
     currency?: string | null;
     minAmount?: number | null;
     maxAmount?: number | null;
-    onlyNew?: boolean;
     limit?: number;
   },
 ): Promise<AccountantDocumentListItem[]> {
@@ -163,19 +161,6 @@ export async function listDocumentsForAccountant(
     if (toInv && isoDay.test(toInv)) {
       conditions.push(sql`${invoiceDay} <= ${toInv}`);
     }
-  }
-
-  if (options.onlyNew) {
-    const [acct] = await db
-      .select({ seen: users.lastDocumentsSeenAt })
-      .from(users)
-      .where(eq(users.id, accountantUserId))
-      .limit(1);
-    conditions.push(isNotNull(documents.submittedAt));
-    if (acct?.seen) {
-      conditions.push(gt(documents.submittedAt, acct.seen));
-    }
-    // אם עדיין אין last_documents_seen_at — כל הגשות ייחשבו חדשות (אין הגבלה על ישן יותר)
   }
 
   const currencyCanon = canonicalizeCurrency(options.currency);
