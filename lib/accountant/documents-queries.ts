@@ -9,6 +9,7 @@ import {
   ne,
   sql,
 } from "drizzle-orm";
+import type { ClientDocumentRow } from "@/lib/client/document-access";
 import { canonicalizeCurrency } from "@/lib/client/currency-canonical";
 
 export type AccountantDocumentListItem = {
@@ -78,6 +79,25 @@ export async function assertAccountantOwnsClient(
     )
     .limit(1);
   return !!row;
+}
+
+/**
+ * מסמך ששייך ללקוח של רואה החשבון (לכל סיבות הרשאה, כולל טיוטת העלאה).
+ */
+export async function getDocumentForAccountantAccess(
+  accountantUserId: string,
+  documentId: string,
+): Promise<ClientDocumentRow | null> {
+  if (!uuidPattern(documentId)) return null;
+  const [doc] = await db
+    .select()
+    .from(documents)
+    .where(eq(documents.id, documentId))
+    .limit(1);
+  if (!doc) return null;
+  const ok = await assertAccountantOwnsClient(accountantUserId, doc.clientId);
+  if (!ok) return null;
+  return doc;
 }
 
 const uploader = alias(users, "doc_uploader");

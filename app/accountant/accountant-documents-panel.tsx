@@ -10,6 +10,8 @@ import {
   type Dispatch,
   type SetStateAction,
 } from "react";
+import { AccountantDraftUploadResumeButton } from "./accountant-draft-upload-resume-button";
+import { AccountantUploadSection } from "./accountant-upload-section";
 import { AccountantSubmittedInvoiceEditDialog } from "@/components/accountant-submitted-invoice-edit-dialog";
 import { DocumentFileViewerOverlay } from "@/components/document-file-viewer-overlay";
 import {
@@ -507,7 +509,15 @@ export function AccountantDocumentsPanel() {
   const closeFilterModal = useCallback(() => setFilterPanelOpen(false), []);
 
   return (
-    <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
+    <div className="space-y-6">
+      <AccountantUploadSection
+        clients={clients}
+        onSuccessfulUpload={(cid) => {
+          setClientIdFilter(cid);
+          setStatusFilter("all");
+        }}
+      />
+      <div className="rounded-lg border border-zinc-200 bg-white p-4 shadow-sm sm:p-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <h2 className="text-base font-semibold text-zinc-900">מסמכים</h2>
         <button
@@ -862,9 +872,10 @@ export function AccountantDocumentsPanel() {
                         צפייה בקובץ
                       </button>
                     ) : (
-                      <span className="text-sm text-zinc-400">
-                        אין קובץ מוכן
-                      </span>
+                      <AccountantDraftUploadResumeButton
+                        documentId={d.id}
+                        onDone={() => void loadDocs()}
+                      />
                     )}
                     {canAccountantApproveDocument(d.status) ? (
                       <button
@@ -1104,7 +1115,10 @@ export function AccountantDocumentsPanel() {
                             צפייה בקובץ
                           </button>
                         ) : (
-                          <span className="text-zinc-400">—</span>
+                          <AccountantDraftUploadResumeButton
+                            documentId={d.id}
+                            onDone={() => void loadDocs()}
+                          />
                         )}
                         {canAccountantApproveDocument(d.status) ? (
                           <button
@@ -1176,6 +1190,7 @@ export function AccountantDocumentsPanel() {
             document.body,
           )
         : null}
+    </div>
     </div>
   );
 }

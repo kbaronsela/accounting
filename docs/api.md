@@ -425,6 +425,12 @@
 }
 ```
 
+**העלאה מצד הרו״ח** (פרטים מלאים כמו בסעיפים 5.2–5.4 ללקוח — אותם גופים ובדיקות):
+
+- `POST /accountants/me/documents/uploads` — `clientId` חייב להיות לקוח ש־`accountant_id` שלו הוא המשתמש המחובר; `uploaded_by_user_id` יירשם כרואה החשבון.
+- `PUT /accountants/me/documents/:documentId/upload` — בעלות ובמצבי סטטוס כמו העלאת לקוח.
+- `POST /accountants/me/documents/:documentId/complete-upload` — השלמת העלאה והפעלת OCR.
+
 ---
 
 `uploadedByDisplayName` מתוך שם המשתמש ב־DB; ללא שם — `null`.
