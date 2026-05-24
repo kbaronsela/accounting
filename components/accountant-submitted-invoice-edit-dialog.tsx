@@ -360,7 +360,7 @@ export function AccountantSubmittedInvoiceEditDialog({
                     <input
                       type="date"
                       tabIndex={-1}
-                      value={invoiceDate.iso}
+                      value={parseStoredIsoDate(invoiceDate.iso) ?? ""}
                       disabled={saving}
                       onChange={(e) => {
                         const v = e.target.value;

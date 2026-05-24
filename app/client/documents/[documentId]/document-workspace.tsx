@@ -386,7 +386,7 @@ export function ClientDocumentWorkspace({
                 id="d-date-picker-native"
                 type="date"
                 tabIndex={-1}
-                value={invoiceDate.iso}
+                value={parseStoredIsoDate(invoiceDate.iso) ?? ""}
                 disabled={!finalEditable}
                 onChange={(e) => {
                   const v = e.target.value;

@@ -8,6 +8,7 @@ import { ClientDocumentWorkspace } from "./document-workspace";
 import { hasRole } from "@/lib/auth/roles";
 import { getDocumentForClientMember } from "@/lib/client/document-access";
 import { isClientDocumentEditable } from "@/lib/client/document-edit-policy";
+import { dbTimestampToIso } from "@/lib/db-timestamp-serialize";
 
 type PageProps = { params: Promise<{ documentId: string }> };
 
@@ -29,6 +30,11 @@ export default async function ClientDocumentPage(props: PageProps) {
     .where(eq(clients.id, doc.clientId))
     .limit(1);
 
+  const submittedAtIso = dbTimestampToIso(doc.submittedAt);
+  const updatedAtIso =
+    dbTimestampToIso(doc.updatedAt) ??
+    `${doc.updatedAt ?? "missing"}`;
+
   const initial = {
     id: doc.id,
     clientId: doc.clientId,
@@ -42,7 +48,7 @@ export default async function ClientDocumentPage(props: PageProps) {
     finalInvoiceNumber: doc.finalInvoiceNumber,
     extractedInvoiceNumber: doc.extractedInvoiceNumber,
     clientNote: doc.clientNote,
-    submittedAt: doc.submittedAt?.toISOString() ?? null,
+    submittedAt: submittedAtIso,
     editable: isClientDocumentEditable(doc.status),
   };
 
@@ -54,7 +60,7 @@ export default async function ClientDocumentPage(props: PageProps) {
       showAccountantLink={hasRole(roles, "accountant")}
     >
       <ClientDocumentWorkspace
-        key={`${doc.id}-${doc.submittedAt?.toISOString() ?? "nosubmit"}-${doc.updatedAt.toISOString()}`}
+        key={`${doc.id}-${submittedAtIso ?? "nosubmit"}-${updatedAtIso}`}
         initial={initial}
       />
     </ClientPortalShell>
