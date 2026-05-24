@@ -6,6 +6,8 @@ export type HeuristicExtraction = {
   extractedCurrency: string | null;
   extractedDate: string | null;
   extractedVendor: string | null;
+  /** מספר חשבונית / קבלה — לפי תוויות טקסט ב־OCR */
+  extractedInvoiceNumber: string | null;
 };
 
 function europeanFriendlyToDecimal(raw: string): number | null {
@@ -142,6 +144,55 @@ function scanAmount(text: string): string | null {
   return decimalToStoredAmount(Math.max(...amounts));
 }
 
+function clipInvoiceNumberFragment(raw: string): string {
+  const oneLine = raw.split(/\r?\n/)[0] ?? raw;
+  const stop = /(?:\s{2,}|,|;|\||\t|תאריך|Date|סיכום|סה|Total|₪|ILS|USD)/i;
+  const cut = stop.exec(oneLine);
+  const slice = cut ? oneLine.slice(0, cut.index) : oneLine;
+  return slice.trim();
+}
+
+function normalizeInvoiceNumberCandidate(raw: string): string | null {
+  let s = clipInvoiceNumberFragment(raw)
+    .replace(/[\u200f\u202a-\u202e]/g, "")
+    .replace(/^[\s:.\-–—#׳״'"]+|[\s:.\-–—#]+$/g, "");
+  s = s.replace(/\u00A0/g, " ").replace(/\s+/g, " ").trim();
+  if (!s || s.length < 2 || s.length > 64) return null;
+  if (!/[\da-zA-Z\u0590-\u05FF]/.test(s)) return null;
+  return s.slice(0, 80);
+}
+
+/**
+ * מזהה מספר חשבונית או קבלה לפי תוויות נפוצות (עברית / אנגלית).
+ * שמרני — אם אין תווית מתאימה מחזיר null.
+ */
+export function scanInvoiceOrReceiptNumber(raw: string): string | null {
+  const text = raw.replace(/\u00A0/g, " ").replace(/\ufeff/g, "");
+  const patterns: RegExp[] = [
+    /(?:מ\s*ס(?:פר|\.)?|מ\s*ס['׳״']?\s*)\s*חשבונית\s*(?:מס(?:פר)?|מ\s*ס['׳״']?)?\s*[:\s.\-–—#]*\s*([^\n\r]{1,72})/gi,
+    /חשבונית\s*(?:מס(?:פר)?|מ\s*ס['׳״']?(?:\s*מר)?)\s*[:\s.\-–—#]*\s*([^\n\r]{1,72})/gi,
+    /מס(?:פר)?\s*קבלה\s*[:\s.\-–—#]*\s*([^\n\r]{1,72})/gi,
+    /קבלה\s*(?:מס(?:פר)?)?\s*(?:מס['׳״']?)?\s*[:\s.\-–—#]*\s*([^\n\r]{1,72})/gi,
+    /Invoice\s*(?:No\.?|#|Number)?\s*[:\s]*([^\n\r]{1,72})/gi,
+    /Receipt\s*(?:No\.?|#|Number)?\s*[:\s]*([^\n\r]{1,72})/gi,
+    /Inv\.?\s*No\.?\s*[:\s]*([^\n\r]{1,72})/gi,
+  ];
+
+  const seen = new Set<string>();
+  for (const re of patterns) {
+    re.lastIndex = 0;
+    for (const m of text.matchAll(re)) {
+      const norm = normalizeInvoiceNumberCandidate(m[1] ?? "");
+      if (!norm) continue;
+      const key = norm.toLowerCase();
+      if (seen.has(key)) continue;
+      seen.add(key);
+      return norm;
+    }
+  }
+  return null;
+}
+
 function guessVendor(text: string): string | null {
   const lines = text
     .split(/\r?\n/)
@@ -172,10 +223,12 @@ export function extractHeuristicInvoiceFields(raw: string): HeuristicExtraction 
   const extractedCurrency =
     extractedAmount || hasAnyCurrencyHint(text) ? SHEKEL_DISPLAY : null;
   const extractedVendor = guessVendor(text);
+  const extractedInvoiceNumber = scanInvoiceOrReceiptNumber(text);
   return {
     extractedAmount,
     extractedCurrency,
     extractedDate,
     extractedVendor,
+    extractedInvoiceNumber,
   };
 }

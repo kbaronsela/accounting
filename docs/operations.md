@@ -120,6 +120,7 @@ npm run db:bootstrap-admin
 ## 6. OCR / תור עיבוד
 
 - Worker נפרד או פונקציה async: מקבל `documentId`, מוריד קובץ (פנימי), קורא לספק OCR, מעדכן DB.
+- בסיום טקסט: היוריסטיקה הפנימית (`heuristic-fields`) מנסה למלא סכום, תאריך, ספק וכן **מספר חשבונית/קבלה** (לפי תוויות בשפה — תוצאות ב־`extracted` + עמודות `extracted*` / `final*`).
 - retries עם exponential backoff; dead-letter או סטטוס `ocr_failed` + לוג.
 - **לא** לשמור API keys בלוגים.
 

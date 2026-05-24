@@ -27,6 +27,7 @@ const accountantPatchBodySchema = z
     finalCurrency: z.string().max(12).optional(),
     finalDate: z.string().max(32).optional(),
     finalVendor: z.string().max(500).optional(),
+    finalInvoiceNumber: z.string().max(80).optional(),
     clientNote: z.union([z.string().max(4000), z.null()]).optional(),
   })
   .strict();
@@ -57,6 +58,8 @@ export async function GET(_request: Request, context: RouteContext) {
     finalCurrency: canonicalizeCurrency(row.finalCurrency),
     finalDate: row.finalDate,
     finalVendor: row.finalVendor,
+    finalInvoiceNumber: row.finalInvoiceNumber,
+    extractedInvoiceNumber: row.extractedInvoiceNumber,
     clientNote: row.clientNote,
     extracted: row.extracted ?? null,
     submittedAt: row.submittedAt,
@@ -128,6 +131,12 @@ export async function PATCH(request: Request, context: RouteContext) {
     patch.finalVendor =
       p.finalVendor.trim().length > 0 ? p.finalVendor.trim() : null;
   }
+  if (p.finalInvoiceNumber !== undefined) {
+    patch.finalInvoiceNumber =
+      p.finalInvoiceNumber.trim().length > 0
+        ? p.finalInvoiceNumber.trim()
+        : null;
+  }
   if (p.clientNote !== undefined) {
     patch.clientNote =
       p.clientNote === null ? null : p.clientNote.trim() || null;
@@ -193,6 +202,8 @@ export async function PATCH(request: Request, context: RouteContext) {
     finalCurrency: canonicalizeCurrency(updated.finalCurrency),
     finalDate: updated.finalDate,
     finalVendor: updated.finalVendor,
+    finalInvoiceNumber: updated.finalInvoiceNumber,
+    extractedInvoiceNumber: updated.extractedInvoiceNumber,
     clientNote: updated.clientNote,
     extracted: row.extracted ?? null,
     submittedAt: updated.submittedAt?.toISOString() ?? null,

@@ -36,6 +36,8 @@ export type AccountantDocumentDetail = {
   finalCurrency: string | null;
   finalDate: string | null;
   finalVendor: string | null;
+  finalInvoiceNumber: string | null;
+  extractedInvoiceNumber: string | null;
   clientNote: string | null;
   extracted: unknown;
   submittedAt: string | null;
@@ -244,6 +246,8 @@ export async function getDocumentDetailForAccountant(
       finalCurrency: documents.finalCurrency,
       finalDate: documents.finalDate,
       finalVendor: documents.finalVendor,
+      finalInvoiceNumber: documents.finalInvoiceNumber,
+      extractedInvoiceNumber: documents.extractedInvoiceNumber,
       clientNote: documents.clientNote,
       extracted: documents.extracted,
       submittedAt: documents.submittedAt,
@@ -267,6 +271,8 @@ export async function getDocumentDetailForAccountant(
     finalCurrency: canonicalizeCurrency(row.finalCurrency),
     finalDate: row.finalDate,
     finalVendor: row.finalVendor,
+    finalInvoiceNumber: row.finalInvoiceNumber,
+    extractedInvoiceNumber: row.extractedInvoiceNumber,
     clientNote: row.clientNote,
     extracted: row.extracted,
     submittedAt: row.submittedAt?.toISOString() ?? null,

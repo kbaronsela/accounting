@@ -92,6 +92,7 @@ export async function runDocumentOcr(documentId: string): Promise<void> {
       extractedCurrency: fields.extractedCurrency ?? null,
       extractedDate: fields.extractedDate ?? null,
       extractedVendor: fields.extractedVendor ?? null,
+      extractedInvoiceNumber: fields.extractedInvoiceNumber ?? null,
     };
 
     if (!doc.finalAmount?.trim()) patch.finalAmount = fields.extractedAmount ?? null;
@@ -100,6 +101,9 @@ export async function runDocumentOcr(documentId: string): Promise<void> {
     }
     if (!doc.finalDate?.trim()) patch.finalDate = fields.extractedDate ?? null;
     if (!doc.finalVendor?.trim()) patch.finalVendor = fields.extractedVendor ?? null;
+    if (!doc.finalInvoiceNumber?.trim()) {
+      patch.finalInvoiceNumber = fields.extractedInvoiceNumber ?? null;
+    }
 
     const weakText = extractedPlain.text.trim().length < 24;
     if (weakText) {

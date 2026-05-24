@@ -25,6 +25,8 @@ export type ClientDocumentDetailInitial = {
   finalCurrency: string | null;
   finalDate: string | null;
   finalVendor: string | null;
+  finalInvoiceNumber: string | null;
+  extractedInvoiceNumber: string | null;
   clientNote: string | null;
   submittedAt: string | null;
   editable: boolean;
@@ -86,6 +88,9 @@ export function ClientDocumentWorkspace({
   >(null);
 
   const [finalVendor, setFinalVendor] = useState(initial.finalVendor ?? "");
+  const [finalInvoiceNumber, setFinalInvoiceNumber] = useState(
+    initial.finalInvoiceNumber ?? "",
+  );
   const [clientNote, setClientNote] = useState(initial.clientNote ?? "");
 
   const [submitErrors, setSubmitErrors] = useState<Record<
@@ -131,6 +136,8 @@ export function ClientDocumentWorkspace({
           finalCurrency: SHEKEL_DISPLAY,
           finalDate: invoiceDate.iso,
           finalVendor: finalVendor.trim(),
+          finalInvoiceNumber:
+            finalInvoiceNumber.trim() === "" ? null : finalInvoiceNumber.trim(),
           clientNote: clientNote.trim() === "" ? null : clientNote.trim(),
         }),
       });
@@ -170,6 +177,8 @@ export function ClientDocumentWorkspace({
       finalCurrency: SHEKEL_DISPLAY,
       finalDate: invoiceDate.iso,
       finalVendor: finalVendor.trim(),
+      finalInvoiceNumber:
+        finalInvoiceNumber.trim() === "" ? null : finalInvoiceNumber.trim(),
       clientNote: clientNote.trim() === "" ? null : clientNote.trim(),
     };
     try {
@@ -424,6 +433,35 @@ export function ClientDocumentWorkspace({
             </p>
           ) : null}
         </div>
+
+        <div>
+          <label htmlFor="d-inv-no" className="mb-1 block text-sm text-zinc-700">
+            מספר חשבונית / קבלה
+            <span className="ms-1 font-normal text-zinc-500">(אופציונלי)</span>
+          </label>
+          <input
+            id="d-inv-no"
+            type="text"
+            inputMode="text"
+            autoComplete="off"
+            value={finalInvoiceNumber}
+            disabled={!finalEditable}
+            onChange={(e) => setFinalInvoiceNumber(e.target.value)}
+            placeholder="למשל 12345 או INV-2026-01"
+            className="w-full rounded-md border border-zinc-300 px-3 py-2 text-sm disabled:bg-zinc-100"
+          />
+          {initial.extractedInvoiceNumber?.trim() ? (
+            <p className="mt-1 text-xs text-zinc-500">
+              זוהה במסמך: {initial.extractedInvoiceNumber.trim()}
+            </p>
+          ) : null}
+          {submitErrors?.finalInvoiceNumber ? (
+            <p className="mt-1 text-xs text-red-600">
+              {submitErrors.finalInvoiceNumber.join(" · ")}
+            </p>
+          ) : null}
+        </div>
+
         <div>
           <label htmlFor="d-note" className="mb-1 block text-sm text-zinc-700">
             הערה

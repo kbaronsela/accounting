@@ -39,6 +39,8 @@ export default async function ClientDocumentPage(props: PageProps) {
     finalCurrency: doc.finalCurrency,
     finalDate: doc.finalDate,
     finalVendor: doc.finalVendor,
+    finalInvoiceNumber: doc.finalInvoiceNumber,
+    extractedInvoiceNumber: doc.extractedInvoiceNumber,
     clientNote: doc.clientNote,
     submittedAt: doc.submittedAt?.toISOString() ?? null,
     editable: isClientDocumentEditable(doc.status),

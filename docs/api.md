@@ -448,6 +448,8 @@
   "finalCurrency": "ש״ח",
   "finalDate": "2026-01-10",
   "finalVendor": "ספק לדוגמה",
+  "finalInvoiceNumber": "10042",
+  "extractedInvoiceNumber": "10042",
   "clientNote": "טקסט",
   "extracted": {},
   "submittedAt": "2026-01-12T10:00:00.000Z",
@@ -467,7 +469,7 @@
 
 ### `PATCH /accountants/me/documents/:documentId`
 
-גוף זהה ל־`PATCH /client/documents/:documentId` (שדות `finalAmount`, `finalCurrency`, `finalDate` בפורמט ISO, `finalVendor`, `clientNote`).
+גוף זהה ל־`PATCH /client/documents/:documentId` (כולל `finalInvoiceNumber` אופציונלי, `finalAmount`, `finalCurrency`, `finalDate` בפורמט ISO, `finalVendor`, `clientNote`).
 
 זמין רק כאשר המסמך במצב שמאפשר עריכה אצל הרו״ח (כפי ש־`GET` מציין ב־`editableInvoiceFields`). ולידציית השדות כמו בהגשה לקוחית (סכום, מטבע, תאריך וספק חובה).
 
@@ -540,7 +542,7 @@
 
 **מטרה**: לאשר שהקובץ נכח; להתחיל בדיקת איכות + OCR.
 
-**Response 202** — `{ "status": "ocr_processing" }`. עיבוד OCR רץ ברקע; בסיום מצב המסמך יועדכן ל־`needs_review` (או `ocr_failed`). אם `OCR_DISABLED=1`, הממשק משאיר `uploaded` ללא OCR.
+**Response 202** — `{ "status": "ocr_processing" }`. עיבוד OCR רץ ברקע; בסיום מצב המסמך יועדכן ל־`needs_review` (או `ocr_failed`). אם `OCR_DISABLED=1`, הממשק משאיר `uploaded` ללא OCR. בסיום OCR היוריסטיקה מנסה לזהות גם **מספר חשבונית/קבלה** (`extractedInvoiceNumber`); כאשר `finalInvoiceNumber` ריק, הערך משוכפל אליו.
 
 **שגיאות `400` (אם עדיין `draft_uploading`)**
 
@@ -551,7 +553,7 @@
 
 ### 5.4 `GET /client/documents/:documentId`
 
-**Response 200** — דומה לגרסת accountant אך **ללא** שדות שמורים רק לצופה חיצוני; `downloadUrl` אם הרישום שייך ללקוח.
+**Response 200** — פרטי המסמך ללקוח, כולל `finalInvoiceNumber` (ערוך / ממולא מהחילוץ) ו־`extractedInvoiceNumber` (מה־OCR — לעיתים `null`); `file` עם `downloadUrl` אם הרישום שייך ללקוח.
 
 ---
 
@@ -583,9 +585,12 @@
   "finalCurrency": "ש״ח",
   "finalDate": "2026-01-10",
   "finalVendor": "ספק",
+  "finalInvoiceNumber": "INV-1001",
   "clientNote": "הערה"
 }
 ```
+
+שדות PATCH הם אופציונליים לפי מה שמשנים; **`finalInvoiceNumber`** אינו חובה להגשה.
 
 **Response 200** — אובייקט מסמך מעודכן.
 

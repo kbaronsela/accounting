@@ -50,6 +50,8 @@ type AccountantDocDetailPayload = {
   finalCurrency: string | null;
   finalDate: string | null;
   finalVendor: string | null;
+  finalInvoiceNumber: string | null;
+  extractedInvoiceNumber: string | null;
   clientNote: string | null;
   submittedAt: string | null;
   mimeType: string;
@@ -84,6 +86,7 @@ export function AccountantSubmittedInvoiceEditDialog({
     string | null
   >(null);
   const [finalVendor, setFinalVendor] = useState("");
+  const [finalInvoiceNumber, setFinalInvoiceNumber] = useState("");
   const [clientNote, setClientNote] = useState("");
 
   const [submitErrors, setSubmitErrors] = useState<Record<
@@ -144,6 +147,7 @@ export function AccountantSubmittedInvoiceEditDialog({
             parseStoredIsoDate(row.finalDate) ?? todayIsoLocal();
           setInvoiceDate({ iso, display: isoDateToDisplay(iso) });
           setFinalVendor(row.finalVendor ?? "");
+          setFinalInvoiceNumber(row.finalInvoiceNumber ?? "");
           setClientNote(row.clientNote ?? "");
         }
       } catch {
@@ -181,6 +185,8 @@ export function AccountantSubmittedInvoiceEditDialog({
       finalCurrency: SHEKEL_DISPLAY,
       finalDate: invoiceDate.iso,
       finalVendor: finalVendor.trim(),
+      finalInvoiceNumber:
+        finalInvoiceNumber.trim() === "" ? null : finalInvoiceNumber.trim(),
       clientNote: clientNote.trim() === "" ? null : clientNote.trim(),
     };
 
@@ -398,6 +404,39 @@ export function AccountantSubmittedInvoiceEditDialog({
                 {submitErrors?.finalVendor ? (
                   <p className="mt-1 text-xs text-red-600">
                     {submitErrors.finalVendor.join(" · ")}
+                  </p>
+                ) : null}
+              </div>
+
+              <div>
+                <label
+                  htmlFor="acct-ed-inv-no"
+                  className="mb-1 block text-sm text-zinc-700"
+                >
+                  מספר חשבונית / קבלה
+                  <span className="ms-1 font-normal text-zinc-500">
+                    (אופציונלי)
+                  </span>
+                </label>
+                <input
+                  id="acct-ed-inv-no"
+                  type="text"
+                  inputMode="text"
+                  autoComplete="off"
+                  value={finalInvoiceNumber}
+                  disabled={saving}
+                  onChange={(e) => setFinalInvoiceNumber(e.target.value)}
+                  placeholder="למשל 12345 או INV-2026-01"
+                  className={`w-full ${appModalInputClass} disabled:bg-teal-50/50`}
+                />
+                {payload?.extractedInvoiceNumber?.trim() ? (
+                  <p className="mt-1 text-xs text-zinc-500">
+                    זוהה במסמך: {payload.extractedInvoiceNumber.trim()}
+                  </p>
+                ) : null}
+                {submitErrors?.finalInvoiceNumber ? (
+                  <p className="mt-1 text-xs text-red-600">
+                    {submitErrors.finalInvoiceNumber.join(" · ")}
                   </p>
                 ) : null}
               </div>
