@@ -399,8 +399,7 @@
 | `clientId` | UUID |
 | `from` / `to` | טווח **תאריך הגשה** — על `submitted_at` (YYYY-MM-DD) |
 | `invoiceFrom` / `invoiceTo` | טווח **תאריך חשבונית** — `COALESCE(finalDate, extractedDate)` (YYYY-MM-DD) |
-| `minAmount` / `maxAmount` | עשרוני — על `finalAmount` |
-| `currency` | למשל `ש״ח` (פרמטרים כמו `ILS`/`NIS` מתקבלים ומנורמלים) |
+| `minAmount` / `maxAmount` | עשרוני — על `finalAmount` (הסכומים מובנים כש״ח) |
 | `status` | ברירת מחדל: `submitted` לרשימת “שליחות”; אפשר להרחיץ לטיפול פנימי |
 | `cursor` / `limit` | עימוד |
 
@@ -602,46 +601,11 @@
 
 **שגיאות**: `422` + פירוט שדות.
 
-**תופעה לוואי**: מייל + ניסיון Web Push לרואה החשבון.
+**תופעה לוואי**: שליחת **מייל** לרואה החשבון (כאשר הגדרת המייל בשרת מאופשרת).
 
 ---
 
-## 6. Web Push (רואה חשבון)
-
-### 6.1 `GET /accountants/me/push/vapid-public-key`
-
-**Response 200**
-
-```json
-{ "publicKey": "<base64>" }
-```
-
----
-
-### 6.2 `POST /accountants/me/push/subscribe`
-
-**Body**
-
-```json
-{
-  "endpoint": "https://...",
-  "keys": { "p256dh": "...", "auth": "..." }
-}
-```
-
-**Response 201**
-
----
-
-### 6.3 `DELETE /accountants/me/push/subscribe`
-
-**Body**: אותו `endpoint` או מזהה מנוי.
-
-**Response 204**
-
----
-
-## 7. Auth.js — נקודות קצה “שקופות”
+## 6. Auth.js — נקודות קצה “שקופות”
 
 ביישום Next.js, Auth.js מספקת לרוב נתיבים כמו `/api/auth/*`.  
 מפרט זה **לא** מחליף את תיעוד Auth.js; הוא מתייחס רק לכך שהזרימה הציבורית כוללת:
@@ -651,7 +615,7 @@
 
 ---
 
-## 8. גרסאות עתידיות
+## 7. גרסאות עתידיות
 
 - OpenAPI 3.1 YAML שנוצר מהקוד או ידנית: `openapi.yaml` (להוסיף כשמתייצבים).
 

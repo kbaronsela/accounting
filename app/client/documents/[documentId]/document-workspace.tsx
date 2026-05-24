@@ -7,18 +7,13 @@ import { createPortal } from "react-dom";
 import { DocumentFileViewerOverlay } from "@/components/document-file-viewer-overlay";
 import { DraftUploadResumeButton } from "@/app/client/draft-upload-resume-button";
 import { RequiredFieldMark } from "@/app/client/required-field-mark";
-import {
-  SHEKEL_DISPLAY,
-  canonicalizeCurrency,
-} from "@/lib/client/currency-canonical";
+import { SHEKEL_DISPLAY } from "@/lib/client/currency-canonical";
 import {
   isoDateToDisplay,
   parseFlexibleInvoiceDate,
   parseStoredIsoDate,
   todayIsoLocal,
 } from "@/lib/client/date-input-helpers";
-
-type ClientCurrencyCode = typeof SHEKEL_DISPLAY | "USD" | "EUR";
 
 export type ClientDocumentDetailInitial = {
   id: string;
@@ -34,18 +29,6 @@ export type ClientDocumentDetailInitial = {
   submittedAt: string | null;
   editable: boolean;
 };
-
-const CURRENCY_OPTIONS: { code: ClientCurrencyCode; label: string }[] = [
-  { code: SHEKEL_DISPLAY, label: SHEKEL_DISPLAY },
-  { code: "USD", label: "\u05D3\u05D5\u05DC\u05E8" },
-  { code: "EUR", label: "\u05D9\u05D5\u05E8\u05D5" },
-];
-
-function coerceSelectableCurrency(raw: string | null | undefined): ClientCurrencyCode {
-  const c = canonicalizeCurrency(raw);
-  if (c === "USD" || c === "EUR") return c;
-  return SHEKEL_DISPLAY;
-}
 
 const STATUS_LABELS: Record<string, string> = {
   draft_uploading: "טעינת קובץ",
@@ -92,9 +75,6 @@ export function ClientDocumentWorkspace({
     initial.editable && status !== "submitted" && status !== "approved";
 
   const [finalAmount, setFinalAmount] = useState(initial.finalAmount ?? "");
-  const [finalCurrencyCode, setFinalCurrencyCode] = useState(
-    () => coerceSelectableCurrency(initial.finalCurrency),
-  );
 
   const [invoiceDate, setInvoiceDate] = useState(() => {
     const iso =
@@ -148,7 +128,7 @@ export function ClientDocumentWorkspace({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           finalAmount: finalAmount.trim(),
-          finalCurrency: finalCurrencyCode,
+          finalCurrency: SHEKEL_DISPLAY,
           finalDate: invoiceDate.iso,
           finalVendor: finalVendor.trim(),
           clientNote: clientNote.trim() === "" ? null : clientNote.trim(),
@@ -187,7 +167,7 @@ export function ClientDocumentWorkspace({
     setPendingSubmit(true);
     const patchPayload = {
       finalAmount: finalAmount.trim(),
-      finalCurrency: finalCurrencyCode,
+      finalCurrency: SHEKEL_DISPLAY,
       finalDate: invoiceDate.iso,
       finalVendor: finalVendor.trim(),
       clientNote: clientNote.trim() === "" ? null : clientNote.trim(),
@@ -345,33 +325,9 @@ export function ClientDocumentWorkspace({
           ) : null}
         </div>
 
-        <div>
-          <label htmlFor="d-curr" className="mb-1 inline-flex flex-wrap items-center gap-0 text-sm text-zinc-700">
-            מטבע
-            <RequiredFieldMark />
-          </label>
-          <select
-            id="d-curr"
-            aria-required="true"
-            value={finalCurrencyCode}
-            disabled={!finalEditable}
-            onChange={(e) =>
-              setFinalCurrencyCode(e.target.value as ClientCurrencyCode)
-            }
-            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm disabled:bg-zinc-100"
-          >
-            {CURRENCY_OPTIONS.map((o) => (
-              <option key={o.code} value={o.code}>
-                {o.code === SHEKEL_DISPLAY ? o.label : `${o.label} (${o.code})`}
-              </option>
-            ))}
-          </select>
-          {submitErrors?.finalCurrency ? (
-            <p className="mt-1 text-xs text-red-600">
-              {submitErrors.finalCurrency.join(" · ")}
-            </p>
-          ) : null}
-        </div>
+        <p className="rounded-md bg-zinc-50 px-3 py-2 text-sm text-zinc-700">
+          המערכת מטפלת רק בשקלים — הסכום מוצג ב־{SHEKEL_DISPLAY}.
+        </p>
 
         <div className="min-w-0">
           <label htmlFor="d-date-display" className="mb-1 inline-flex flex-wrap items-center gap-0 text-sm text-zinc-700">

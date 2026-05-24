@@ -9,10 +9,7 @@ import {
   ne,
   sql,
 } from "drizzle-orm";
-import {
-  SHEKEL_DISPLAY,
-  canonicalizeCurrency,
-} from "@/lib/client/currency-canonical";
+import { canonicalizeCurrency } from "@/lib/client/currency-canonical";
 
 export type AccountantDocumentListItem = {
   id: string;
@@ -103,7 +100,6 @@ export async function listDocumentsForAccountant(
     /** YYYY-MM-DD — לפי `finalDate` ואם ריק אז `extractedDate` */
     fromInvoiceDate?: string | null;
     toInvoiceDate?: string | null;
-    currency?: string | null;
     minAmount?: number | null;
     maxAmount?: number | null;
     limit?: number;
@@ -161,15 +157,6 @@ export async function listDocumentsForAccountant(
     if (toInv && isoDay.test(toInv)) {
       conditions.push(sql`${invoiceDay} <= ${toInv}`);
     }
-  }
-
-  const currencyCanon = canonicalizeCurrency(options.currency);
-  if (currencyCanon === SHEKEL_DISPLAY) {
-    conditions.push(
-      sql`${eq(documents.finalCurrency, SHEKEL_DISPLAY)} OR upper(trim(coalesce(${documents.finalCurrency}, ''))) IN ('ILS', 'NIS')`,
-    );
-  } else if (currencyCanon) {
-    conditions.push(eq(documents.finalCurrency, currencyCanon));
   }
 
   if (options.minAmount != null) {

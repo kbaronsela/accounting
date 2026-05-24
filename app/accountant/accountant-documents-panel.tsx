@@ -566,9 +566,10 @@ export function AccountantDocumentsPanel() {
                   <span className="font-medium text-zinc-800">תאריך הגשה</span>
                   {" "}ו/או{" "}
                   <span className="font-medium text-zinc-800">תאריך חשבונית</span>{" "}
-                  (ערך סופי או מתוצאות חילוץ), ו־
-                  <span className="font-medium text-zinc-800">סכום סופי</span> במסמך (מספר בלבד;
-                  מטבעות שונים — לפרש בזהירות). ברירת המחדל: «נשלח לרואה החשבון». ניתן למיין את
+                  (ערך סופי או מתוצאות חילוץ),                   ו־
+                  <span className="font-medium text-zinc-800">סכום סופי</span> בש״ח
+                  במסמך (מספר בלבד).
+                  ברירת המחדל: «נשלח לרואה החשבון». ניתן למיין את
                   הרשימה לפי עמודות (חיצים בכותרות; במובייל — בוחר וכיוון).
                 </p>
                 <div className="max-h-[min(32rem,calc(100dvh-10rem))] space-y-3 overflow-y-auto bg-zinc-50/85 px-4 py-4 sm:px-5">

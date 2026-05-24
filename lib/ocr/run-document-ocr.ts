@@ -5,6 +5,7 @@ import { documents } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { readUploadedDocumentBuffer } from "@/lib/uploads/document-storage";
 import { extractDocumentPlainText } from "@/lib/ocr/document-text";
+import { SHEKEL_DISPLAY } from "@/lib/client/currency-canonical";
 import { extractHeuristicInvoiceFields } from "@/lib/ocr/heuristic-fields";
 import { recognizeWithTesseract } from "@/lib/ocr/tesseract-runner";
 
@@ -95,7 +96,7 @@ export async function runDocumentOcr(documentId: string): Promise<void> {
 
     if (!doc.finalAmount?.trim()) patch.finalAmount = fields.extractedAmount ?? null;
     if (!doc.finalCurrency?.trim()) {
-      patch.finalCurrency = fields.extractedCurrency ?? null;
+      patch.finalCurrency = SHEKEL_DISPLAY;
     }
     if (!doc.finalDate?.trim()) patch.finalDate = fields.extractedDate ?? null;
     if (!doc.finalVendor?.trim()) patch.finalVendor = fields.extractedVendor ?? null;

@@ -32,7 +32,6 @@ export async function GET(request: Request) {
   const to = searchParams.get("to")?.trim() ?? null;
   const invoiceFrom = searchParams.get("invoiceFrom")?.trim() ?? null;
   const invoiceTo = searchParams.get("invoiceTo")?.trim() ?? null;
-  const currency = searchParams.get("currency")?.trim() ?? null;
 
   const isoDay = /^\d{4}-\d{2}-\d{2}$/;
   if (invoiceFrom && !isoDay.test(invoiceFrom)) {
@@ -77,7 +76,6 @@ export async function GET(request: Request) {
     toSubmittedDate: to || null,
     fromInvoiceDate: invoiceFrom || null,
     toInvoiceDate: invoiceTo || null,
-    currency: currency || null,
     minAmount,
     maxAmount,
     limit,

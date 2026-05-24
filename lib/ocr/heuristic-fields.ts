@@ -43,12 +43,11 @@ function decimalToStoredAmount(n: number): string | null {
   return s;
 }
 
-function detectCurrency(text: string): string | null {
-  if (/₪|ש[\"״']?ח|שקל|NIS\b|ILS\b|NEW\s*Sheqel/i.test(text))
-    return SHEKEL_DISPLAY;
-  if (/\$/u.test(text) || /\bUSD\b/i.test(text)) return "USD";
-  if (/€|\bEUR\b/i.test(text)) return "EUR";
-  return null;
+/** רמז שיש במסמך סימן מחיר/מטבע (המערכת שומרת תמיד ש״ח) */
+function hasAnyCurrencyHint(text: string): boolean {
+  return /₪|ש[\"״']?ח|שקל|NIS\b|ILS\b|NEW\s*Sheqel|\$|\bUSD\b|€|\bEUR\b/i.test(
+    text,
+  );
 }
 
 function isoFromFlexibleCandidate(candidate: string): string | null {
@@ -168,12 +167,10 @@ function guessVendor(text: string): string | null {
 /** חילוץ שמרני לקבלות/חשבוניות מתוך טקסט גולמי (OCR או טקסט מוטמע ב־PDF) */
 export function extractHeuristicInvoiceFields(raw: string): HeuristicExtraction {
   const text = raw.replace(/\u00A0/g, " ").replace(/\ufeff/g, "");
-  let extractedCurrency = detectCurrency(text);
   const extractedDate = scanDate(text);
   const extractedAmount = scanAmount(text);
-  if (!extractedCurrency && (extractedAmount || /₪|ש[\"״']?ח|ILS\b|NIS\b/i.test(text))) {
-    extractedCurrency = SHEKEL_DISPLAY;
-  }
+  const extractedCurrency =
+    extractedAmount || hasAnyCurrencyHint(text) ? SHEKEL_DISPLAY : null;
   const extractedVendor = guessVendor(text);
   return {
     extractedAmount,

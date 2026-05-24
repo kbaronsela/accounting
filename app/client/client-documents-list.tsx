@@ -9,6 +9,7 @@ import {
   useMemo,
 } from "react";
 import { isoDateToDisplay } from "@/lib/client/date-input-helpers";
+import { SHEKEL_DISPLAY } from "@/lib/client/currency-canonical";
 import type { ClientDocumentListItem } from "@/lib/client/queries";
 import { documentStatusRowSurfaceClass } from "@/lib/ui/document-status-row-classes";
 import { DraftUploadResumeButton } from "./draft-upload-resume-button";
@@ -72,8 +73,7 @@ function amountNumeric(d: ClientDocumentListItem): number | null {
 function formatAmount(d: ClientDocumentListItem): string {
   const amt = d.finalAmount?.trim();
   if (!amt) return "—";
-  const cur = d.finalCurrency?.trim();
-  return cur ? `${amt} ${cur}` : amt;
+  return `${amt} ${SHEKEL_DISPLAY}`;
 }
 
 export type DocumentsListSortKey = "vendor" | "amount" | "date" | "status";

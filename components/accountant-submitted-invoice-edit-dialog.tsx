@@ -4,7 +4,6 @@ import { useCallback, useEffect, useId, useState } from "react";
 import { RequiredFieldMark } from "@/app/client/required-field-mark";
 import {
   SHEKEL_DISPLAY,
-  canonicalizeCurrency,
 } from "@/lib/client/currency-canonical";
 import {
   isoDateToDisplay,
@@ -20,20 +19,6 @@ import {
   appModalInputClass,
   appModalCloseButtonClass,
 } from "@/lib/ui/modal-classes";
-
-type ClientCurrencyCode = typeof SHEKEL_DISPLAY | "USD" | "EUR";
-
-const CURRENCY_OPTIONS: { code: ClientCurrencyCode; label: string }[] = [
-  { code: SHEKEL_DISPLAY, label: SHEKEL_DISPLAY },
-  { code: "USD", label: "\u05D3\u05D5\u05DC\u05E8" },
-  { code: "EUR", label: "\u05D9\u05D5\u05E8\u05D5" },
-];
-
-function coerceSelectableCurrency(raw: string | null | undefined): ClientCurrencyCode {
-  const c = canonicalizeCurrency(raw);
-  if (c === "USD" || c === "EUR") return c;
-  return SHEKEL_DISPLAY;
-}
 
 function CalendarIcon({ className }: { className?: string }) {
   return (
@@ -91,9 +76,6 @@ export function AccountantSubmittedInvoiceEditDialog({
   );
 
   const [finalAmount, setFinalAmount] = useState("");
-  const [finalCurrencyCode, setFinalCurrencyCode] = useState<ClientCurrencyCode>(
-    SHEKEL_DISPLAY,
-  );
   const [invoiceDate, setInvoiceDate] = useState({
     iso: todayIsoLocal(),
     display: isoDateToDisplay(todayIsoLocal()),
@@ -158,7 +140,6 @@ export function AccountantSubmittedInvoiceEditDialog({
         if (!cancelled) {
           setPayload(row);
           setFinalAmount(row.finalAmount ?? "");
-          setFinalCurrencyCode(coerceSelectableCurrency(row.finalCurrency));
           const iso =
             parseStoredIsoDate(row.finalDate) ?? todayIsoLocal();
           setInvoiceDate({ iso, display: isoDateToDisplay(iso) });
@@ -197,7 +178,7 @@ export function AccountantSubmittedInvoiceEditDialog({
 
     const body = {
       finalAmount: finalAmount.trim(),
-      finalCurrency: finalCurrencyCode,
+      finalCurrency: SHEKEL_DISPLAY,
       finalDate: invoiceDate.iso,
       finalVendor: finalVendor.trim(),
       clientNote: clientNote.trim() === "" ? null : clientNote.trim(),
@@ -262,7 +243,7 @@ export function AccountantSubmittedInvoiceEditDialog({
       >
         <button
           type="button"
-          className={`${appModalCloseButtonClass} end-4 top-[0.875rem]`}
+          className={`${appModalCloseButtonClass} end-4 top-[0.875rem] z-30`}
           aria-label="סגירה"
           disabled={saving}
           onClick={handleBackdropClick}
@@ -329,36 +310,9 @@ export function AccountantSubmittedInvoiceEditDialog({
                 ) : null}
               </div>
 
-              <div>
-                <label
-                  htmlFor="acct-ed-curr"
-                  className="mb-1 inline-flex flex-wrap items-center gap-0 text-sm text-zinc-700"
-                >
-                  מטבע
-                  <RequiredFieldMark />
-                </label>
-                <select
-                  id="acct-ed-curr"
-                  aria-required="true"
-                  value={finalCurrencyCode}
-                  disabled={saving}
-                  onChange={(e) =>
-                    setFinalCurrencyCode(e.target.value as ClientCurrencyCode)
-                  }
-                  className={`w-full ${appModalInputClass} disabled:bg-teal-50/50`}
-                >
-                  {CURRENCY_OPTIONS.map((o) => (
-                    <option key={o.code} value={o.code}>
-                      {o.code === SHEKEL_DISPLAY ? o.label : `${o.label} (${o.code})`}
-                    </option>
-                  ))}
-                </select>
-                {submitErrors?.finalCurrency ? (
-                  <p className="mt-1 text-xs text-red-600">
-                    {submitErrors.finalCurrency.join(" · ")}
-                  </p>
-                ) : null}
-              </div>
+              <p className="rounded-lg border border-teal-100 bg-teal-50/70 px-3 py-2 text-sm text-teal-950">
+                המערכת מטפלת רק בשקלים — הסכום בשדה הבא מוצג ב־{SHEKEL_DISPLAY}.
+              </p>
 
               <div className="min-w-0">
                 <label

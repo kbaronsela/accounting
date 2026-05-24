@@ -28,7 +28,6 @@
 | `LOCAL_UPLOAD_DIR` | לא (פיתוח) | תיקיית יעד לקבצים מקומיים ביחס ל־cwd; ברירת מחדל **`.data/uploads`** |
 | `OCR_*` | לפי ספק | מפתחות/פרויקט Document AI / Textract וכו׳ |
 | `REDIS_URL` / `QUEUE_*` | אופציונלי | לתור עיבוד OCR אם לא serverless מובנה |
-| `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_SUBJECT` | לפוש | Web Push — `subject` בד״כ `mailto:…` |
 | `BOOTSTRAP_ADMIN_EMAIL` | פריסה ראשונה | מייל האדמין הראשון |
 | `BOOTSTRAP_ADMIN_PASSWORD` | פריסה ראשונה בלבד | סיסמה זמנית; **לסובב מיד** אחרי כניסה ראשונה |
 
@@ -109,18 +108,7 @@ npm run db:bootstrap-admin
 
 ---
 
-## 5. Web Push
-
-1. יצירת זוג מפתחות VAPID (פקודה/כלי מהספרייה `web-push`).
-2. שמירת מפתח פרטי בסביבת שרת; חשיפת מפתח ציבורי ל-PWA.
-3. **Subscription**: רישום דרך `POST /accountants/me/push/subscribe`; אחסון ב-`push_subscriptions`.
-4. **שידור**: לאחר `submit`, לולאה על מנויי רואה החשבון; כשלים (410 Gone וכו׳) → מחיקת מנוי.
-
-**הערת מוצר**: ב-iOS Web Push תלוי התקנה/PWA; המייל נשאר גיבוי.
-
----
-
-## 6. אחסון קבצים
+## 5. אחסון קבצים
 
 - **Bucket** ייעודי; אין רשימת directory public.
 - **העלאה**: presigned PUT; **הורדה**: presigned GET קצר (למשל 5–15 דקות).
@@ -129,7 +117,7 @@ npm run db:bootstrap-admin
 
 ---
 
-## 7. OCR / תור עיבוד
+## 6. OCR / תור עיבוד
 
 - Worker נפרד או פונקציה async: מקבל `documentId`, מוריד קובץ (פנימי), קורא לספק OCR, מעדכן DB.
 - retries עם exponential backoff; dead-letter או סטטוס `ocr_failed` + לוג.
@@ -137,7 +125,7 @@ npm run db:bootstrap-admin
 
 ---
 
-## 8. צ׳ק-ליסט פריסה (Production)
+## 7. צ׳ק-ליסט פריסה (Production)
 
 - [ ] `AUTH_SECRET` וסודות OAuth חדשים וייחודיים לפרוד.
 - [ ] `DATABASE_URL` עם TLS; משתמש DB עם הרשאות מינימליות.
@@ -147,11 +135,11 @@ npm run db:bootstrap-admin
 - [ ] CORS ו-`AUTH_URL` תואמים לדומיין האמיתי.
 - [ ] מניעת דליפת stack traces ללקוח.
 - [ ] ניטור (לפחות לוגים + alerts על שגיאות 5xx).
-- [ ] רוטציית מפתחות (תכנון עתידי ל-VAPID / מייל / storage).
+- [ ] רוטציית מפתחות (תכנון עתידי למייל / storage).
 
 ---
 
-## 9. עסקי ומשפטי (תזכורת, לא ייעוץ משפטי)
+## 8. עסקי ומשפטי (תזכורת, לא ייעוץ משפטי)
 
 - מדיניות פרטיות ושמירת מסמכים פיננסיים.
 - הסכמי עיבוד (DPA) מול ספקי OCR/מייל/ענן במידת הצורך.
@@ -159,7 +147,7 @@ npm run db:bootstrap-admin
 
 ---
 
-## 10. קישורים פנימיים
+## 9. קישורים פנימיים
 
 - `docs/architecture.md` — ארכיטקטורה ומודל נתונים
 - `docs/screens.md` — מפת מסכים
