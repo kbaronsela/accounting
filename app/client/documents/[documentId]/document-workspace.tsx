@@ -55,6 +55,7 @@ const STATUS_LABELS: Record<string, string> = {
   ocr_failed: "כשל ב־OCR",
   ready_to_submit: "מוכן לשליחה לרו״ח",
   submitted: "נשלח לרואה החשבון",
+  approved: "אושר",
 };
 
 function CalendarIcon({ className }: { className?: string }) {
@@ -87,7 +88,8 @@ export function ClientDocumentWorkspace({
   const router = useRouter();
   const [status, setStatus] = useState(initial.status);
 
-  const finalEditable = initial.editable && status !== "submitted";
+  const finalEditable =
+    initial.editable && status !== "submitted" && status !== "approved";
 
   const [finalAmount, setFinalAmount] = useState(initial.finalAmount ?? "");
   const [finalCurrencyCode, setFinalCurrencyCode] = useState(
@@ -257,7 +259,8 @@ export function ClientDocumentWorkspace({
           לקוח: <span className="font-medium">{title}</span> · סטטוס:{" "}
           {STATUS_LABELS[status] ?? status}
         </p>
-        {status === "submitted" && initial.submittedAt ? (
+        {(status === "submitted" || status === "approved") &&
+        initial.submittedAt ? (
           <p className="mt-2 text-sm text-zinc-500">
             תאריך הגשה:{" "}
             {new Date(initial.submittedAt).toLocaleString("he-IL", {
@@ -510,9 +513,11 @@ export function ClientDocumentWorkspace({
           </div>
         ) : (
           <p className="text-sm text-zinc-600">
-            {status === "submitted"
-              ? "המסמך הוגש לרואה החשבון — מתוך מסך זה אין עריכה. לשינויים בפרטי החשבונית פנו לרו״ח (הוא יכול לעדכן אצלה במערכת)."
-              : "לא ניתן לערוך מסמך במצב זה."}
+            {status === "approved"
+              ? "המסמך אושר על ידי רואה החשבון — אין עריכה מתוך מסך זה."
+              : status === "submitted"
+                ? "המסמך הוגש לרואה החשבון — מתוך מסך זה אין עריכה. לשינויים בפרטי החשבונית פנו לרו״ח (הוא יכול לעדכן אצלה במערכת)."
+                : "לא ניתן לערוך מסמך במצב זה."}
           </p>
         )}
       </form>

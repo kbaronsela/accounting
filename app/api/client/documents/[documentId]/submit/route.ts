@@ -26,8 +26,14 @@ export async function POST(_request: Request, context: RouteContext) {
     return jsonError(404, "NOT_FOUND", "מסמך לא נמצא.");
   }
 
-  if (doc.status === "submitted") {
-    return jsonError(409, "CONFLICT", "המסמך כבר הוגש.");
+  if (doc.status === "submitted" || doc.status === "approved") {
+    return jsonError(
+      409,
+      "CONFLICT",
+      doc.status === "approved"
+        ? "המסמך אושר על ידי רואה החשבון ולא ניתן להגישו מחדש."
+        : "המסמך כבר הוגש.",
+    );
   }
 
   if (!isClientDocumentEditable(doc.status)) {

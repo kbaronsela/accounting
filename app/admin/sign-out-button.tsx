@@ -2,6 +2,7 @@
 
 import { signOut } from "next-auth/react";
 import { workspaceFooterNavLinkClass } from "@/lib/ui/workspace-footer-nav-classes";
+import { NavIconDoorExit, WorkspaceNavIconRow } from "@/lib/ui/workspace-nav-icons";
 
 type SignOutButtonProps = {
   className?: string;
@@ -28,7 +29,9 @@ export function SignOutButton({
         .filter(Boolean)
         .join(" ")}
     >
-      התנתקות
+      <WorkspaceNavIconRow icon={<NavIconDoorExit />}>
+        התנתקות
+      </WorkspaceNavIconRow>
     </button>
   );
 }

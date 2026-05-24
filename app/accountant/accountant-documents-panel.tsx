@@ -12,7 +12,11 @@ import {
 } from "react";
 import { AccountantSubmittedInvoiceEditDialog } from "@/components/accountant-submitted-invoice-edit-dialog";
 import { DocumentFileViewerOverlay } from "@/components/document-file-viewer-overlay";
-import { canAccountantEditSubmittedInvoiceFields } from "@/lib/accountant/document-edit-policy";
+import {
+  canAccountantApproveDocument,
+  canAccountantEditSubmittedInvoiceFields,
+} from "@/lib/accountant/document-edit-policy";
+import { documentStatusRowSurfaceClass } from "@/lib/ui/document-status-row-classes";
 
 type ClientOption = {
   id: string;
@@ -41,6 +45,7 @@ const STATUS_LABELS: Record<string, string> = {
   ocr_failed: "כשל ב־OCR",
   ready_to_submit: "מוכן לשליחה לרו״ח",
   submitted: "נשלח לרואה החשבון",
+  approved: "אושר",
   rejected_quality: "נדחה (איכות)",
   archived: "בארכיון",
 };
@@ -267,6 +272,7 @@ export function AccountantDocumentsPanel() {
     DEFAULT_ACCOUNTANT_DOCS_SORT,
   );
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [approvingId, setApprovingId] = useState<string | null>(null);
   const [viewerDoc, setViewerDoc] = useState<{
     id: string;
     mimeType: string;
@@ -414,6 +420,41 @@ export function AccountantDocumentsPanel() {
     }
   }, [loadDocs]);
 
+  const handleApproveDoc = useCallback(
+    async (documentId: string) => {
+      setApprovingId(documentId);
+      setListError(null);
+      try {
+        const res = await fetch(
+          `/api/accountants/me/documents/${documentId}/approve`,
+          {
+            method: "POST",
+            credentials: "same-origin",
+          },
+        );
+        let data: { error?: { message?: string } } | null = null;
+        try {
+          data = (await res.json()) as { error?: { message?: string } };
+        } catch {
+          data = null;
+        }
+        if (!res.ok) {
+          const msg =
+            data?.error?.message?.trim() ??
+            `אישור המסמך נכשל (קוד ${res.status}).`;
+          setListError(msg);
+          return;
+        }
+        await loadDocs();
+      } catch {
+        setListError("שגיאת רשת בעת אישור המסמך.");
+      } finally {
+        setApprovingId(null);
+      }
+    },
+    [loadDocs],
+  );
+
   const toggleSort = useCallback((key: AccountantDocsSortKey) => {
     setSort((prev) => {
       if (prev.key === key) {
@@ -509,6 +550,7 @@ export function AccountantDocumentsPanel() {
               className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
             >
               <option value="submitted">נשלח לרואה החשבון (ברירת מחדל)</option>
+              <option value="approved">אושר על ידי רואה החשבון</option>
               <option value="">כל הסטטוסים (למעט טעינת קובץ)</option>
               <option value="all">הכל כולל טיוטות</option>
               <option value="uploaded">הועלה</option>
@@ -659,80 +701,105 @@ export function AccountantDocumentsPanel() {
               onSortChange={setSort}
             />
           </div>
-          <ul className="mt-4 divide-y divide-zinc-200 md:hidden">
+          <ul className="mt-4 flex flex-col gap-3 md:hidden">
             {sortedItems.map((d) => (
-              <li key={d.id} className="py-4 first:pt-0 last:pb-0">
-                <div className="font-medium text-zinc-900">{d.clientDisplayName}</div>
-                <dl className="mt-2 space-y-1.5 text-sm text-zinc-600">
-                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
-                    <dt className="text-zinc-500">סטטוס</dt>
-                    <dd>{statusLabel(d.status)}</dd>
+              <li key={d.id}>
+                <div
+                  className={[
+                    "rounded-xl px-3 py-4 shadow-sm shadow-zinc-900/5 transition-colors ring-1 ring-zinc-200/60",
+                    documentStatusRowSurfaceClass(d.status),
+                  ].join(" ")}
+                >
+                  <div className="font-medium text-zinc-900">
+                    {d.clientDisplayName}
                   </div>
-                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
-                    <dt className="text-zinc-500">סכום</dt>
-                    <dd>
-                      {d.finalAmount
-                        ? `${d.finalAmount}${d.finalCurrency ? ` ${d.finalCurrency}` : ""}`
-                        : "—"}
-                    </dd>
-                  </div>
-                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-1">
-                    <dt className="shrink-0 text-zinc-500">ספק</dt>
-                    <dd className="min-w-0 break-words text-end">
-                      {d.finalVendor ?? "—"}
-                    </dd>
-                  </div>
-                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
-                    <dt className="text-zinc-500">נשלח</dt>
-                    <dd className="tabular-nums">
-                      {d.submittedAt
-                        ? new Date(d.submittedAt).toLocaleString("he-IL", {
-                            dateStyle: "short",
-                            timeStyle: "short",
-                          })
-                        : "—"}
-                    </dd>
-                  </div>
-                  <div className="flex flex-wrap justify-between gap-x-3 gap-y-1">
-                    <dt className="shrink-0 text-zinc-500">הועלה ע״י</dt>
-                    <dd className="min-w-0 break-all text-end text-xs">
-                      {d.uploadedByDisplayName ?? "—"}
-                    </dd>
-                  </div>
-                </dl>
-                <div className="mt-3 flex flex-wrap gap-4">
-                  {d.status !== "draft_uploading" ? (
+                  <dl className="mt-2 space-y-1.5 text-sm text-zinc-600">
+                    <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                      <dt className="text-zinc-500">סטטוס</dt>
+                      <dd>{statusLabel(d.status)}</dd>
+                    </div>
+                    <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                      <dt className="text-zinc-500">סכום</dt>
+                      <dd>
+                        {d.finalAmount
+                          ? `${d.finalAmount}${d.finalCurrency ? ` ${d.finalCurrency}` : ""}`
+                          : "—"}
+                      </dd>
+                    </div>
+                    <div className="flex flex-wrap justify-between gap-x-3 gap-y-1">
+                      <dt className="shrink-0 text-zinc-500">ספק</dt>
+                      <dd className="min-w-0 break-words text-end">
+                        {d.finalVendor ?? "—"}
+                      </dd>
+                    </div>
+                    <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
+                      <dt className="text-zinc-500">נשלח</dt>
+                      <dd className="tabular-nums">
+                        {d.submittedAt
+                          ? new Date(d.submittedAt).toLocaleString("he-IL", {
+                              dateStyle: "short",
+                              timeStyle: "short",
+                            })
+                          : "—"}
+                      </dd>
+                    </div>
+                    <div className="flex flex-wrap justify-between gap-x-3 gap-y-1">
+                      <dt className="shrink-0 text-zinc-500">הועלה ע״י</dt>
+                      <dd className="min-w-0 break-all text-end text-xs">
+                        {d.uploadedByDisplayName ?? "—"}
+                      </dd>
+                    </div>
+                  </dl>
+                  <div className="mt-3 flex flex-wrap gap-4">
+                    {d.status !== "draft_uploading" ? (
+                      <button
+                        type="button"
+                        className="inline-flex text-sm font-semibold text-teal-800 underline-offset-4 transition hover:text-teal-950 hover:underline"
+                        onClick={() =>
+                          setViewerDoc({ id: d.id, mimeType: d.mimeType })
+                        }
+                      >
+                        צפייה בקובץ
+                      </button>
+                    ) : (
+                      <span className="text-sm text-zinc-400">
+                        אין קובץ מוכן
+                      </span>
+                    )}
+                    {canAccountantApproveDocument(d.status) ? (
+                      <button
+                        type="button"
+                        disabled={
+                          approvingId === d.id || deletingId === d.id
+                        }
+                        className="inline-flex text-sm font-semibold text-emerald-900 underline-offset-4 transition hover:text-emerald-950 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={() => {
+                          void handleApproveDoc(d.id);
+                        }}
+                      >
+                        {approvingId === d.id ? "מאשרים…" : "אישור המסמך"}
+                      </button>
+                    ) : null}
+                    {canAccountantEditSubmittedInvoiceFields(d.status) ? (
+                      <button
+                        type="button"
+                        className="inline-flex text-sm font-semibold text-teal-800 underline-offset-4 transition hover:text-teal-950 hover:underline"
+                        onClick={() => setEditingDocId(d.id)}
+                      >
+                        עריכה
+                      </button>
+                    ) : null}
                     <button
                       type="button"
-                      className="inline-flex text-sm font-semibold text-teal-800 underline-offset-4 transition hover:text-teal-950 hover:underline"
-                      onClick={() =>
-                        setViewerDoc({ id: d.id, mimeType: d.mimeType })
-                      }
+                      disabled={deletingId === d.id}
+                      className="inline-flex text-sm font-medium text-red-700 underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                      onClick={() => {
+                        void handleDeleteDoc(d.id);
+                      }}
                     >
-                      צפייה בקובץ
+                      {deletingId === d.id ? "מוחק…" : "מחק"}
                     </button>
-                  ) : (
-                    <span className="text-sm text-zinc-400">אין קובץ מוכן</span>
-                  )}
-                  {canAccountantEditSubmittedInvoiceFields(d.status) ? (
-                    <button
-                      type="button"
-                      className="inline-flex text-sm font-semibold text-teal-800 underline-offset-4 transition hover:text-teal-950 hover:underline"
-                      onClick={() => setEditingDocId(d.id)}
-                    >
-                      עריכה
-                    </button>
-                  ) : null}
-                  <button
-                    type="button"
-                    disabled={deletingId === d.id}
-                    className="inline-flex text-sm font-medium text-red-700 underline-offset-4 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
-                    onClick={() => {
-                      void handleDeleteDoc(d.id);
-                    }}
-                  >
-                    {deletingId === d.id ? "מוחק…" : "מחק"}
-                  </button>
+                  </div>
                 </div>
               </li>
             ))}
@@ -889,7 +956,13 @@ export function AccountantDocumentsPanel() {
               </thead>
               <tbody className="divide-y divide-zinc-100">
                 {sortedItems.map((d) => (
-                  <tr key={d.id} className="text-zinc-800">
+                  <tr
+                    key={d.id}
+                    className={[
+                      documentStatusRowSurfaceClass(d.status),
+                      "text-zinc-800 transition-colors",
+                    ].join(" ")}
+                  >
                     <td className="py-2.5 font-medium text-zinc-900">
                       {d.clientDisplayName}
                     </td>
@@ -933,6 +1006,20 @@ export function AccountantDocumentsPanel() {
                         ) : (
                           <span className="text-zinc-400">—</span>
                         )}
+                        {canAccountantApproveDocument(d.status) ? (
+                          <button
+                            type="button"
+                            disabled={
+                              approvingId === d.id || deletingId === d.id
+                            }
+                            className="font-medium text-emerald-900 underline-offset-4 transition hover:text-emerald-950 hover:underline disabled:cursor-not-allowed disabled:opacity-50"
+                            onClick={() => {
+                              void handleApproveDoc(d.id);
+                            }}
+                          >
+                            {approvingId === d.id ? "מאשרים…" : "אישור המסמך"}
+                          </button>
+                        ) : null}
                         {canAccountantEditSubmittedInvoiceFields(d.status) ? (
                           <button
                             type="button"

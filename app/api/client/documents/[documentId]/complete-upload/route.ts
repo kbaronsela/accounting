@@ -33,6 +33,7 @@ export async function POST(_request: Request, context: RouteContext) {
     "ocr_failed",
     "ready_to_submit",
     "submitted",
+    "approved",
     "rejected_quality",
     "archived",
   ]);

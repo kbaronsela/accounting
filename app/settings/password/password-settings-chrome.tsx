@@ -7,6 +7,12 @@ import {
   AccountantWorkspaceMenuFooter,
   AdminWorkspaceMenuFooter,
 } from "@/app/workspace-menu-footers";
+import { WORKSPACE_NAV_ITEM_ROW_LAYOUT } from "@/lib/ui/workspace-footer-nav-classes";
+import {
+  NavIconDocument,
+  NavIconPeople,
+  WorkspaceNavIconRow,
+} from "@/lib/ui/workspace-nav-icons";
 
 export type PasswordSettingsWorkspace = "client" | "accountant" | "admin";
 
@@ -41,11 +47,9 @@ function AccountantPasswordChrome({
     };
   }, [mobileOpen]);
 
-  const navLinkDesk =
-    "rounded-lg px-3 py-2 text-start text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-teal-500/50 focus-visible:ring-offset-2 text-zinc-700 hover:bg-teal-50/60";
+  const navLinkDesk = `${WORKSPACE_NAV_ITEM_ROW_LAYOUT} rounded-lg px-3 py-2 text-start text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-teal-500/50 focus-visible:ring-offset-2 text-zinc-700 hover:bg-teal-50/60`;
 
-  const navLinkMobile =
-    "rounded-lg px-3 py-3 text-start text-sm font-medium text-zinc-800 hover:bg-teal-50/60";
+  const navLinkMobile = `${WORKSPACE_NAV_ITEM_ROW_LAYOUT} rounded-lg px-3 py-3 text-start text-sm font-medium text-zinc-800 hover:bg-teal-50/60`;
 
   return (
     <div
@@ -60,13 +64,17 @@ function AccountantPasswordChrome({
           <div className="flex-1 overflow-y-auto px-3 py-8">
             <nav className="flex flex-col gap-1 px-0">
               <Link href="/accountant" className={navLinkDesk}>
-                מסמכים
+                <WorkspaceNavIconRow icon={<NavIconDocument />}>
+                  מסמכים
+                </WorkspaceNavIconRow>
               </Link>
               <Link
                 href="/accountant?section=clients"
                 className={navLinkDesk}
               >
-                ניהול לקוחות
+                <WorkspaceNavIconRow icon={<NavIconPeople />}>
+                  ניהול לקוחות
+                </WorkspaceNavIconRow>
               </Link>
             </nav>
           </div>
@@ -140,14 +148,18 @@ function AccountantPasswordChrome({
                 onClick={closeMobile}
                 className={navLinkMobile}
               >
-                מסמכים
+                <WorkspaceNavIconRow icon={<NavIconDocument />}>
+                  מסמכים
+                </WorkspaceNavIconRow>
               </Link>
               <Link
                 href="/accountant?section=clients"
                 onClick={closeMobile}
                 className={navLinkMobile}
               >
-                ניהול לקוחות
+                <WorkspaceNavIconRow icon={<NavIconPeople />}>
+                  ניהול לקוחות
+                </WorkspaceNavIconRow>
               </Link>
               <AccountantWorkspaceMenuFooter
                 mobile
@@ -194,11 +206,9 @@ function AdminPasswordChrome({
     };
   }, [mobileOpen]);
 
-  const deskNavBtn =
-    "rounded-lg px-3 py-2 text-start text-sm font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-teal-500/50 focus-visible:ring-offset-2 bg-white text-teal-900 shadow-md shadow-teal-900/10 ring-1 ring-teal-200";
+  const deskNavBtn = `${WORKSPACE_NAV_ITEM_ROW_LAYOUT} rounded-lg px-3 py-2 text-start text-sm font-semibold outline-none transition focus-visible:ring-2 focus-visible:ring-teal-500/50 focus-visible:ring-offset-2 bg-white text-teal-900 shadow-md shadow-teal-900/10 ring-1 ring-teal-200`;
 
-  const mobileNavBtn =
-    "rounded-lg bg-gradient-to-bl from-teal-700 to-emerald-800 px-3 py-3 text-start text-sm font-semibold text-white shadow-md shadow-teal-900/25";
+  const mobileNavBtn = `${WORKSPACE_NAV_ITEM_ROW_LAYOUT} rounded-lg bg-gradient-to-bl from-teal-700 to-emerald-800 px-3 py-3 text-start text-sm font-semibold text-white shadow-md shadow-teal-900/25`;
 
   return (
     <div
@@ -213,7 +223,9 @@ function AdminPasswordChrome({
           <div className="flex-1 overflow-y-auto px-3 py-8">
             <nav className="flex flex-col gap-1 px-0">
               <Link href="/admin" className={deskNavBtn}>
-                ניהול רואי חשבון
+                <WorkspaceNavIconRow icon={<NavIconPeople />}>
+                  ניהול רואי חשבון
+                </WorkspaceNavIconRow>
               </Link>
             </nav>
           </div>
@@ -287,7 +299,9 @@ function AdminPasswordChrome({
                 onClick={closeMobile}
                 className={mobileNavBtn}
               >
-                ניהול רואי חשבון
+                <WorkspaceNavIconRow icon={<NavIconPeople />}>
+                  ניהול רואי חשבון
+                </WorkspaceNavIconRow>
               </Link>
               <AdminWorkspaceMenuFooter
                 mobile

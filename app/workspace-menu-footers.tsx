@@ -3,6 +3,14 @@
 import Link from "next/link";
 import { SignOutButton } from "@/app/admin/sign-out-button";
 import { workspaceFooterNavLinkClass } from "@/lib/ui/workspace-footer-nav-classes";
+import {
+  NavIconBriefcase,
+  NavIconClientUser,
+  NavIconHome,
+  NavIconKey,
+  NavIconShieldAdmin,
+  WorkspaceNavIconRow,
+} from "@/lib/ui/workspace-nav-icons";
 
 export function AccountantWorkspaceMenuFooter({
   mobile,
@@ -25,14 +33,16 @@ export function AccountantWorkspaceMenuFooter({
           onClick={mobile ? closeMobileNav : undefined}
           className={workspaceFooterNavLinkClass(mobile)}
         >
-          דף הבית
+          <WorkspaceNavIconRow icon={<NavIconHome />}>דף הבית</WorkspaceNavIconRow>
         </Link>
         <Link
           href="/settings/password"
           onClick={mobile ? closeMobileNav : undefined}
           className={workspaceFooterNavLinkClass(mobile)}
         >
-          החלפת סיסמה
+          <WorkspaceNavIconRow icon={<NavIconKey />}>
+            החלפת סיסמה
+          </WorkspaceNavIconRow>
         </Link>
         {showAdminLink ? (
           <Link
@@ -40,7 +50,9 @@ export function AccountantWorkspaceMenuFooter({
             onClick={mobile ? closeMobileNav : undefined}
             className={workspaceFooterNavLinkClass(mobile)}
           >
-            אדמין
+            <WorkspaceNavIconRow icon={<NavIconShieldAdmin />}>
+              אדמין
+            </WorkspaceNavIconRow>
           </Link>
         ) : null}
         {showClientLink ? (
@@ -49,7 +61,9 @@ export function AccountantWorkspaceMenuFooter({
             onClick={mobile ? closeMobileNav : undefined}
             className={workspaceFooterNavLinkClass(mobile)}
           >
-            לקוח
+            <WorkspaceNavIconRow icon={<NavIconClientUser />}>
+              לקוח
+            </WorkspaceNavIconRow>
           </Link>
         ) : null}
         <SignOutButton mobile={mobile} />
@@ -79,14 +93,16 @@ export function AdminWorkspaceMenuFooter({
           onClick={mobile ? closeMobileNav : undefined}
           className={workspaceFooterNavLinkClass(mobile)}
         >
-          דף הבית
+          <WorkspaceNavIconRow icon={<NavIconHome />}>דף הבית</WorkspaceNavIconRow>
         </Link>
         <Link
           href="/settings/password"
           onClick={mobile ? closeMobileNav : undefined}
           className={workspaceFooterNavLinkClass(mobile)}
         >
-          החלפת סיסמה
+          <WorkspaceNavIconRow icon={<NavIconKey />}>
+            החלפת סיסמה
+          </WorkspaceNavIconRow>
         </Link>
         {showAccountantLink ? (
           <Link
@@ -94,7 +110,9 @@ export function AdminWorkspaceMenuFooter({
             onClick={mobile ? closeMobileNav : undefined}
             className={workspaceFooterNavLinkClass(mobile)}
           >
-            רואה חשבון
+            <WorkspaceNavIconRow icon={<NavIconBriefcase />}>
+              רואה חשבון
+            </WorkspaceNavIconRow>
           </Link>
         ) : null}
         {showClientLink ? (
@@ -103,7 +121,9 @@ export function AdminWorkspaceMenuFooter({
             onClick={mobile ? closeMobileNav : undefined}
             className={workspaceFooterNavLinkClass(mobile)}
           >
-            לקוח
+            <WorkspaceNavIconRow icon={<NavIconClientUser />}>
+              לקוח
+            </WorkspaceNavIconRow>
           </Link>
         ) : null}
         <SignOutButton mobile={mobile} />

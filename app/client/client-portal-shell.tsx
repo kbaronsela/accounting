@@ -1,7 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { workspaceFooterNavLinkClass } from "@/lib/ui/workspace-footer-nav-classes";
+import {
+  WORKSPACE_NAV_ITEM_ROW_LAYOUT,
+  workspaceFooterNavLinkClass,
+} from "@/lib/ui/workspace-footer-nav-classes";
+import {
+  NavIconBriefcase,
+  NavIconDocument,
+  NavIconHome,
+  NavIconKey,
+  NavIconShieldAdmin,
+  WorkspaceNavIconRow,
+} from "@/lib/ui/workspace-nav-icons";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useId, useState } from "react";
 import { SignOutButton } from "@/app/admin/sign-out-button";
@@ -26,14 +37,16 @@ export function ClientWorkspaceMenuFooter({
           onClick={mobile ? closeMobileNav : undefined}
           className={workspaceFooterNavLinkClass(mobile)}
         >
-          דף הבית
+          <WorkspaceNavIconRow icon={<NavIconHome />}>דף הבית</WorkspaceNavIconRow>
         </Link>
         <Link
           href="/settings/password"
           onClick={mobile ? closeMobileNav : undefined}
           className={workspaceFooterNavLinkClass(mobile)}
         >
-          החלפת סיסמה
+          <WorkspaceNavIconRow icon={<NavIconKey />}>
+            החלפת סיסמה
+          </WorkspaceNavIconRow>
         </Link>
         {showAdminLink ? (
           <Link
@@ -41,7 +54,9 @@ export function ClientWorkspaceMenuFooter({
             onClick={mobile ? closeMobileNav : undefined}
             className={workspaceFooterNavLinkClass(mobile)}
           >
-            אדמין
+            <WorkspaceNavIconRow icon={<NavIconShieldAdmin />}>
+              אדמין
+            </WorkspaceNavIconRow>
           </Link>
         ) : null}
         {showAccountantLink ? (
@@ -50,7 +65,9 @@ export function ClientWorkspaceMenuFooter({
             onClick={mobile ? closeMobileNav : undefined}
             className={workspaceFooterNavLinkClass(mobile)}
           >
-            רואה חשבון
+            <WorkspaceNavIconRow icon={<NavIconBriefcase />}>
+              רואה חשבון
+            </WorkspaceNavIconRow>
           </Link>
         ) : null}
         <SignOutButton mobile={mobile} />
@@ -95,12 +112,12 @@ export function ClientPortalShell({
   }, [mobileOpen]);
 
   const documentsNavClasses = documentsSectionActive
-    ? "rounded-lg px-3 py-2 text-start text-sm font-semibold outline-none bg-white text-teal-900 shadow-md shadow-teal-900/10 ring-1 ring-teal-200"
-    : "rounded-lg px-3 py-2 text-start text-sm font-medium text-zinc-700 outline-none hover:bg-teal-50/60 transition";
+    ? `${WORKSPACE_NAV_ITEM_ROW_LAYOUT} rounded-lg px-3 py-2 text-start text-sm font-semibold outline-none bg-white text-teal-900 shadow-md shadow-teal-900/10 ring-1 ring-teal-200`
+    : `${WORKSPACE_NAV_ITEM_ROW_LAYOUT} rounded-lg px-3 py-2 text-start text-sm font-medium text-zinc-700 outline-none hover:bg-teal-50/60 transition`;
 
   const documentsMobileNavClasses = documentsSectionActive
-    ? "rounded-lg bg-gradient-to-bl from-teal-700 to-emerald-800 px-3 py-3 text-start text-sm font-semibold text-white shadow-md shadow-teal-900/25"
-    : "rounded-lg px-3 py-3 text-start text-sm font-medium text-zinc-800 hover:bg-teal-50/50";
+    ? `${WORKSPACE_NAV_ITEM_ROW_LAYOUT} rounded-lg bg-gradient-to-bl from-teal-700 to-emerald-800 px-3 py-3 text-start text-sm font-semibold text-white shadow-md shadow-teal-900/25`
+    : `${WORKSPACE_NAV_ITEM_ROW_LAYOUT} rounded-lg px-3 py-3 text-start text-sm font-medium text-zinc-800 hover:bg-teal-50/50`;
 
   return (
     <div
@@ -121,7 +138,9 @@ export function ClientPortalShell({
                 }
                 className={`${documentsNavClasses} focus-visible:ring-2 focus-visible:ring-teal-500/50 focus-visible:ring-offset-2`}
               >
-                ניהול מסמכים
+                <WorkspaceNavIconRow icon={<NavIconDocument />}>
+                  ניהול מסמכים
+                </WorkspaceNavIconRow>
               </Link>
             </nav>
           </div>
@@ -198,7 +217,9 @@ export function ClientPortalShell({
                 }
                 className={documentsMobileNavClasses}
               >
-                ניהול מסמכים
+                <WorkspaceNavIconRow icon={<NavIconDocument />}>
+                  ניהול מסמכים
+                </WorkspaceNavIconRow>
               </Link>
               <ClientWorkspaceMenuFooter
                 mobile

@@ -1,6 +1,12 @@
 "use client";
 
 import { AccountantWorkspaceMenuFooter } from "@/app/workspace-menu-footers";
+import { WORKSPACE_NAV_ITEM_ROW_LAYOUT } from "@/lib/ui/workspace-footer-nav-classes";
+import {
+  NavIconDocument,
+  NavIconPeople,
+  WorkspaceNavIconRow,
+} from "@/lib/ui/workspace-nav-icons";
 import { useCallback, useEffect, useId, useState } from "react";
 import { AccountantClientsPanel } from "./accountant-clients-panel";
 import { AccountantDocumentsPanel } from "./accountant-documents-panel";
@@ -9,9 +15,13 @@ export type AccountantWorkspaceSection = "documents" | "clients";
 
 type Section = AccountantWorkspaceSection;
 
-const NAV: { section: Section; label: string }[] = [
-  { section: "documents", label: "מסמכים" },
-  { section: "clients", label: "ניהול לקוחות" },
+const NAV: {
+  section: Section;
+  label: string;
+  Icon: typeof NavIconDocument | typeof NavIconPeople;
+}[] = [
+  { section: "documents", label: "מסמכים", Icon: NavIconDocument },
+  { section: "clients", label: "ניהול לקוחות", Icon: NavIconPeople },
 ];
 
 type AccountantWorkspaceProps = {
@@ -70,19 +80,19 @@ export function AccountantWorkspace({
         <div className="flex flex-1 flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto px-3 py-8">
             <nav className="flex flex-col gap-1 px-0">
-              {NAV.map(({ section, label }) => (
+              {NAV.map(({ section, label, Icon }) => (
                 <button
                   key={section}
                   type="button"
                   onClick={() => select(section)}
                   aria-current={active === section ? "page" : undefined}
-                  className={`rounded-lg px-3 py-2 text-start text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-teal-500/50 focus-visible:ring-offset-2 ${
+                  className={`${WORKSPACE_NAV_ITEM_ROW_LAYOUT} rounded-lg px-3 py-2 text-start text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-teal-500/50 focus-visible:ring-offset-2 ${
                     active === section
                       ? "bg-white font-semibold text-teal-900 shadow-md shadow-teal-900/10 ring-1 ring-teal-200"
                       : "text-zinc-700 hover:bg-teal-50/60"
                   }`}
                 >
-                  {label}
+                  <WorkspaceNavIconRow icon={<Icon />}>{label}</WorkspaceNavIconRow>
                 </button>
               ))}
             </nav>
@@ -156,19 +166,19 @@ export function AccountantWorkspace({
               </button>
             </div>
             <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
-              {NAV.map(({ section, label }) => (
+              {NAV.map(({ section, label, Icon }) => (
                 <button
                   key={section}
                   type="button"
                   onClick={() => select(section)}
                   aria-current={active === section ? "page" : undefined}
-                  className={`rounded-lg px-3 py-3 text-start text-sm font-medium ${
+                  className={`${WORKSPACE_NAV_ITEM_ROW_LAYOUT} rounded-lg px-3 py-3 text-start text-sm font-medium ${
                     active === section
                       ? "bg-gradient-to-bl from-teal-700 to-emerald-800 font-semibold text-white shadow-md shadow-teal-900/25"
                       : "text-zinc-800 hover:bg-teal-50/60"
                   }`}
                 >
-                  {label}
+                  <WorkspaceNavIconRow icon={<Icon />}>{label}</WorkspaceNavIconRow>
                 </button>
               ))}
               <AccountantWorkspaceMenuFooter

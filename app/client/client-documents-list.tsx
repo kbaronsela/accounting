@@ -10,6 +10,7 @@ import {
 } from "react";
 import { isoDateToDisplay } from "@/lib/client/date-input-helpers";
 import type { ClientDocumentListItem } from "@/lib/client/queries";
+import { documentStatusRowSurfaceClass } from "@/lib/ui/document-status-row-classes";
 import { DraftUploadResumeButton } from "./draft-upload-resume-button";
 
 const STATUS_LABELS: Record<string, string> = {
@@ -20,6 +21,7 @@ const STATUS_LABELS: Record<string, string> = {
   ocr_failed: "כשל ב־OCR",
   ready_to_submit: "מוכן לשליחה",
   submitted: "נשלח לרואה החשבון",
+  approved: "אושר",
   rejected_quality: "נדחה (איכות)",
   archived: "בארכיון",
 };
@@ -270,21 +272,22 @@ export function ClientDocumentsList({
     "inline-flex items-center gap-0.5 rounded-sm px-1 py-0.5 text-xs font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900";
 
   const rowInteractiveClass =
-    "cursor-pointer select-none hover:bg-zinc-50 focus-visible:bg-zinc-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2";
+    "cursor-pointer select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:ring-offset-2";
 
   return (
     <>
       {/* מובייל */}
       <div className="mt-4 md:hidden">
-        <ul className="divide-y divide-zinc-200" role="list">
+        <ul className="flex flex-col gap-3" role="list">
         {rows.map((d) => (
-          <li key={d.id} className="py-4 first:pt-0 last:pb-0">
+          <li key={d.id}>
             <button
               type="button"
               tabIndex={0}
               aria-label={`פתיחת פרטים: ${listVendor(d) ?? "ספק לא צוין"}`}
               className={[
-                "w-full rounded-lg border border-transparent px-1 py-0.5 text-right transition-colors",
+                "w-full rounded-lg px-3 py-2 text-right transition-colors",
+                documentStatusRowSurfaceClass(d.status),
                 rowInteractiveClass,
               ].join(" ")}
               onClick={() => handleRowActivate(d.id)}
@@ -316,7 +319,7 @@ export function ClientDocumentsList({
               </div>
             </button>
             {d.status === "draft_uploading" ? (
-              <div className="mt-3">
+              <div className="mt-2 px-3">
                 <DraftUploadResumeButton documentId={d.id} />
               </div>
             ) : null}
@@ -419,6 +422,7 @@ export function ClientDocumentsList({
                 tabIndex={0}
                 aria-label={`פתיחת פרטים: ${listVendor(d) ?? "ספק לא צוין"}`}
                 className={[
+                  documentStatusRowSurfaceClass(d.status),
                   rowInteractiveClass,
                   "text-zinc-800 [&>td:first-child]:pe-3 [&>td:nth-child(n+2)]:pe-3",
                 ].join(" ")}

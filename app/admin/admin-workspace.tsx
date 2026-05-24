@@ -2,14 +2,18 @@
 
 import { AdminWorkspaceMenuFooter } from "@/app/workspace-menu-footers";
 import type { AccountantListItem } from "@/lib/admin/accountants-types";
+import { WORKSPACE_NAV_ITEM_ROW_LAYOUT } from "@/lib/ui/workspace-footer-nav-classes";
+import { NavIconPeople, WorkspaceNavIconRow } from "@/lib/ui/workspace-nav-icons";
 import { useCallback, useEffect, useId, useState } from "react";
 import { ManageAccountantsPanel } from "./manage-accountants-panel";
 
 type Section = "accountants";
 
-const NAV: { section: Section; label: string }[] = [
-  { section: "accountants", label: "ניהול רואי חשבון" },
-];
+const NAV: {
+  section: Section;
+  label: string;
+  Icon: typeof NavIconPeople;
+}[] = [{ section: "accountants", label: "ניהול רואי חשבון", Icon: NavIconPeople }];
 
 type AdminWorkspaceProps = {
   showAccountantLink: boolean;
@@ -57,7 +61,7 @@ export function AdminWorkspace({
         <div className="flex flex-1 flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto px-3 py-8">
             <nav className="flex flex-col gap-1 px-0">
-              {NAV.map(({ section, label }) => (
+              {NAV.map(({ section, label, Icon }) => (
                 <button
                   key={section}
                   type="button"
@@ -65,13 +69,13 @@ export function AdminWorkspace({
                     /** פריט יחיד — אין מעבר למקטע אחר בתצוגת דסקטופ */
                   }}
                   aria-current={active === section ? "page" : undefined}
-                  className={`rounded-lg px-3 py-2 text-start text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-teal-500/50 focus-visible:ring-offset-2 ${
+                  className={`${WORKSPACE_NAV_ITEM_ROW_LAYOUT} rounded-lg px-3 py-2 text-start text-sm font-medium outline-none transition focus-visible:ring-2 focus-visible:ring-teal-500/50 focus-visible:ring-offset-2 ${
                     active === section
                       ? "bg-white font-semibold text-teal-900 shadow-md shadow-teal-900/10 ring-1 ring-teal-200"
                       : "text-zinc-700 hover:bg-teal-50/60"
                   }`}
                 >
-                  {label}
+                  <WorkspaceNavIconRow icon={<Icon />}>{label}</WorkspaceNavIconRow>
                 </button>
               ))}
             </nav>
@@ -143,19 +147,19 @@ export function AdminWorkspace({
               </button>
             </div>
             <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
-              {NAV.map(({ section, label }) => (
+              {NAV.map(({ section, label, Icon }) => (
                 <button
                   key={section}
                   type="button"
                   onClick={closeMobile}
                   aria-current={active === section ? "page" : undefined}
-                  className={`rounded-lg px-3 py-3 text-start text-sm font-medium ${
+                  className={`${WORKSPACE_NAV_ITEM_ROW_LAYOUT} rounded-lg px-3 py-3 text-start text-sm font-medium ${
                     active === section
                       ? "bg-gradient-to-bl from-teal-700 to-emerald-800 font-semibold text-white shadow-md shadow-teal-900/25"
                       : "text-zinc-800 hover:bg-teal-50/60"
                   }`}
                 >
-                  {label}
+                  <WorkspaceNavIconRow icon={<Icon />}>{label}</WorkspaceNavIconRow>
                 </button>
               ))}
               <AdminWorkspaceMenuFooter
