@@ -261,6 +261,17 @@ function buildReportCsv(sorted: ReportRow[]): string {
   return lines.join("\r\n");
 }
 
+/** מקטע בטוח לשם קובץ הורדה (שם לקוח וכו׳). */
+function sanitizeReportDownloadNamePart(raw: string): string {
+  const t = raw
+    .replace(/[/\\:*?"<>|\u0000-\u001F]/g, "_")
+    .replace(/\s+/g, "_")
+    .replace(/_+/g, "_")
+    .replace(/^_|_$/g, "")
+    .slice(0, 80);
+  return t.length > 0 ? t : "client";
+}
+
 export function AccountantReportsPanel() {
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [clientIdFilter, setClientIdFilter] = useState("");
@@ -449,14 +460,19 @@ export function AccountantReportsPanel() {
     });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
+    const cid = clientIdFilter.trim();
+    const display =
+      cid ? (clients.find((c) => c.id === cid)?.displayName ?? "").trim() : "";
+    const fallback = cid ? `id-${cid.slice(0, 12)}` : "client";
+    const clientPart = sanitizeReportDownloadNamePart(display || fallback);
     const stamp = new Date().toISOString().slice(0, 10);
     a.href = url;
-    a.download = `documents-report_${stamp}.csv`;
+    a.download = `documents-report_${clientPart}_${stamp}.csv`;
     document.body.appendChild(a);
     a.click();
     a.remove();
     URL.revokeObjectURL(url);
-  }, [sortedItems]);
+  }, [sortedItems, clientIdFilter, clients]);
 
   const selectedClientName = useMemo(() => {
     const id = clientIdFilter.trim();
