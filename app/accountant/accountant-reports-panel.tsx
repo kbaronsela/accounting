@@ -501,12 +501,27 @@ export function AccountantReportsPanel() {
             {`@media print {
   @page { size: A4 portrait; margin: 11mm 10mm 14mm; }
   .acct-report-print-root { box-sizing: border-box; max-width: 100%; }
+  .acct-report-print-title {
+    font-weight: 700;
+    padding: 6px 10px;
+    margin: 0 0 10px;
+    border-radius: 2px;
+    background-color: #e4e9ec;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
   .acct-report-print-root table.acct-report-table {
     width: 100%;
     max-width: 100%;
     table-layout: fixed;
     border-collapse: collapse;
     font-size: 9pt;
+  }
+  .acct-report-print-root .acct-report-table thead th {
+    font-weight: 700;
+    background-color: #dce3e9 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   .acct-report-print-root .acct-report-table th,
   .acct-report-print-root .acct-report-table td {
@@ -515,6 +530,16 @@ export function AccountantReportsPanel() {
     vertical-align: top;
     overflow-wrap: anywhere;
     word-break: break-word;
+  }
+  .acct-report-print-root .acct-report-table tbody .acct-report-data-row:nth-child(odd) {
+    background-color: #ffffff !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .acct-report-print-root .acct-report-table tbody .acct-report-data-row:nth-child(even) {
+    background-color: #efeff1 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   .acct-report-col-vendor { width: 41%; max-width: 41%; }
   .acct-report-col-amount { width: 13%; max-width: 13%; white-space: nowrap; }
@@ -805,8 +830,8 @@ export function AccountantReportsPanel() {
             : null}
 
           {selectedClientName ? (
-            <div className="hidden print:block print:pb-3 print:pt-1 print:text-center">
-              <p className="text-[13pt] font-bold leading-snug text-black">
+            <div className="hidden print:block print:text-center">
+              <p className="acct-report-print-title text-[13pt] leading-snug text-black">
                 דוח עבור {selectedClientName}
               </p>
             </div>
@@ -832,7 +857,7 @@ export function AccountantReportsPanel() {
                   dir="rtl"
                 >
                   <thead>
-                    <tr className="border-b border-teal-200/80 bg-gradient-to-bl from-teal-50 to-emerald-50/80 print:border-black print:bg-white">
+                    <tr className="border-b border-teal-200/80 bg-gradient-to-bl from-teal-50 to-emerald-50/80 print:border-black print:bg-transparent">
                       <th
                         scope="col"
                         className="acct-report-col-vendor px-2 py-2.5 text-start font-semibold text-teal-950 print:border print:px-1 print:py-1"
@@ -903,9 +928,7 @@ export function AccountantReportsPanel() {
                     {sortedItems.map((d, idx) => (
                       <tr
                         key={d.id}
-                        className={
-                          idx % 2 === 0 ? "bg-white" : "bg-zinc-50/60 print:bg-white"
-                        }
+                        className={`acct-report-data-row ${idx % 2 === 0 ? "bg-white" : "bg-zinc-50/60"}`}
                       >
                         <td
                           className="acct-report-col-vendor max-w-[12rem] px-2 py-2 text-zinc-800 print:max-w-none print:border print:px-1 print:py-1"
