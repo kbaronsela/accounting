@@ -1,7 +1,10 @@
 "use client";
 
 import { useCallback, useEffect, useId, useState } from "react";
+import { createPortal } from "react-dom";
 import { SHEKEL_DISPLAY } from "@/lib/client/currency-canonical";
+import { DocumentFileViewerPanel } from "@/components/document-file-viewer-panel";
+import { DocumentFileViewerOverlay } from "@/components/document-file-viewer-overlay";
 import {
   isoDateToDisplay,
   parseFlexibleInvoiceDate,
@@ -90,6 +93,7 @@ export function AccountantSubmittedInvoiceEditDialog({
   > | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [mobileViewerOpen, setMobileViewerOpen] = useState(false);
 
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -237,21 +241,60 @@ export function AccountantSubmittedInvoiceEditDialog({
     if (!saving) onClose();
   }
 
+  const fetchFile = useCallback(
+    () =>
+      fetch(`/api/accountants/me/documents/${documentId}/file`, {
+        credentials: "same-origin",
+        cache: "no-store",
+      }),
+    [documentId],
+  );
+
   return (
     <div
-      className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-teal-950/45 px-4 py-6 backdrop-blur-[2px] sm:items-center sm:px-3 sm:py-10"
+      className="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-teal-950/45 px-2 py-4 backdrop-blur-[2px] sm:items-center sm:px-3 sm:py-8"
       role="presentation"
       onMouseDown={(e) => {
         if (e.target === e.currentTarget) handleBackdropClick();
       }}
     >
+      {/* תצוגת קובץ בנייד — overlay מלא */}
+      {mobileViewerOpen && payload
+        ? createPortal(
+            <DocumentFileViewerOverlay
+              viewerKey={documentId}
+              mimeTypeHint={payload.mimeType}
+              fetchFile={fetchFile}
+              onClose={() => setMobileViewerOpen(false)}
+            />,
+            document.body,
+          )
+        : null}
+
       <div
-        className={`${appModalCenteredPaperClass} relative my-auto max-h-[calc(100dvh-6rem)] w-full`}
+        className="relative my-auto flex w-full max-w-lg flex-col overflow-hidden rounded-2xl border border-teal-100/95 bg-white/95 shadow-[0_24px_60px_-28px_rgb(13_148_136_/_0.32)] backdrop-blur-sm xl:max-w-5xl xl:flex-row xl:max-h-[min(90dvh,860px)]"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
         dir="rtl"
       >
+        {/* עמודת הקובץ — מוצגת רק ב-xl+ */}
+        {payload ? (
+          <div className="hidden xl:flex xl:min-h-0 xl:w-[55%] xl:shrink-0 xl:flex-col xl:border-s xl:border-teal-100/80">
+            <div className="shrink-0 border-b border-teal-100/80 bg-gradient-to-l from-teal-50/60 to-transparent px-4 py-2.5">
+              <p className="text-xs font-medium text-zinc-500">תצוגת הקובץ</p>
+            </div>
+            <DocumentFileViewerPanel
+              viewerKey={documentId}
+              mimeTypeHint={payload.mimeType}
+              fetchFile={fetchFile}
+              className="flex-1"
+            />
+          </div>
+        ) : null}
+
+        {/* עמודת הטופס */}
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto">
         <button
           type="button"
           className={`${appModalCloseButtonClass} end-4 top-[0.875rem] z-30`}
@@ -293,9 +336,17 @@ export function AccountantSubmittedInvoiceEditDialog({
                   {payload.clientDisplayName}
                 </span>
               </p>
+              {/* כפתור הצגת קובץ — נייד בלבד */}
+              <button
+                type="button"
+                onClick={() => setMobileViewerOpen(true)}
+                className="mt-2 text-sm font-medium text-teal-800 underline-offset-4 hover:underline xl:hidden"
+              >
+                הצגת הקובץ
+              </button>
             </div>
 
-            <form onSubmit={(e) => void handleSubmit(e)} className="mt-6 space-y-4">
+            <form onSubmit={(e) => void handleSubmit(e)} className="mt-6 space-y-4 px-4 pb-6 sm:px-6">
               <div>
                 <label
                   htmlFor="acct-ed-amt"
@@ -480,6 +531,7 @@ export function AccountantSubmittedInvoiceEditDialog({
             </form>
           </>
         )}
+        </div>{/* סוף עמודת הטופס */}
       </div>
     </div>
   );
