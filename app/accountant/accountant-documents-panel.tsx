@@ -40,7 +40,11 @@ type DocRow = {
   finalAmount: string | null;
   finalCurrency: string | null;
   finalDate: string | null;
+  /** נוסף בשאילתת API — להצגה עתידית / דוחות */
+  extractedDate?: string | null;
   finalVendor: string | null;
+  finalInvoiceNumber?: string | null;
+  extractedInvoiceNumber?: string | null;
   submittedAt: string | null;
   uploadedByDisplayName: string | null;
   updatedAt: string;

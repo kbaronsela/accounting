@@ -5,23 +5,29 @@ import { WORKSPACE_NAV_ITEM_ROW_LAYOUT } from "@/lib/ui/workspace-footer-nav-cla
 import {
   NavIconDocument,
   NavIconPeople,
+  NavIconReportTable,
   WorkspaceNavIconRow,
 } from "@/lib/ui/workspace-nav-icons";
 import { useCallback, useEffect, useId, useState } from "react";
 import { AccountantClientsPanel } from "./accountant-clients-panel";
 import { AccountantDocumentsPanel } from "./accountant-documents-panel";
+import { AccountantReportsPanel } from "./accountant-reports-panel";
 
-export type AccountantWorkspaceSection = "documents" | "clients";
+export type AccountantWorkspaceSection = "documents" | "clients" | "reports";
 
 type Section = AccountantWorkspaceSection;
 
 const NAV: {
   section: Section;
   label: string;
-  Icon: typeof NavIconDocument | typeof NavIconPeople;
+  Icon:
+    | typeof NavIconDocument
+    | typeof NavIconPeople
+    | typeof NavIconReportTable;
 }[] = [
   { section: "documents", label: "מסמכים", Icon: NavIconDocument },
   { section: "clients", label: "ניהול לקוחות", Icon: NavIconPeople },
+  { section: "reports", label: "דוחות", Icon: NavIconReportTable },
 ];
 
 type AccountantWorkspaceProps = {
@@ -75,7 +81,7 @@ export function AccountantWorkspace({
     >
       <aside
         aria-label="ניווט אזור רואה החשבון"
-        className="fixed inset-y-0 start-0 z-40 hidden w-52 flex-col border-e border-teal-200/80 bg-gradient-to-b from-teal-50 via-white to-emerald-50/90 shadow-[inset_-1px_0_0_0_rgb(167_243_208_/_0.35)] xl:w-56 lg:flex"
+        className="fixed inset-y-0 start-0 z-40 hidden w-52 flex-col border-e border-teal-200/80 bg-gradient-to-b from-teal-50 via-white to-emerald-50/90 shadow-[inset_-1px_0_0_0_rgb(167_243_208_/_0.35)] print:hidden xl:w-56 lg:flex"
       >
         <div className="flex flex-1 flex-col overflow-hidden">
           <div className="flex-1 overflow-y-auto px-3 py-8">
@@ -107,8 +113,8 @@ export function AccountantWorkspace({
         </div>
       </aside>
 
-      <div className="flex min-h-full min-w-0 flex-1 flex-col ps-0 lg:ps-52 xl:ps-56">
-        <div className="sticky top-0 z-30 flex shrink-0 items-center border-b border-teal-100/90 bg-white/90 px-3 py-3 shadow-sm shadow-teal-900/5 backdrop-blur-sm sm:px-4 lg:hidden">
+      <div className="flex min-h-full min-w-0 flex-1 flex-col ps-0 lg:ps-52 xl:ps-56 print:!ps-0">
+        <div className="sticky top-0 z-30 flex shrink-0 items-center border-b border-teal-100/90 bg-white/90 px-3 py-3 shadow-sm shadow-teal-900/5 backdrop-blur-sm print:hidden sm:px-4 lg:hidden">
           <button
             type="button"
             aria-expanded={mobileOpen}
@@ -124,11 +130,13 @@ export function AccountantWorkspace({
           </button>
         </div>
 
-        <main className="flex flex-1 flex-col gap-6 px-3 py-6 sm:gap-8 sm:px-4 sm:py-12">
+        <main className="flex flex-1 flex-col gap-6 px-3 py-6 sm:gap-8 sm:px-4 sm:py-12 print:px-2 print:py-4">
           {active === "documents" ? (
             <AccountantDocumentsPanel />
-          ) : (
+          ) : active === "clients" ? (
             <AccountantClientsPanel />
+          ) : (
+            <AccountantReportsPanel />
           )}
         </main>
       </div>
@@ -139,7 +147,7 @@ export function AccountantWorkspace({
             type="button"
             aria-hidden
             tabIndex={-1}
-            className="fixed inset-0 z-40 bg-zinc-900/50 lg:hidden"
+            className="fixed inset-0 z-40 bg-zinc-900/50 print:hidden lg:hidden"
             onClick={closeMobile}
           />
           <div
@@ -147,7 +155,7 @@ export function AccountantWorkspace({
             role="dialog"
             aria-modal="true"
             aria-labelledby={drawerHeadingId}
-            className="fixed inset-y-0 start-0 z-50 flex w-[min(20rem,calc(100vw-3rem))] flex-col bg-white shadow-2xl ring-1 ring-black/10 lg:hidden"
+            className="fixed inset-y-0 start-0 z-50 flex w-[min(20rem,calc(100vw-3rem))] flex-col bg-white shadow-2xl ring-1 ring-black/10 print:hidden lg:hidden"
           >
             <div className="flex shrink-0 items-center justify-between border-b border-zinc-100 px-4 py-3">
               <p

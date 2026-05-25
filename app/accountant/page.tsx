@@ -22,6 +22,8 @@ export default async function AccountantHomePage({
     const one = Array.isArray(raw) ? raw[0] : raw;
     if (one === "clients") {
       initialSection = "clients";
+    } else if (one === "reports") {
+      initialSection = "reports";
     }
   }
 

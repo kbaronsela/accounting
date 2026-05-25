@@ -20,8 +20,13 @@ export type AccountantDocumentListItem = {
   mimeType: string;
   finalAmount: string | null;
   finalCurrency: string | null;
+  /** תאריך חשבונית סופי */
   finalDate: string | null;
+  /** גיבוי מתוצאות חילוץ — לתצוגות דוח */
+  extractedDate: string | null;
   finalVendor: string | null;
+  finalInvoiceNumber: string | null;
+  extractedInvoiceNumber: string | null;
   submittedAt: string | null;
   uploadedByDisplayName: string | null;
   updatedAt: string;
@@ -127,7 +132,7 @@ export async function listDocumentsForAccountant(
     limit?: number;
   },
 ): Promise<AccountantDocumentListItem[]> {
-  const limit = Math.min(Math.max(options.limit ?? 50, 1), 100);
+  const limit = Math.min(Math.max(options.limit ?? 50, 1), 2000);
 
   if (options.clientId) {
     const ok = await assertAccountantOwnsClient(
@@ -202,7 +207,10 @@ export async function listDocumentsForAccountant(
       finalAmount: documents.finalAmount,
       finalCurrency: documents.finalCurrency,
       finalDate: documents.finalDate,
+      extractedDate: documents.extractedDate,
       finalVendor: documents.finalVendor,
+      finalInvoiceNumber: documents.finalInvoiceNumber,
+      extractedInvoiceNumber: documents.extractedInvoiceNumber,
       submittedAt: documents.submittedAt,
       uploadedByName: uploader.name,
       updatedAt: documents.updatedAt,
@@ -223,7 +231,10 @@ export async function listDocumentsForAccountant(
     finalAmount: r.finalAmount,
     finalCurrency: canonicalizeCurrency(r.finalCurrency),
     finalDate: r.finalDate,
+    extractedDate: r.extractedDate,
     finalVendor: r.finalVendor,
+    finalInvoiceNumber: r.finalInvoiceNumber,
+    extractedInvoiceNumber: r.extractedInvoiceNumber,
     submittedAt: r.submittedAt?.toISOString() ?? null,
     uploadedByDisplayName: uploadedByDisplayLabel(r.uploadedByName),
     updatedAt: r.updatedAt.toISOString(),

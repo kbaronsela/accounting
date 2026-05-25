@@ -99,6 +99,16 @@ export function NavIconPeople(props: IconProps) {
   );
 }
 
+/** דוחות — טבלה / תרשים עמודות */
+export function NavIconReportTable(props: IconProps) {
+  return (
+    <svg {...svgAttrs} {...props}>
+      <path d="M3 3v18h18" />
+      <path d="M7 14v6M12 10v10M17 8v12" />
+    </svg>
+  );
+}
+
 /** דלת פתוחה + חץ החוצה (התנתקות) */
 export function NavIconDoorExit(props: IconProps) {
   return (

@@ -48,7 +48,8 @@ export async function GET(request: Request) {
       "invoiceTo חייב להיות בתבנית YYYY-MM-DD.",
     );
   }
-  const limit = parsePositiveInt(searchParams.get("limit"), 50);
+  const limitRaw = parsePositiveInt(searchParams.get("limit"), 50);
+  const limit = Math.min(Math.max(limitRaw, 1), 2000);
 
   let minAmount: number | null = null;
   let maxAmount: number | null = null;
