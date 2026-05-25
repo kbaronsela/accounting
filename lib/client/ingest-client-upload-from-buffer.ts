@@ -9,6 +9,7 @@ import {
   uploadedDocumentFileExists,
   writeUploadedDocumentFile,
 } from "@/lib/uploads/document-storage";
+import { normalizeUploadBufferToPdfStorage } from "@/lib/uploads/normalize-upload-to-pdf";
 import { runDocumentOcr } from "@/lib/ocr/run-document-ocr";
 import { UPLOAD_MAX_BYTES } from "@/lib/uploads/config";
 import { eq, and } from "drizzle-orm";
@@ -50,6 +51,27 @@ export async function ingestClientUploadedBufferAndStartOcr(options: {
     return { ok: false, message: "אין גישה לתיק זה." };
   }
 
+  let storeBuffer = buffer;
+  let storeMime = mimeType;
+
+  try {
+    const normalized = await normalizeUploadBufferToPdfStorage({
+      buffer: storeBuffer,
+      declaredMimeType: mimeType,
+    });
+    storeBuffer = normalized.buffer;
+    storeMime = normalized.mimeType;
+  } catch {
+    return { ok: false, message: "לא ניתן להמיר את הקובץ ל־PDF." };
+  }
+
+  if (storeBuffer.length > UPLOAD_MAX_BYTES) {
+    return {
+      ok: false,
+      message: `הקובץ אחרי ההמרה ל־PDF חורג מהגודל המרבי (${Math.floor(UPLOAD_MAX_BYTES / (1024 * 1024))} מ״ב).`,
+    };
+  }
+
   const documentId = randomUUID();
   const storageObjectKey = newDocumentStorageObjectKey(documentId);
   const now = new Date();
@@ -59,14 +81,14 @@ export async function ingestClientUploadedBufferAndStartOcr(options: {
     clientId,
     uploadedByUserId: userId,
     storageObjectKey,
-    mimeType,
-    byteSize: buffer.length,
+    mimeType: storeMime,
+    byteSize: storeBuffer.length,
     status: "draft_uploading",
     updatedAt: now,
   });
 
   try {
-    await writeUploadedDocumentFile(documentId, storageObjectKey, buffer);
+    await writeUploadedDocumentFile(documentId, storageObjectKey, storeBuffer);
   } catch {
     await db.delete(documents).where(eq(documents.id, documentId));
     return { ok: false, message: "שמירת הקובץ נכשלה." };
@@ -81,7 +103,7 @@ export async function ingestClientUploadedBufferAndStartOcr(options: {
     return { ok: false, message: "הקובץ לא נשמר אחרי ההעלאה." };
   }
   const alignNow = new Date();
-  if (size !== buffer.length) {
+  if (size !== storeBuffer.length) {
     await db
       .update(documents)
       .set({ byteSize: size, updatedAt: alignNow })
