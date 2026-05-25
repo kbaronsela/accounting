@@ -285,7 +285,7 @@ export function AccountantReportsPanel() {
   const [maxAmount, setMaxAmount] = useState("");
   const [items, setItems] = useState<ReportRow[]>([]);
   const [listError, setListError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [lastLoadedAt, setLastLoadedAt] = useState<Date | null>(null);
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [sort, setSort] = useState<ReportSortState>({
@@ -322,10 +322,12 @@ export function AccountantReportsPanel() {
     if (!cid) {
       setItems([]);
       setLastLoadedAt(null);
+      setListError(null);
       setLoading(false);
-      setListError("נא לבחור לקוח אחד לדוח (מתוך חלון «סינון»).");
       return;
     }
+
+    setLoading(true);
 
     const fromD = submittedFrom.trim();
     const toD = submittedTo.trim();
@@ -425,14 +427,7 @@ export function AccountantReportsPanel() {
   ]);
 
   useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      if (!cancelled) setLoading(true);
-      await loadDocs();
-    })();
-    return () => {
-      cancelled = true;
-    };
+    void loadDocs();
   }, [loadDocs]);
 
   const sortedItems = useMemo(
@@ -564,21 +559,31 @@ export function AccountantReportsPanel() {
 }`}
           </style>
           <div className="flex flex-wrap items-start justify-between gap-3 print:hidden">
-            <div>
+            <div className="min-w-0 flex-1 space-y-3">
               <h2 className="text-base font-semibold text-zinc-900">דוחות</h2>
-              <p className="mt-1 max-w-xl text-xs text-zinc-600">
-                דוח לפי לקוח אחד (חובה), עם סינונים כמו בסקשן המסמכים עד ל־
-                {REPORT_LIMIT} מסמכים. יש להשתמש בסינון לבחירת הלקוח ושאר הסינון.
-              </p>
-              {selectedClientName ? (
-                <p className="mt-2 text-sm font-semibold text-teal-900 print:hidden">
-                  דוח עבור {selectedClientName}
-                </p>
-              ) : (
-                <p className="mt-2 text-xs text-amber-800 print:hidden">
-                  נא לבחור לקוח מתוך «סינון» כדי לטעון את הדוח.
-                </p>
-              )}
+              <div className="flex max-w-xl flex-wrap items-center gap-x-3 gap-y-2">
+                <label
+                  htmlFor="acct-rpt-client-main"
+                  className="text-sm font-medium text-zinc-700"
+                >
+                  דוח עבור
+                </label>
+                <select
+                  id="acct-rpt-client-main"
+                  value={clientIdFilter}
+                  onChange={(e) => setClientIdFilter(e.target.value)}
+                  className="min-w-[12rem] max-w-full flex-1 rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm shadow-sm sm:max-w-xs"
+                >
+                  <option value="">
+                    {clients.length === 0 ? "טוען לקוחות…" : "בחרו לקוח…"}
+                  </option>
+                  {clients.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.displayName}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
             <button
               type="button"
@@ -650,39 +655,12 @@ export function AccountantReportsPanel() {
                       id={filterModalDescriptionId}
                       className="shrink-0 border-b border-teal-100/90 bg-white/80 px-4 py-3 text-sm text-zinc-600 sm:px-5"
                     >
-                      במסך זה דוח מתייחס ללקוח אחד בלבד בכל פעם. יש לבחור את הלקוח
-                      בשדה שלמטה ואז לסנן תאריכים, סטטוס וכו לפי הצורך.
+                      סינון לפי סטטוס, תאריכי הגשה, תאריך חשבונית וטווח סכומים —
+                      בהתאמה לכללים בסקשן המסמכים (עד ל־{REPORT_LIMIT} מסמכים).
+                      הלקוח נבחר רק בשדה «דוח עבור» בראש העמוד.
                     </p>
                     <div className="max-h-[min(32rem,calc(100dvh-10rem))] space-y-3 overflow-y-auto bg-zinc-50/85 px-4 py-4 sm:px-5">
-                      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
-                        <div className="min-w-[11rem] flex-1">
-                          <label
-                            htmlFor="acct-rpt-client"
-                            className="mb-1 block text-xs font-medium text-zinc-700"
-                          >
-                            לקוח
-                            <span className="text-red-600"> *</span>
-                          </label>
-                          <select
-                            id="acct-rpt-client"
-                            required
-                            value={clientIdFilter}
-                            onChange={(e) => setClientIdFilter(e.target.value)}
-                            className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
-                          >
-                            <option value="">
-                              {clients.length === 0
-                                ? "טוען לקוחות…"
-                                : "יש לבחור לקוח…"}
-                            </option>
-                            {clients.map((c) => (
-                              <option key={c.id} value={c.id}>
-                                {c.displayName}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="min-w-[11rem]">
+                      <div className="min-w-[11rem] max-w-xl">
                           <label
                             htmlFor="acct-rpt-status"
                             className="mb-1 block text-xs font-medium text-zinc-700"
@@ -713,7 +691,6 @@ export function AccountantReportsPanel() {
                             <option value="archived">בארכיון</option>
                           </select>
                         </div>
-                      </div>
                       <div className="border-t border-zinc-200 pt-3">
                         <p className="mb-2 text-xs font-medium text-zinc-600">
                           תאריך הגשה לרואה החשבון
@@ -853,7 +830,7 @@ export function AccountantReportsPanel() {
             </div>
           ) : null}
 
-          {loading ? (
+          {!canRunReport ? null : loading ? (
             <p className="text-sm text-zinc-600">טוענים דוח…</p>
           ) : listError ? (
             <p className="text-sm text-red-700" role="alert">
