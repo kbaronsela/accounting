@@ -157,6 +157,8 @@ function normalizeInvoiceNumberCandidate(raw: string): string | null {
     .replace(/[\u200f\u202a-\u202e]/g, "")
     .replace(/^[\s:.\-–—#׳״'"]+|[\s:.\-–—#]+$/g, "");
   s = s.replace(/\u00A0/g, " ").replace(/\s+/g, " ").trim();
+  // הסרת "/קבלה" או "קבלה" בתחילה — תופעת לוואי של תיוג "מס/קבלה" ב-OCR
+  s = s.replace(/^[/\\]?\s*קבלה\s*/i, "").trim();
   if (!s || s.length < 2 || s.length > 64) return null;
   if (!/[\da-zA-Z\u0590-\u05FF]/.test(s)) return null;
   return s.slice(0, 80);
@@ -170,7 +172,8 @@ export function scanInvoiceOrReceiptNumber(raw: string): string | null {
   const text = raw.replace(/\u00A0/g, " ").replace(/\ufeff/g, "");
   const patterns: RegExp[] = [
     /(?:מ\s*ס(?:פר|\.)?|מ\s*ס['׳״']?\s*)\s*חשבונית\s*(?:מס(?:פר)?|מ\s*ס['׳״']?)?\s*[:\s.\-–—#]*\s*([^\n\r]{1,72})/gi,
-    /חשבונית\s*(?:מס(?:פר)?|מ\s*ס['׳״']?(?:\s*מר)?)\s*[:\s.\-–—#]*\s*([^\n\r]{1,72})/gi,
+    // "חשבונית מס/קבלה" / "חשבונית מסקבלה" — ה-"/קבלה" הוא חלק מהתווית, לא מהמספר
+    /חשבונית\s*(?:מס(?:פר|קבלה)?|מ\s*ס['׳״']?(?:\s*מר)?)(?:\s*[/\\]\s*קבלה)?\s*[:\s.\-–—#]*\s*([^\n\r]{1,72})/gi,
     /מס(?:פר)?\s*קבלה\s*[:\s.\-–—#]*\s*([^\n\r]{1,72})/gi,
     /קבלה\s*(?:מס(?:פר)?)?\s*(?:מס['׳״']?)?\s*[:\s.\-–—#]*\s*([^\n\r]{1,72})/gi,
     /Invoice\s*(?:No\.?|#|Number)?\s*[:\s]*([^\n\r]{1,72})/gi,
