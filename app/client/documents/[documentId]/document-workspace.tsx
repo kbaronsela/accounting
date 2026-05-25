@@ -242,15 +242,9 @@ export function ClientDocumentWorkspace({
         <h2 className="text-base font-semibold text-zinc-900">
           פרטי חשבונית
         </h2>
-        <p className="text-xs text-zinc-500">
-          כשהסטטוס הוא «הועלה» אפשר לערוך ולשמור — הלקוח ורואה החשבון. אחרי אישור
-          הרו״ח הסטטוס הוא «אושר» והעמוד לקריאה בלבד.
-        </p>
-
         <div>
           <label htmlFor="d-amt" className="mb-1 block text-sm text-zinc-700">
             סכום סופי
-            <span className="ms-1 font-normal text-zinc-500">(אופציונלי)</span>
           </label>
           <input
             id="d-amt"
@@ -268,14 +262,9 @@ export function ClientDocumentWorkspace({
           ) : null}
         </div>
 
-        <p className="rounded-md bg-zinc-50 px-3 py-2 text-sm text-zinc-700">
-          כשנרשם סכום הוא נשמר ב־{SHEKEL_DISPLAY}.
-        </p>
-
         <div className="min-w-0">
           <label htmlFor="d-date-display" className="mb-1 block text-sm text-zinc-700">
             תאריך חשבונית (DD.MM.YYYY)
-            <span className="ms-1 font-normal text-zinc-500">(אופציונלי)</span>
           </label>
           <div className="flex min-w-0 flex-row flex-nowrap items-stretch gap-0">
             <input
@@ -357,7 +346,6 @@ export function ClientDocumentWorkspace({
         <div>
           <label htmlFor="d-vendor" className="mb-1 block text-sm text-zinc-700">
             ספק / שם העסק
-            <span className="ms-1 font-normal text-zinc-500">(אופציונלי)</span>
           </label>
           <input
             id="d-vendor"
@@ -377,7 +365,6 @@ export function ClientDocumentWorkspace({
         <div>
           <label htmlFor="d-inv-no" className="mb-1 block text-sm text-zinc-700">
             מספר חשבונית / קבלה
-            <span className="ms-1 font-normal text-zinc-500">(אופציונלי)</span>
           </label>
           <input
             id="d-inv-no"
