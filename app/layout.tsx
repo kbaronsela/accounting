@@ -16,7 +16,6 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "שיתוף קבלות",
   description: "פלטפורמה לשיתוף קבלות וחשבוניות בין לקוחות לרואי חשבון",
-  manifest: "/manifest.json",
   icons: {
     icon: [
       { url: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
