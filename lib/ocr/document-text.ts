@@ -6,18 +6,18 @@ import "server-only";
 export async function extractDocumentPlainText(opts: {
   mimeType: string;
   buffer: Buffer;
-  onTesseract: (
+  onOcr: (
     image: Buffer,
   ) => Promise<{ text: string; confidence?: number | null }>;
 }): Promise<{
   text: string;
-  source: "tesseract-image" | "pdf-text" | "tesseract-pdf-page";
+  source: "ocr-image" | "pdf-text" | "ocr-pdf-page";
   avgConfidence?: number | null;
 }> {
   const { mimeType } = opts;
 
   if (mimeType === "application/pdf") {
-    return extractFromPdf(opts.buffer, opts.onTesseract);
+    return extractFromPdf(opts.buffer, opts.onOcr);
   }
 
   if (
@@ -25,27 +25,27 @@ export async function extractDocumentPlainText(opts: {
     mimeType === "image/png" ||
     mimeType === "image/webp"
   ) {
-    const r = await opts.onTesseract(opts.buffer);
+    const r = await opts.onOcr(opts.buffer);
     return {
       text: r.text,
-      source: "tesseract-image",
+      source: "ocr-image",
       avgConfidence: r.confidence ?? null,
     };
   }
 
-  return { text: "", source: "tesseract-image", avgConfidence: null };
+  return { text: "", source: "ocr-image", avgConfidence: null };
 }
 
 const MIN_MEANINGFUL_PDF_TEXT_LEN = 48;
 
 async function extractFromPdf(
   buffer: Buffer,
-  onTesseract: (
+  onOcr: (
     image: Buffer,
   ) => Promise<{ text: string; confidence?: number | null }>,
 ): Promise<{
   text: string;
-  source: "tesseract-image" | "pdf-text" | "tesseract-pdf-page";
+  source: "ocr-image" | "pdf-text" | "ocr-pdf-page";
   avgConfidence?: number | null;
 }> {
   const mod = await import("pdf-parse");
@@ -65,10 +65,10 @@ async function extractFromPdf(
       return { text: stripped, source: "pdf-text" };
     }
     const buf = Buffer.from(page0);
-    const r = await onTesseract(buf);
+    const r = await onOcr(buf);
     return {
       text: r.text,
-      source: "tesseract-pdf-page",
+      source: "ocr-pdf-page",
       avgConfidence: r.confidence ?? null,
     };
   } finally {

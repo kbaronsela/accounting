@@ -8,9 +8,9 @@ import { extractDocumentPlainText } from "@/lib/ocr/document-text";
 import { SHEKEL_DISPLAY } from "@/lib/client/currency-canonical";
 import { canonicalFinalInvoiceAmountOrNull } from "@/lib/invoice-final-amount";
 import { extractHeuristicInvoiceFields } from "@/lib/ocr/heuristic-fields";
-import { recognizeWithTesseract } from "@/lib/ocr/tesseract-runner";
+import { recognizeWithGoogleVision } from "@/lib/ocr/google-vision-runner";
 
-const OCR_PROVIDER = "tesseract_local";
+const OCR_PROVIDER = "google_vision";
 
 function isOcrDisabled(): boolean {
   const v = process.env.OCR_DISABLED?.trim().toLowerCase();
@@ -71,7 +71,7 @@ export async function runDocumentOcr(documentId: string): Promise<void> {
     const extractedPlain = await extractDocumentPlainText({
       mimeType: doc.mimeType,
       buffer: buf,
-      onTesseract: recognizeWithTesseract,
+      onOcr: recognizeWithGoogleVision,
     });
 
     const fields = extractHeuristicInvoiceFields(extractedPlain.text);
