@@ -113,10 +113,29 @@ function scanDate(text: string): string | null {
 }
 
 function scanAmount(text: string): string | null {
-  const amounts: number[] = [];
-
+  /** עדיפות גבוהה: "לתשלום" / "שולם" — הסכום ששולם בפועל */
+  const highPriorityAmounts: number[] = [];
   for (const m of text.matchAll(
-    /(?:סה[\"״']?כ|סיכום|TOTAL|לתשלום|Amount\s*due|סכום\s*כולל|Balance\s*due)\s*[:\s]*([\d\s,.'']+)/gi,
+    /(?:לתשלום|שולם|סכום\s*לתשלום|סה[\"״']?כ\s*לתשלום)\s*[:\s]*([\d\s,.'']+)/gi,
+  )) {
+    const n = europeanFriendlyToDecimal(m[1] ?? "");
+    if (n !== null && n > 0 && n < 100_000_000) highPriorityAmounts.push(n);
+  }
+  /** כאשר הסכום מופיע לפני התווית (RTL: "1,650 לתשלום") */
+  for (const m of text.matchAll(
+    /([\d\s,.'']{1,20})\s*(?:לתשלום|שולם)\b/gi,
+  )) {
+    const n = europeanFriendlyToDecimal(m[1] ?? "");
+    if (n !== null && n > 0 && n < 100_000_000) highPriorityAmounts.push(n);
+  }
+  if (highPriorityAmounts.length > 0) {
+    return decimalToStoredAmount(Math.max(...highPriorityAmounts));
+  }
+
+  /** עדיפות רגילה: תוויות סיכום אחרות */
+  const amounts: number[] = [];
+  for (const m of text.matchAll(
+    /(?:סה[\"״']?כ|סיכום|TOTAL|Amount\s*due|סכום\s*כולל|Balance\s*due)\s*[:\s]*([\d\s,.'']+)/gi,
   )) {
     const n = europeanFriendlyToDecimal(m[1] ?? "");
     if (n !== null && n > 0 && n < 100_000_000) amounts.push(n);
@@ -139,10 +158,9 @@ function scanAmount(text: string): string | null {
   }
 
   if (amounts.length === 0) return null;
-
-  /** נוחות: לרוב הקבלה מציגת סיכום בסכום הגבוה ביותר בשורות אחרונות */
   return decimalToStoredAmount(Math.max(...amounts));
 }
+
 
 function clipInvoiceNumberFragment(raw: string): string {
   const oneLine = raw.split(/\r?\n/)[0] ?? raw;
