@@ -12,7 +12,7 @@ function isPdfMime(mime: string): boolean {
   return m.startsWith("application/pdf");
 }
 
-/** סיומת קובץ לשמירה מקומית לפי סוג MIME (נופל ל־bin). */
+/** סיומת קובץ להורדה לפי סוג MIME (נופל ל־bin). */
 function extensionForMime(mime: string): string {
   const m = mime.trim().toLowerCase();
   if (m.startsWith("image/jpeg") || m.startsWith("image/jpg")) return "jpg";
@@ -72,7 +72,7 @@ export type DocumentFileViewerOverlayProps = {
   viewerKey: string;
   /** מ־שורת המסמך — נופל לאחור אם ל־Blob אין `type` אחרי הורדה */
   mimeTypeHint: string;
-  /** שם קובץ מוצע לשמירה (למשל receipt.pdf). אם חסר — נבנה מ־viewerKey וסיומת לפי MIME. */
+  /** שם קובץ מוצע להורדה (למשל receipt.pdf). אם חסר — נבנה מ־viewerKey וסיומת לפי MIME. */
   downloadFileName?: string;
   onClose: () => void;
   /** טעינת תגובת הקובץ מאותו מקור העלאה (כולל `credentials: same-origin`) */
@@ -276,7 +276,7 @@ export function DocumentFileViewerOverlay({
                   onClick={handleSaveLocal}
                   className="shrink-0 rounded-xl border border-teal-200/90 bg-white px-3 py-1.5 text-sm font-semibold text-teal-900 shadow-sm transition hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/50"
                 >
-                  שמירה במכשיר
+                  הורדה
                 </button>
                 <button
                   type="button"
