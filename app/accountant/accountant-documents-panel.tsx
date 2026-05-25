@@ -25,6 +25,7 @@ import {
 } from "@/lib/ui/modal-classes";
 import { documentStatusRowSurfaceClass } from "@/lib/ui/document-status-row-classes";
 import { isoDateToDisplay } from "@/lib/client/date-input-helpers";
+import { documentStatusLabelHebrew } from "@/lib/document-status-display";
 import { formatFinalInvoiceAmountDisplay } from "@/lib/invoice-final-amount";
 
 type ClientOption = {
@@ -51,21 +52,8 @@ type DocRow = {
   updatedAt: string;
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  draft_uploading: "טעינת קובץ",
-  uploaded: "הועלה",
-  ocr_processing: "עיבוד OCR",
-  needs_review: "דורש בדיקה",
-  ocr_failed: "כשל ב־OCR",
-  ready_to_submit: "מוכן לשליחה לרו״ח",
-  submitted: "נשלח לרואה החשבון",
-  approved: "אושר",
-  rejected_quality: "נדחה (איכות)",
-  archived: "בארכיון",
-};
-
 function statusLabel(status: string): string {
-  return STATUS_LABELS[status] ?? status;
+  return documentStatusLabelHebrew(status);
 }
 
 type AccountantDocsSortKey =
@@ -74,7 +62,7 @@ type AccountantDocsSortKey =
   | "amount"
   | "vendor"
   | "invoiceDate"
-  | "submitted"
+  | "updatedAt"
   | "uploadedBy";
 
 type AccountantDocsSortState = {
@@ -82,9 +70,9 @@ type AccountantDocsSortState = {
   dir: "asc" | "desc";
 };
 
-/** מיון דיפולט: נשלח — יורד (הכי מאוחר ראשון) */
+/** מיון דיפולט: עדכון אחרון — יורד (הכי מאוחר ראשון) */
 const DEFAULT_ACCOUNTANT_DOCS_SORT: AccountantDocsSortState = {
-  key: "submitted",
+  key: "updatedAt",
   dir: "desc",
 };
 
@@ -92,7 +80,7 @@ const DEFAULT_ACCOUNTANT_DOCS_SORT: AccountantDocsSortState = {
 function accountantDocsDefaultDirForKey(
   key: AccountantDocsSortKey,
 ): "asc" | "desc" {
-  if (key === "submitted" || key === "amount" || key === "invoiceDate") {
+  if (key === "updatedAt" || key === "amount" || key === "invoiceDate") {
     return "desc";
   }
   return "asc";
@@ -117,8 +105,8 @@ function cmpStrings(a: string, b: string, dir: "asc" | "desc"): number {
   return a.localeCompare(b, "he", { sensitivity: "base" }) * mul;
 }
 
-function submittedTs(row: DocRow): number | null {
-  const s = row.submittedAt?.trim();
+function updatedAtTs(row: DocRow): number | null {
+  const s = row.updatedAt?.trim();
   if (!s) return null;
   const t = Date.parse(s);
   return Number.isNaN(t) ? null : t;
@@ -201,8 +189,8 @@ function sortAccountantDocs(
           sort.dir,
         );
         break;
-      case "submitted":
-        c = cmpNumericOrTs(submittedTs(a), submittedTs(b), sort.dir);
+      case "updatedAt":
+        c = cmpNumericOrTs(updatedAtTs(a), updatedAtTs(b), sort.dir);
         break;
       case "uploadedBy":
         c = cmpStrings(uploadedBySortKey(a), uploadedBySortKey(b), sort.dir);
@@ -258,7 +246,7 @@ function AccountantDocumentsMobileSortBar({
         <option value="vendor">ספק</option>
         <option value="invoiceDate">תאריך חשבונית</option>
         <option value="amount">סכום</option>
-        <option value="submitted">נשלח</option>
+        <option value="updatedAt">עודכן</option>
         <option value="uploadedBy">הועלה ע״י</option>
       </select>
       <button
@@ -309,7 +297,7 @@ function buildDocsQuery(params: Record<string, string>): string {
 export function AccountantDocumentsPanel() {
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [clientIdFilter, setClientIdFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("submitted");
+  const [statusFilter, setStatusFilter] = useState("uploaded");
   const [submittedFrom, setSubmittedFrom] = useState("");
   const [submittedTo, setSubmittedTo] = useState("");
   const [invoiceFrom, setInvoiceFrom] = useState("");
@@ -353,7 +341,7 @@ export function AccountantDocumentsPanel() {
     if (fromD && toD && fromD > toD) {
       setItems([]);
       setListError(
-        "תאריך הגשה — «מתאריך» חייב להיות לפני או שווה ל־«עד תאריך».",
+        "תאריך עדכון — «מתאריך» חייב להיות לפני או שווה ל־«עד תאריך».",
       );
       setLoading(false);
       return;
@@ -665,8 +653,8 @@ export function AccountantDocumentsPanel() {
                         }
                         className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
                       >
-                        <option value="submitted">
-                          נשלח לרואה החשבון (ברירת מחדל)
+                        <option value="uploaded">
+                          הועלה — למעקב לפני אישור (ברירת מחדל)
                         </option>
                         <option value="approved">
                           אושר על ידי רואה החשבון
@@ -675,21 +663,26 @@ export function AccountantDocumentsPanel() {
                           כל הסטטוסים (למעט טעינת קובץ)
                         </option>
                         <option value="all">הכל כולל טיוטות</option>
-                        <option value="uploaded">הועלה</option>
-                        <option value="ready_to_submit">
-                          מוכן לשליחה לרו״ח
-                        </option>
-                        <option value="needs_review">דורש בדיקה</option>
-                        <option value="ocr_processing">עיבוד OCR</option>
-                        <option value="ocr_failed">כשל OCR</option>
+                        <option value="ocr_processing">בעיבוד (OCR)</option>
+                        <option value="draft_uploading">טעינת קובץ (טיוטה)</option>
                         <option value="archived">בארכיון</option>
+                        <option value="submitted">
+                          סטטוס ישן: submitted (אם קיים בנתונים)
+                        </option>
+                        <option value="needs_review">
+                          סטטוס ישן: needs_review
+                        </option>
+                        <option value="ready_to_submit">
+                          סטטוס ישן: ready_to_submit
+                        </option>
+                        <option value="ocr_failed">סטטוס ישן: ocr_failed</option>
                       </select>
                     </div>
                   </div>
 
                   <div className="border-t border-zinc-200 pt-3">
                     <p className="mb-2 text-xs font-medium text-zinc-600">
-                      תאריך הגשה לרואה החשבון
+                      עדכון אחרון במערכת (לפי השרת)
                     </p>
                     <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:items-end">
                       <div>
@@ -697,7 +690,7 @@ export function AccountantDocumentsPanel() {
                           htmlFor="acct-docs-from"
                           className="mb-1 block text-xs font-medium text-zinc-700"
                         >
-                          הגשה מתאריך
+                          מתאריך עדכון
                         </label>
                         <input
                           id="acct-docs-from"
@@ -714,7 +707,7 @@ export function AccountantDocumentsPanel() {
                           htmlFor="acct-docs-to"
                           className="mb-1 block text-xs font-medium text-zinc-700"
                         >
-                          הגשה עד תאריך
+                          עד תאריך עדכון
                         </label>
                         <input
                           id="acct-docs-to"
@@ -901,14 +894,12 @@ export function AccountantDocumentsPanel() {
                       <dd>{statusLabel(d.status)}</dd>
                     </div>
                     <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
-                      <dt className="text-zinc-500">נשלח</dt>
+                      <dt className="text-zinc-500">עודכן</dt>
                       <dd className="tabular-nums">
-                        {d.submittedAt
-                          ? new Date(d.submittedAt).toLocaleString("he-IL", {
-                              dateStyle: "short",
-                              timeStyle: "short",
-                            })
-                          : "—"}
+                        {new Date(d.updatedAt).toLocaleString("he-IL", {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        })}
                       </dd>
                     </div>
                     <div className="flex flex-wrap justify-between gap-x-3 gap-y-1">
@@ -1099,7 +1090,7 @@ export function AccountantDocumentsPanel() {
                     scope="col"
                     className="pb-2 pe-3 font-normal"
                     aria-sort={
-                      sort.key === "submitted"
+                      sort.key === "updatedAt"
                         ? sort.dir === "asc"
                           ? "ascending"
                           : "descending"
@@ -1109,11 +1100,11 @@ export function AccountantDocumentsPanel() {
                     <button
                       type="button"
                       className={sortButtonClass}
-                      onClick={() => toggleSort("submitted")}
+                      onClick={() => toggleSort("updatedAt")}
                     >
-                      נשלח
+                      עודכן
                       <SortCue
-                        active={sort.key === "submitted"}
+                        active={sort.key === "updatedAt"}
                         dir={sort.dir}
                       />
                     </button>
@@ -1180,12 +1171,10 @@ export function AccountantDocumentsPanel() {
                       {statusLabel(d.status)}
                     </td>
                     <td className="whitespace-nowrap py-2.5 text-zinc-500">
-                      {d.submittedAt
-                        ? new Date(d.submittedAt).toLocaleString("he-IL", {
-                            dateStyle: "short",
-                            timeStyle: "short",
-                          })
-                        : "—"}
+                      {new Date(d.updatedAt).toLocaleString("he-IL", {
+                        dateStyle: "short",
+                        timeStyle: "short",
+                      })}
                     </td>
                     <td className="max-w-[10rem] truncate py-2.5 text-zinc-500">
                       {d.uploadedByDisplayName ?? "—"}

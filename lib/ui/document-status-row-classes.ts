@@ -5,7 +5,7 @@
 export function documentStatusRowSurfaceClass(status: string): string {
   switch (status) {
     case "draft_uploading":
-      return "bg-slate-50/95 hover:bg-slate-100/80 focus-visible:bg-slate-100/80";
+      return "bg-indigo-50/88 hover:bg-indigo-100/68 focus-visible:bg-indigo-100/68";
     case "uploaded":
       return "bg-sky-50/90 hover:bg-sky-100/72 focus-visible:bg-sky-100/72";
     case "ocr_processing":

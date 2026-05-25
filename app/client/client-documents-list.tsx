@@ -12,24 +12,12 @@ import { isoDateToDisplay } from "@/lib/client/date-input-helpers";
 import { SHEKEL_DISPLAY } from "@/lib/client/currency-canonical";
 import type { ClientDocumentListItem } from "@/lib/client/queries";
 import { formatFinalInvoiceAmountDisplay } from "@/lib/invoice-final-amount";
+import { documentStatusLabelHebrew } from "@/lib/document-status-display";
 import { documentStatusRowSurfaceClass } from "@/lib/ui/document-status-row-classes";
 import { DraftUploadResumeButton } from "./draft-upload-resume-button";
 
-const STATUS_LABELS: Record<string, string> = {
-  draft_uploading: "טעינת קובץ",
-  uploaded: "הועלה",
-  ocr_processing: "עיבוד OCR",
-  needs_review: "דורש בדיקה",
-  ocr_failed: "כשל ב־OCR",
-  ready_to_submit: "מוכן לשליחה",
-  submitted: "נשלח לרואה החשבון",
-  approved: "אושר",
-  rejected_quality: "נדחה (איכות)",
-  archived: "בארכיון",
-};
-
 function statusLabel(status: string): string {
-  return STATUS_LABELS[status] ?? status;
+  return documentStatusLabelHebrew(status);
 }
 
 function listVendor(d: ClientDocumentListItem): string | null {

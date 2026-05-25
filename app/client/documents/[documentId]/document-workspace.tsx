@@ -14,6 +14,7 @@ import {
   todayIsoLocal,
 } from "@/lib/client/date-input-helpers";
 import { finalInvoiceAmountInputValueFromStored } from "@/lib/invoice-final-amount";
+import { documentStatusLabelHebrew } from "@/lib/document-status-display";
 
 export type ClientDocumentDetailInitial = {
   id: string;
@@ -30,17 +31,6 @@ export type ClientDocumentDetailInitial = {
   clientNote: string | null;
   submittedAt: string | null;
   editable: boolean;
-};
-
-const STATUS_LABELS: Record<string, string> = {
-  draft_uploading: "טעינת קובץ",
-  uploaded: "הועלה",
-  ocr_processing: "עיבוד OCR",
-  needs_review: "דורש בדיקה",
-  ocr_failed: "כשל ב־OCR",
-  ready_to_submit: "מוכן לשליחה לרו״ח",
-  submitted: "נשלח לרואה החשבון",
-  approved: "אושר",
 };
 
 function CalendarIcon({ className }: { className?: string }) {
@@ -72,9 +62,9 @@ export function ClientDocumentWorkspace({
 }) {
   const router = useRouter();
   const [status, setStatus] = useState(initial.status);
+  const [editableFlag, setEditableFlag] = useState(initial.editable);
 
-  const finalEditable =
-    initial.editable && status !== "submitted" && status !== "approved";
+  const finalEditable = editableFlag && status !== "approved";
 
   const [finalAmount, setFinalAmount] = useState(() =>
     finalInvoiceAmountInputValueFromStored(initial.finalAmount),
@@ -102,7 +92,6 @@ export function ClientDocumentWorkspace({
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pendingSave, setPendingSave] = useState(false);
-  const [pendingSubmit, setPendingSubmit] = useState(false);
 
   const [fileViewerOpen, setFileViewerOpen] = useState(false);
 
@@ -167,70 +156,14 @@ export function ClientDocumentWorkspace({
         setPendingSave(false);
         return;
       }
-      setStatus(data.status ?? status);
+      if (typeof data.status === "string") setStatus(data.status);
+      if (typeof data.editable === "boolean") setEditableFlag(data.editable);
       setMessage("השינויים נשמרו.");
       router.refresh();
     } catch {
       setError("שגיאת רשת.");
     }
     setPendingSave(false);
-  }
-
-  async function handleSubmit() {
-    setMessage(null);
-    setError(null);
-    setSubmitErrors(null);
-    if (!flushInvoiceDateFromDisplay()) {
-      setError("יש לבדוק את שדה התאריך לפני ההגשה.");
-      return;
-    }
-    setPendingSubmit(true);
-    const patchPayload = buildPatchBody();
-    try {
-      const patchRes = await fetch(`/api/client/documents/${initial.id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(patchPayload),
-      });
-      const patchData = (await patchRes.json()) as {
-        error?: { message?: string };
-      };
-      if (!patchRes.ok) {
-        setError(patchData.error?.message ?? "שמירה לפני הגשה נכשלה.");
-        setPendingSubmit(false);
-        return;
-      }
-
-      const res = await fetch(
-        `/api/client/documents/${initial.id}/submit`,
-        {
-          method: "POST",
-        },
-      );
-      const data = (await res.json()) as {
-        error?: {
-          message?: string;
-          details?: { fields?: Record<string, string[]> };
-        };
-      };
-      if (!res.ok) {
-        const fields = data.error?.details?.fields;
-        if (res.status === 422 && fields) {
-          setSubmitErrors(fields);
-          setError(data.error?.message ?? "לא ניתן להגיש.");
-        } else {
-          setError(data.error?.message ?? "ההגשה נכשלה.");
-        }
-        setPendingSubmit(false);
-        return;
-      }
-      setStatus("submitted");
-      setMessage("המסמך הוגש לרואה החשבון.");
-      router.refresh();
-    } catch {
-      setError("שגיאת רשת.");
-    }
-    setPendingSubmit(false);
   }
 
   const showFileLink = status !== "draft_uploading";
@@ -251,24 +184,14 @@ export function ClientDocumentWorkspace({
         </h1>
         <p className="mt-1 text-sm text-zinc-600">
           לקוח: <span className="font-medium">{title}</span> · סטטוס:{" "}
-          {STATUS_LABELS[status] ?? status}
+          {documentStatusLabelHebrew(status)}
         </p>
-        {(status === "submitted" || status === "approved") &&
-        initial.submittedAt ? (
-          <p className="mt-2 text-sm text-zinc-500">
-            תאריך הגשה:{" "}
-            {new Date(initial.submittedAt).toLocaleString("he-IL", {
-              dateStyle: "medium",
-              timeStyle: "short",
-            })}
-          </p>
-        ) : null}
       </div>
 
       {status === "draft_uploading" ? (
         <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 shadow-sm">
           <p className="text-sm font-medium text-amber-950">
-            ההעלאה לא הושלמה אצל השרת
+            בעיבוד — ההעלאה טרם הושלמה אצל השרת
           </p>
           <p className="mt-1 text-xs text-amber-900/90">
             אם קובץ בכלל לא נשמר בשרת, «להשלים» לא יעזור — יש למחוק את הטיוטה
@@ -314,11 +237,11 @@ export function ClientDocumentWorkspace({
         className="min-w-0 space-y-4 rounded-xl border border-teal-100/90 bg-white/95 p-4 shadow-[0_4px_24px_-8px_rgb(13_148_136_/_0.06)] sm:p-6"
       >
         <h2 className="text-base font-semibold text-zinc-900">
-          פרטי חשבונית לשליחה
+          פרטי חשבונית
         </h2>
         <p className="text-xs text-zinc-500">
-          כל השדות למטה אופציונליים — ניתן לשלוח לרואה החשבון גם בלי מילוי,
-          עם קובץ המצורף ועם עריכה מאוחרת אצלה או אצל הרו״ח.
+          כשהסטטוס הוא «הועלה» אפשר לערוך ולשמור — הלקוח ורואה החשבון. אחרי אישור
+          הרו״ח הסטטוס הוא «אושר» והעמוד לקריאה בלבד.
         </p>
 
         <div>
@@ -505,26 +428,20 @@ export function ClientDocumentWorkspace({
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:gap-3">
             <button
               type="submit"
-              disabled={pendingSave || pendingSubmit}
+              disabled={pendingSave}
               className="w-full rounded-md bg-zinc-900 px-4 py-2.5 text-sm font-medium text-white hover:bg-zinc-800 disabled:opacity-60 sm:w-auto"
             >
               {pendingSave ? "שומרים…" : "שמירה"}
-            </button>
-            <button
-              type="button"
-              disabled={pendingSave || pendingSubmit}
-              onClick={() => void handleSubmit()}
-              className="w-full rounded-md border border-emerald-800 bg-emerald-50 px-4 py-2.5 text-sm font-medium text-emerald-900 hover:bg-emerald-100 disabled:opacity-60 sm:w-auto"
-            >
-              {pendingSubmit ? "שולחים…" : "הגשה לרואה החשבון"}
             </button>
           </div>
         ) : (
           <p className="text-sm text-zinc-600">
             {status === "approved"
               ? "המסמך אושר על ידי רואה החשבון — אין עריכה מתוך מסך זה."
-              : status === "submitted"
-                ? "המסמך הוגש לרואה החשבון — מתוך מסך זה אין עריכה. לשינויים בפרטי החשבונית פנו לרו״ח (הוא יכול לעדכן אצלה במערכת)."
+              : status === "draft_uploading"
+                ? "השלימו את ההעלאה בהנחיות למעלה."
+              : status === "ocr_processing"
+                ? "המסמך בעיבוד — חילוץ טקסט מהקובץ. בסיום ניתן יהיה לערוך ולשמור."
                 : "לא ניתן לערוך מסמך במצב זה."}
           </p>
         )}

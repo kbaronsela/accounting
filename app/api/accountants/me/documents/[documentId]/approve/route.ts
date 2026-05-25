@@ -10,7 +10,7 @@ import { eq } from "drizzle-orm";
 
 type RouteContext = { params: Promise<{ documentId: string }> };
 
-/** סימון מסמך כאושר — רואה החשבון בלבד, רק מתוך סטטוס «נשלח לרו״ח». */
+/** סימון מסמך כאושר — רואה החשבון בלבד, מסטטוס «הועלה». */
 export async function POST(_request: Request, context: RouteContext) {
   const session = await auth();
   if (!session?.user?.id || !hasRole(session.user.roles, "accountant")) {
@@ -31,7 +31,7 @@ export async function POST(_request: Request, context: RouteContext) {
     return jsonError(
       409,
       "CONFLICT",
-      "ניתן לאשר רק מסמכים שסטטוסם «נשלח לרואה החשבון».",
+      "ניתן לאשר רק מסמכים שסטטוסם «הועלה» (לאחר סיום העיבוד).",
     );
   }
 

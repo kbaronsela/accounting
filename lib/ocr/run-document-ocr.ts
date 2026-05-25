@@ -25,7 +25,8 @@ function appendQualityNote(previous: string | null, note: string): string | null
 }
 
 /**
- * OCR אסינכרוני למסמך במצב `ocr_processing` — בסיום משבצך ל־`needs_review` או ל־`ocr_failed`.
+ * OCR אסינכרוני למסמך במצב `ocr_processing` — בסיום מעבר ל־`uploaded` (הצלחה או כשל,
+ * עם הערות איכות במקרה הצורך).
  */
 export async function runDocumentOcr(documentId: string): Promise<void> {
   const [doc] = await db
@@ -85,7 +86,7 @@ export async function runDocumentOcr(documentId: string): Promise<void> {
     };
 
     const patch: Partial<typeof documents.$inferInsert> = {
-      status: "needs_review",
+      status: "uploaded",
       updatedAt: now,
       ocrProvider: OCR_PROVIDER,
       extracted: extractedJson,
@@ -114,7 +115,7 @@ export async function runDocumentOcr(documentId: string): Promise<void> {
     if (weakText) {
       patch.qualityNotes = appendQualityNote(
         doc.qualityNotes,
-        "נדלק מעט טקסט — ייתכן מסמך סרוק; יש לוודא את הנתונים לפני שליחת רו״ח.",
+        "נדלק מעט טקסט — ייתכן מסמך סרוק; יש לוודא את הנתונים לפני אישור הרו״ח.",
       );
     }
 
@@ -125,7 +126,7 @@ export async function runDocumentOcr(documentId: string): Promise<void> {
     await db
       .update(documents)
       .set({
-        status: "ocr_failed",
+        status: "uploaded",
         qualityNotes: appendQualityNote(doc.qualityNotes, msg),
         updatedAt: now,
         ocrProvider: OCR_PROVIDER,

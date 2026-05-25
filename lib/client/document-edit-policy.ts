@@ -1,10 +1,5 @@
-/** סטטוסים בהם ניתן לערוך שדות ולהגיש מסמך (לפני שליחת רו״ח; ללא טיוטה/בעיות איכות). */
-export const CLIENT_DOCUMENT_EDITABLE_STATUSES = [
-  "uploaded",
-  "needs_review",
-  "ready_to_submit",
-  "ocr_failed",
-] as const;
+/** סטטוסים בהם לקוח רשאי לערוך שדות חשבונית (לאחר סיום עיבוד ההעלאה). */
+export const CLIENT_DOCUMENT_EDITABLE_STATUSES = ["uploaded"] as const;
 
 export type ClientDocumentEditableStatus =
   (typeof CLIENT_DOCUMENT_EDITABLE_STATUSES)[number];

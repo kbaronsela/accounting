@@ -73,8 +73,8 @@ export async function GET(request: Request) {
   const items = await listDocumentsForAccountant(session.user.id, {
     clientId: clientId || null,
     status,
-    fromSubmittedDate: from || null,
-    toSubmittedDate: to || null,
+    fromUpdatedDate: from || null,
+    toUpdatedDate: to || null,
     fromInvoiceDate: invoiceFrom || null,
     toInvoiceDate: invoiceTo || null,
     minAmount,

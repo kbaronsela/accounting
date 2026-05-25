@@ -397,10 +397,10 @@
 | פרמטר | תיאור |
 |--------|--------|
 | `clientId` | UUID |
-| `from` / `to` | טווח **תאריך הגשה** — על `submitted_at` (YYYY-MM-DD) |
+| `from` / `to` | טווח **עדכון אחרון במערכת** — על `updated_at` (YYYY-MM-DD) |
 | `invoiceFrom` / `invoiceTo` | טווח **תאריך חשבונית** — `COALESCE(finalDate, extractedDate)` (YYYY-MM-DD) |
 | `minAmount` / `maxAmount` | עשרוני — על `finalAmount` (הסכומים מובנים כש״ח) |
-| `status` | ברירת מחדל: `submitted` לרשימת “שליחות”; אפשר להרחיץ לטיפול פנימי |
+| `status` | סינון מדויק לפי סטטוס המסמך (`uploaded`, `approved`, `all`, וכו’) — ב־UI ברירת המחדל למסמכים למעקב היא `uploaded` |
 | `cursor` / `limit` | עימוד |
 
 **Response 200**
@@ -412,7 +412,7 @@
       "id": "uuid",
       "clientId": "uuid",
       "clientDisplayName": "משפחת כהן",
-      "status": "submitted",
+      "status": "uploaded",
       "finalAmount": "123.45",
       "finalCurrency": "ש״ח",
       "finalDate": "2026-01-10",

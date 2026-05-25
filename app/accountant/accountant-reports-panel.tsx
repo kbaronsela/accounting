@@ -339,7 +339,7 @@ export function AccountantReportsPanel() {
     if (fromD && toD && fromD > toD) {
       setItems([]);
       setListError(
-        "תאריך הגשה — «מתאריך» חייב להיות לפני או שווה ל־«עד תאריך».",
+        "תאריך עדכון במערכת — «מתאריך» חייב להיות לפני או שווה ל־«עד תאריך».",
       );
       setLoading(false);
       return;
@@ -660,7 +660,7 @@ export function AccountantReportsPanel() {
                       id={filterModalDescriptionId}
                       className="shrink-0 border-b border-teal-100/90 bg-white/80 px-4 py-3 text-sm text-zinc-600 sm:px-5"
                     >
-                      סינון לפי סטטוס, תאריכי הגשה, תאריך חשבונית וטווח סכומים —
+                      סינון לפי סטטוס, תאריכי עדכון במערכת, תאריך חשבונית וטווח סכומים —
                       בהתאמה לכללים בסקשן המסמכים (עד ל־{REPORT_LIMIT} מסמכים).
                       הלקוח נבחר רק בשדה «דוח עבור» בראש העמוד.
                     </p>
@@ -681,24 +681,22 @@ export function AccountantReportsPanel() {
                             <option value="">
                               למעט טיוטות (ברירת מחדל)
                             </option>
-                            <option value="submitted">נשלח לרואה החשבון</option>
+                            <option value="uploaded">הועלה (לפני אישור רו״ח)</option>
+                            <option value="submitted">סטטוס ישן: submitted</option>
                             <option value="approved">
                               אושר על ידי רואה החשבון
                             </option>
                             <option value="all">הכל כולל טיוטות</option>
-                            <option value="uploaded">הועלה</option>
-                            <option value="ready_to_submit">
-                              מוכן לשליחה לרו״ח
-                            </option>
-                            <option value="needs_review">דורש בדיקה</option>
-                            <option value="ocr_processing">עיבוד OCR</option>
-                            <option value="ocr_failed">כשל OCR</option>
+                            <option value="ready_to_submit">סטטוס ישן: ready_to_submit</option>
+                            <option value="needs_review">סטטוס ישן: needs_review</option>
+                            <option value="ocr_processing">בעיבוד (OCR)</option>
+                            <option value="ocr_failed">סטטוס ישן: ocr_failed</option>
                             <option value="archived">בארכיון</option>
                           </select>
                         </div>
                       <div className="border-t border-zinc-200 pt-3">
                         <p className="mb-2 text-xs font-medium text-zinc-600">
-                          תאריך הגשה לרואה החשבון
+                          עדכון אחרון במערכת
                         </p>
                         <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                           <div>
@@ -706,7 +704,7 @@ export function AccountantReportsPanel() {
                               htmlFor="acct-rpt-from"
                               className="mb-1 block text-xs font-medium text-zinc-700"
                             >
-                              הגשה מתאריך
+                              מתאריך עדכון
                             </label>
                             <input
                               id="acct-rpt-from"
@@ -723,7 +721,7 @@ export function AccountantReportsPanel() {
                               htmlFor="acct-rpt-to"
                               className="mb-1 block text-xs font-medium text-zinc-700"
                             >
-                              הגשה עד תאריך
+                              עד תאריך עדכון
                             </label>
                             <input
                               id="acct-rpt-to"

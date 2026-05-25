@@ -5,7 +5,6 @@ import {
   and,
   desc,
   eq,
-  isNotNull,
   ne,
   sql,
 } from "drizzle-orm";
@@ -122,8 +121,8 @@ export async function listDocumentsForAccountant(
   options: {
     clientId?: string | null;
     status?: string | null;
-    fromSubmittedDate?: string | null;
-    toSubmittedDate?: string | null;
+    fromUpdatedDate?: string | null;
+    toUpdatedDate?: string | null;
     /** YYYY-MM-DD — לפי `finalDate` ואם ריק אז `extractedDate` */
     fromInvoiceDate?: string | null;
     toInvoiceDate?: string | null;
@@ -157,19 +156,17 @@ export async function listDocumentsForAccountant(
     conditions.push(eq(documents.clientId, options.clientId));
   }
 
-  if (options.fromSubmittedDate) {
-    const from = startOfUtcDay(options.fromSubmittedDate);
+  if (options.fromUpdatedDate) {
+    const from = startOfUtcDay(options.fromUpdatedDate);
     if (from) {
-      conditions.push(isNotNull(documents.submittedAt));
-      conditions.push(sql`${documents.submittedAt} >= ${from}`);
+      conditions.push(sql`${documents.updatedAt} >= ${from}`);
     }
   }
 
-  if (options.toSubmittedDate) {
-    const toExcl = endOfUtcDayExclusive(options.toSubmittedDate);
+  if (options.toUpdatedDate) {
+    const toExcl = endOfUtcDayExclusive(options.toUpdatedDate);
     if (toExcl) {
-      conditions.push(isNotNull(documents.submittedAt));
-      conditions.push(sql`${documents.submittedAt} < ${toExcl}`);
+      conditions.push(sql`${documents.updatedAt} < ${toExcl}`);
     }
   }
 
