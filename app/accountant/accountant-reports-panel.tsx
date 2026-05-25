@@ -34,7 +34,6 @@ type ReportRow = {
 };
 
 type ReportSortKey =
-  | "client"
   | "vendor"
   | "amount"
   | "invoiceDate"
@@ -125,13 +124,6 @@ function sortReportRows(rows: ReportRow[], sort: ReportSortState): ReportRow[] {
   sorted.sort((a, b) => {
     let c = 0;
     switch (sort.key) {
-      case "client":
-        c = cmpStrings(
-          a.clientDisplayName.trim(),
-          b.clientDisplayName.trim(),
-          sort.dir,
-        );
-        break;
       case "vendor":
         c = cmpStrings(vendorSortKey(a), vendorSortKey(b), sort.dir);
         break;
@@ -198,7 +190,6 @@ function MobileReportSortBar({
           });
         }}
       >
-        <option value="client">לקוח</option>
         <option value="vendor">ספק</option>
         <option value="amount">סכום</option>
         <option value="invoiceDate">תאריך</option>
@@ -254,9 +245,8 @@ function csvEscapeCell(value: string): string {
 }
 
 function buildReportCsv(sorted: ReportRow[]): string {
-  const header = ["לקוח", "ספק", "סכום", "תאריך חשבונית", "מספר חשבונית"];
+  const header = ["ספק", "סכום", "תאריך חשבונית", "מספר חשבונית"];
   const rows = sorted.map((r) => [
-    r.clientDisplayName.trim(),
     (r.finalVendor ?? "").trim() || "",
     (r.finalAmount ?? "").trim().replace(",", "."),
     effectiveInvoiceIso(r) ?? "",
@@ -285,6 +275,7 @@ export function AccountantReportsPanel() {
   const [items, setItems] = useState<ReportRow[]>([]);
   const [listError, setListError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastLoadedAt, setLastLoadedAt] = useState<Date | null>(null);
   const [filterPanelOpen, setFilterPanelOpen] = useState(false);
   const [sort, setSort] = useState<ReportSortState>({
     key: "invoiceDate",
@@ -305,8 +296,25 @@ export function AccountantReportsPanel() {
     };
   }, []);
 
+  useEffect(() => {
+    if (clients.length === 1) {
+      setClientIdFilter((prev) =>
+        prev === clients[0].id ? prev : clients[0].id,
+      );
+    }
+  }, [clients]);
+
   const loadDocs = useCallback(async () => {
     setListError(null);
+
+    const cid = clientIdFilter.trim();
+    if (!cid) {
+      setItems([]);
+      setLastLoadedAt(null);
+      setLoading(false);
+      setListError("נא לבחור לקוח אחד לדוח (מתוך חלון «סינון»).");
+      return;
+    }
 
     const fromD = submittedFrom.trim();
     const toD = submittedTo.trim();
@@ -361,8 +369,10 @@ export function AccountantReportsPanel() {
       }
     }
 
-    const params: Record<string, string> = { limit: REPORT_LIMIT };
-    if (clientIdFilter.trim()) params.clientId = clientIdFilter.trim();
+    const params: Record<string, string> = {
+      limit: REPORT_LIMIT,
+      clientId: cid,
+    };
     if (statusFilter.trim()) params.status = statusFilter.trim();
     if (fromD) params.from = fromD;
     if (toD) params.to = toD;
@@ -386,6 +396,7 @@ export function AccountantReportsPanel() {
         return;
       }
       setItems(data.items ?? []);
+      setLastLoadedAt(new Date());
     } catch {
       setItems([]);
       setListError("שגיאת רשת.");
@@ -447,14 +458,21 @@ export function AccountantReportsPanel() {
     URL.revokeObjectURL(url);
   }, [sortedItems]);
 
-  const generatedLabel = useMemo(
-    () =>
-      `נוצר ${new Date().toLocaleString("he-IL", {
-        dateStyle: "medium",
-        timeStyle: "short",
-      })}, ${sortedItems.length} שורות`,
-    [sortedItems.length],
-  );
+  const selectedClientName = useMemo(() => {
+    const id = clientIdFilter.trim();
+    if (!id) return "";
+    return clients.find((c) => c.id === id)?.displayName ?? "";
+  }, [clients, clientIdFilter]);
+
+  const printGeneratedFooter = useMemo(() => {
+    if (!lastLoadedAt) return "";
+    return `נוצר ${lastLoadedAt.toLocaleString("he-IL", {
+      dateStyle: "medium",
+      timeStyle: "short",
+    })}`;
+  }, [lastLoadedAt]);
+
+  const canRunReport = Boolean(clientIdFilter.trim());
 
   const sortButtonClass =
     "inline-flex items-center gap-0.5 rounded-sm px-1 py-0.5 text-xs font-medium text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900";
@@ -478,15 +496,48 @@ export function AccountantReportsPanel() {
   return (
     <div className="space-y-6">
       <div className="rounded-lg border border-zinc-200 bg-white shadow-sm ring-1 ring-teal-100/80 print:border-black print:bg-white print:shadow-none">
-        <div className="space-y-4 p-4 sm:p-6 print:p-0">
+        <div className="acct-report-print-root space-y-4 p-4 sm:p-6 print:p-0">
+          <style>
+            {`@media print {
+  @page { size: A4 portrait; margin: 11mm 10mm 14mm; }
+  .acct-report-print-root { box-sizing: border-box; max-width: 100%; }
+  .acct-report-print-root table.acct-report-table {
+    width: 100%;
+    max-width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+    font-size: 9pt;
+  }
+  .acct-report-print-root .acct-report-table th,
+  .acct-report-print-root .acct-report-table td {
+    border: 1px solid #bdbdbd;
+    padding: 3px 5px;
+    vertical-align: top;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+  }
+  .acct-report-col-vendor { width: 41%; max-width: 41%; }
+  .acct-report-col-amount { width: 13%; max-width: 13%; white-space: nowrap; }
+  .acct-report-col-date { width: 17%; max-width: 17%; white-space: nowrap; }
+  .acct-report-col-inv { width: 29%; max-width: 29%; }
+}`}
+          </style>
           <div className="flex flex-wrap items-start justify-between gap-3 print:hidden">
             <div>
               <h2 className="text-base font-semibold text-zinc-900">דוחות</h2>
               <p className="mt-1 max-w-xl text-xs text-zinc-600">
-                דוח מהמערכת לפי אותם סינונים כמו ברשימת המסמכים. טבלה מתעדכנת
-                אוטומטית אחרי שינוי מה שמפורט בחלון «סינון». עד ל־{REPORT_LIMIT}{" "}
-                מסמכים בכל דוח אחד.
+                דוח לפי לקוח אחד (חובה), עם סינונים כמו בסקשן המסמכים עד ל־
+                {REPORT_LIMIT} מסמכים. יש להשתמש בסינון לבחירת הלקוח ושאר הסינון.
               </p>
+              {selectedClientName ? (
+                <p className="mt-2 text-sm font-semibold text-teal-900 print:hidden">
+                  דוח עבור {selectedClientName}
+                </p>
+              ) : (
+                <p className="mt-2 text-xs text-amber-800 print:hidden">
+                  נא לבחור לקוח מתוך «סינון» כדי לטעון את הדוח.
+                </p>
+              )}
             </div>
             <button
               type="button"
@@ -503,7 +554,7 @@ export function AccountantReportsPanel() {
             <button
               type="button"
               onClick={handlePrint}
-              disabled={sortedItems.length === 0 || loading}
+              disabled={sortedItems.length === 0 || loading || !canRunReport}
               className="inline-flex items-center rounded-lg border border-zinc-800 bg-zinc-900 px-4 py-2 text-sm font-medium text-white hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50"
             >
               הדפסה
@@ -511,7 +562,7 @@ export function AccountantReportsPanel() {
             <button
               type="button"
               onClick={handleExportCsv}
-              disabled={sortedItems.length === 0 || loading}
+              disabled={sortedItems.length === 0 || loading || !canRunReport}
               className="inline-flex items-center rounded-lg border border-teal-800 bg-teal-50 px-4 py-2 text-sm font-medium text-teal-950 hover:bg-teal-100 disabled:cursor-not-allowed disabled:opacity-50"
             >
               יצוא לאקסל ‎(.csv‎)
@@ -558,8 +609,8 @@ export function AccountantReportsPanel() {
                       id={filterModalDescriptionId}
                       className="shrink-0 border-b border-teal-100/90 bg-white/80 px-4 py-3 text-sm text-zinc-600 sm:px-5"
                     >
-                      אותן אפשרויות כמו בניהול מסמכים: לקוח, סטטוס, טווחי תאריכי
-                      הגשה וחשבונית וסכומים.
+                      במסך זה דוח מתייחס ללקוח אחד בלבד בכל פעם. יש לבחור את הלקוח
+                      בשדה שלמטה ואז לסנן תאריכים, סטטוס וכו לפי הצורך.
                     </p>
                     <div className="max-h-[min(32rem,calc(100dvh-10rem))] space-y-3 overflow-y-auto bg-zinc-50/85 px-4 py-4 sm:px-5">
                       <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
@@ -569,14 +620,20 @@ export function AccountantReportsPanel() {
                             className="mb-1 block text-xs font-medium text-zinc-700"
                           >
                             לקוח
+                            <span className="text-red-600"> *</span>
                           </label>
                           <select
                             id="acct-rpt-client"
+                            required
                             value={clientIdFilter}
                             onChange={(e) => setClientIdFilter(e.target.value)}
                             className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
                           >
-                            <option value="">כל הלקוחות</option>
+                            <option value="">
+                              {clients.length === 0
+                                ? "טוען לקוחות…"
+                                : "יש לבחור לקוח…"}
+                            </option>
                             {clients.map((c) => (
                               <option key={c.id} value={c.id}>
                                 {c.displayName}
@@ -747,10 +804,13 @@ export function AccountantReportsPanel() {
               )
             : null}
 
-          <div className="hidden border-y border-teal-100 bg-teal-50/50 px-3 py-2 text-xs text-teal-900 print:block print:border-black print:bg-white">
-            <p className="font-semibold">דוחות — שיתוף קבלות</p>
-            <p className="tabular-nums text-zinc-700">{generatedLabel}</p>
-          </div>
+          {selectedClientName ? (
+            <div className="hidden print:block print:pb-3 print:pt-1 print:text-center">
+              <p className="text-[13pt] font-bold leading-snug text-black">
+                דוח עבור {selectedClientName}
+              </p>
+            </div>
+          ) : null}
 
           {loading ? (
             <p className="text-sm text-zinc-600">טוענים דוח…</p>
@@ -766,32 +826,16 @@ export function AccountantReportsPanel() {
             <>
               <MobileReportSortBar sort={sort} onSortChange={setSort} />
 
-              <div className="-mx-1 overflow-x-auto print:overflow-visible">
+              <div className="-mx-1 overflow-x-auto print:mx-0 print:w-full print:max-w-none print:overflow-visible">
                 <table
-                  className="min-w-[40rem] w-full border-collapse text-sm print:min-w-0 print:text-xs"
+                  className="acct-report-table min-w-[24rem] w-full max-w-full border-collapse text-sm print:min-w-0 print:text-inherit"
                   dir="rtl"
                 >
                   <thead>
                     <tr className="border-b border-teal-200/80 bg-gradient-to-bl from-teal-50 to-emerald-50/80 print:border-black print:bg-white">
                       <th
                         scope="col"
-                        className="px-2 py-2.5 text-start font-semibold text-teal-950 tabular-nums print:px-1 print:py-1"
-                      >
-                        <button
-                          type="button"
-                          className={sortButtonClass}
-                          onClick={() => toggleSort("client")}
-                        >
-                          לקוח
-                          <SortCue
-                            active={sort.key === "client"}
-                            dir={sort.dir}
-                          />
-                        </button>
-                      </th>
-                      <th
-                        scope="col"
-                        className="px-2 py-2.5 text-start font-semibold text-teal-950 print:px-1 print:py-1"
+                        className="acct-report-col-vendor px-2 py-2.5 text-start font-semibold text-teal-950 print:border print:px-1 print:py-1"
                       >
                         <button
                           type="button"
@@ -807,7 +851,7 @@ export function AccountantReportsPanel() {
                       </th>
                       <th
                         scope="col"
-                        className="px-2 py-2.5 text-start font-semibold text-teal-950 tabular-nums print:px-1 print:py-1"
+                        className="acct-report-col-amount px-2 py-2.5 text-start font-semibold text-teal-950 tabular-nums print:border print:px-1 print:py-1"
                       >
                         <button
                           type="button"
@@ -823,7 +867,7 @@ export function AccountantReportsPanel() {
                       </th>
                       <th
                         scope="col"
-                        className="px-2 py-2.5 text-start font-semibold text-teal-950 tabular-nums print:px-1 print:py-1"
+                        className="acct-report-col-date px-2 py-2.5 text-start font-semibold text-teal-950 tabular-nums print:border print:px-1 print:py-1"
                       >
                         <button
                           type="button"
@@ -839,7 +883,7 @@ export function AccountantReportsPanel() {
                       </th>
                       <th
                         scope="col"
-                        className="px-2 py-2.5 text-start font-semibold text-teal-950 print:px-1 print:py-1"
+                        className="acct-report-col-inv px-2 py-2.5 text-start font-semibold text-teal-950 print:border print:px-1 print:py-1"
                       >
                         <button
                           type="button"
@@ -863,26 +907,23 @@ export function AccountantReportsPanel() {
                           idx % 2 === 0 ? "bg-white" : "bg-zinc-50/60 print:bg-white"
                         }
                       >
-                        <td className="max-w-[10rem] px-2 py-2 font-medium text-zinc-950 print:px-1 print:py-1">
-                          {d.clientDisplayName}
-                        </td>
                         <td
-                          className="max-w-[12rem] px-2 py-2 text-zinc-800 print:max-w-none print:px-1 print:py-1"
+                          className="acct-report-col-vendor max-w-[12rem] px-2 py-2 text-zinc-800 print:max-w-none print:border print:px-1 print:py-1"
                           title={(d.finalVendor ?? "").trim()}
                         >
                           {(d.finalVendor ?? "").trim() || (
                             <span className="text-zinc-400">לא צוין</span>
                           )}
                         </td>
-                        <td className="whitespace-nowrap px-2 py-2 tabular-nums print:px-1 print:py-1">
+                        <td className="acct-report-col-amount whitespace-nowrap px-2 py-2 tabular-nums print:border print:px-1 print:py-1">
                           {formatAmount(d)}
                         </td>
-                        <td className="whitespace-nowrap px-2 py-2 tabular-nums print:px-1 print:py-1">
+                        <td className="acct-report-col-date whitespace-nowrap px-2 py-2 tabular-nums print:border print:px-1 print:py-1">
                           {invoiceDateDisplay(d)}
                         </td>
                         <td
                           dir="ltr"
-                          className="px-2 py-2 text-start text-zinc-800 print:px-1 print:py-1"
+                          className="acct-report-col-inv px-2 py-2 text-start text-zinc-800 print:border print:px-1 print:py-1"
                         >
                           <span>{invoiceNumberDisplay(d)}</span>
                         </td>
@@ -892,7 +933,21 @@ export function AccountantReportsPanel() {
                 </table>
               </div>
 
-              <p className="text-xs text-zinc-500 print:hidden">{generatedLabel}</p>
+              {lastLoadedAt && printGeneratedFooter ? (
+                <p className="mt-6 hidden text-center text-[9pt] leading-relaxed text-zinc-600 print:block print:mt-8">
+                  {printGeneratedFooter}
+                </p>
+              ) : null}
+
+              {lastLoadedAt ? (
+                <p className="text-xs text-zinc-500 print:hidden">
+                  עדכון נתונים אחרון:{" "}
+                  {lastLoadedAt.toLocaleString("he-IL", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
+                </p>
+              ) : null}
             </>
           )}
         </div>
