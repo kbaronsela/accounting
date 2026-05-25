@@ -12,7 +12,10 @@ import { isoDateToDisplay } from "@/lib/client/date-input-helpers";
 import { SHEKEL_DISPLAY } from "@/lib/client/currency-canonical";
 import type { ClientDocumentListItem } from "@/lib/client/queries";
 import { formatFinalInvoiceAmountDisplay } from "@/lib/invoice-final-amount";
-import { documentStatusLabelHebrew } from "@/lib/document-status-display";
+import {
+  documentStatusLabelHebrew,
+  documentStatusSortRank,
+} from "@/lib/document-status-display";
 import { documentStatusRowSurfaceClass } from "@/lib/ui/document-status-row-classes";
 import { DraftUploadResumeButton } from "./draft-upload-resume-button";
 
@@ -113,11 +116,13 @@ function sortDocuments(
         return cmpStrings(a.id, b.id, "asc");
       }
       case "status": {
-        return cmpStrings(
-          `${a.status}\u0000${a.id}`,
-          `${b.status}\u0000${b.id}`,
+        const c = cmpNumericOrTs(
+          documentStatusSortRank(a.status),
+          documentStatusSortRank(b.status),
           sort.dir,
         );
+        if (c !== 0) return c;
+        return cmpStrings(a.id, b.id, "asc");
       }
       case "amount": {
         const c = cmpNumericOrTs(

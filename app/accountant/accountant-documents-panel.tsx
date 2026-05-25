@@ -25,7 +25,10 @@ import {
 } from "@/lib/ui/modal-classes";
 import { documentStatusRowSurfaceClass } from "@/lib/ui/document-status-row-classes";
 import { isoDateToDisplay } from "@/lib/client/date-input-helpers";
-import { documentStatusLabelHebrew } from "@/lib/document-status-display";
+import {
+  documentStatusLabelHebrew,
+  documentStatusSortRank,
+} from "@/lib/document-status-display";
 import { formatFinalInvoiceAmountDisplay } from "@/lib/invoice-final-amount";
 
 type ClientOption = {
@@ -170,9 +173,9 @@ function sortAccountantDocs(
         );
         break;
       case "status":
-        c = cmpStrings(
-          `${a.status}\u0000${a.id}`,
-          `${b.status}\u0000${b.id}`,
+        c = cmpNumericOrTs(
+          documentStatusSortRank(a.status),
+          documentStatusSortRank(b.status),
           sort.dir,
         );
         break;
@@ -297,7 +300,7 @@ function buildDocsQuery(params: Record<string, string>): string {
 export function AccountantDocumentsPanel() {
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [clientIdFilter, setClientIdFilter] = useState("");
-  const [statusFilter, setStatusFilter] = useState("uploaded");
+  const [statusFilter, setStatusFilter] = useState("");
   const [submittedFrom, setSubmittedFrom] = useState("");
   const [submittedTo, setSubmittedTo] = useState("");
   const [invoiceFrom, setInvoiceFrom] = useState("");
@@ -653,29 +656,16 @@ export function AccountantDocumentsPanel() {
                         }
                         className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
                       >
-                        <option value="uploaded">
-                          הועלה — למעקב לפני אישור (ברירת מחדל)
+                        <option value="">
+                          הועלה או אושר (ברירת מחדל)
                         </option>
+                        <option value="processing">בעיבוד</option>
+                        <option value="uploaded">הועלה בלבד</option>
                         <option value="approved">
                           אושר על ידי רואה החשבון
                         </option>
-                        <option value="">
-                          כל הסטטוסים (למעט טעינת קובץ)
-                        </option>
-                        <option value="all">הכל כולל טיוטות</option>
-                        <option value="ocr_processing">בעיבוד (OCR)</option>
-                        <option value="draft_uploading">טעינת קובץ (טיוטה)</option>
                         <option value="archived">בארכיון</option>
-                        <option value="submitted">
-                          סטטוס ישן: submitted (אם קיים בנתונים)
-                        </option>
-                        <option value="needs_review">
-                          סטטוס ישן: needs_review
-                        </option>
-                        <option value="ready_to_submit">
-                          סטטוס ישן: ready_to_submit
-                        </option>
-                        <option value="ocr_failed">סטטוס ישן: ocr_failed</option>
+                        <option value="all">כל המסמכים</option>
                       </select>
                     </div>
                   </div>

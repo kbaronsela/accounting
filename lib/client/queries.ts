@@ -2,6 +2,11 @@ import { db } from "@/lib/db";
 import { canonicalizeCurrency } from "@/lib/client/currency-canonical";
 import { clientMembers, clients, documents, users } from "@/lib/db/schema";
 import { and, desc, eq, inArray } from "drizzle-orm";
+import {
+  DOCUMENT_ACTIVE_LIST_STATUSES,
+  DOCUMENT_PROCESSING_STATUSES,
+  parseDocumentListStatusFilter,
+} from "@/lib/document-status-display";
 
 export type ClientMeUser = {
   id: string;
@@ -118,8 +123,15 @@ export async function listDocumentsForClientUser(
   }
 
   const conditions = [inArray(documents.clientId, filterIds)];
-  if (options.status && options.status.length > 0) {
-    conditions.push(eq(documents.status, options.status));
+  const listFilter = parseDocumentListStatusFilter(options.status);
+  if (listFilter === "active") {
+    conditions.push(inArray(documents.status, [...DOCUMENT_ACTIVE_LIST_STATUSES]));
+  } else if (listFilter === "all") {
+    /* אין סינון סטטוס */
+  } else if (listFilter === "processing") {
+    conditions.push(inArray(documents.status, [...DOCUMENT_PROCESSING_STATUSES]));
+  } else {
+    conditions.push(eq(documents.status, listFilter));
   }
 
   const rows = await db

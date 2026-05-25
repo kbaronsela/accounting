@@ -400,7 +400,7 @@
 | `from` / `to` | טווח **עדכון אחרון במערכת** — על `updated_at` (YYYY-MM-DD) |
 | `invoiceFrom` / `invoiceTo` | טווח **תאריך חשבונית** — `COALESCE(finalDate, extractedDate)` (YYYY-MM-DD) |
 | `minAmount` / `maxAmount` | עשרוני — על `finalAmount` (הסכומים מובנים כש״ח) |
-| `status` | סינון מדויק לפי סטטוס המסמך (`uploaded`, `approved`, `all`, וכו’) — ב־UI ברירת המחדל למסמכים למעקב היא `uploaded` |
+| `status` | ללא פרמטר או `active`: **`uploaded` ו־`approved`** (ברירת המחדל ברשימות). `processing` → `draft_uploading`+`ocr_processing`; `uploaded` / `approved` / `archived`; `all` → ללא סינון סטטוס |
 | `cursor` / `limit` | עימוד |
 
 **Response 200**
@@ -443,7 +443,7 @@
 {
   "id": "uuid",
   "clientId": "uuid",
-  "status": "submitted",
+  "status": "uploaded",
   "finalAmount": "123.45",
   "finalCurrency": "ש״ח",
   "finalDate": "2026-01-10",
@@ -463,7 +463,7 @@
 }
 ```
 
-- `editableInvoiceFields`: `true` כאשר הרו״ח רשאי לעדכן את שדות החשבונית (לאחר הגשה — בעיקר במצבים `submitted`, `archived`).
+- `editableInvoiceFields`: `true` כאשר הרו״ח רשאי לעדכן את שדות החשבונית (במצב `uploaded`; לא בארכיון ובמסמכים באישור סופי).
 
 ---
 
@@ -542,7 +542,7 @@
 
 **מטרה**: לאשר שהקובץ נכח; להתחיל בדיקת איכות + OCR.
 
-**Response 202** — `{ "status": "ocr_processing" }`. עיבוד OCR רץ ברקע; בסיום מצב המסמך יועדכן ל־`needs_review` (או `ocr_failed`). אם `OCR_DISABLED=1`, הממשק משאיר `uploaded` ללא OCR. בסיום OCR היוריסטיקה מנסה לזהות גם **מספר חשבונית/קבלה** (`extractedInvoiceNumber`); כאשר `finalInvoiceNumber` ריק, הערך משוכפל אליו.
+**Response 202** — `{ "status": "ocr_processing" }`. עיבוד OCR רץ ברקע; בסיום מצב המסמך יועדכן ל־`uploaded`. אם `OCR_DISABLED=1`, הממשק משאיר `uploaded` ללא OCR. בסיום OCR היוריסטיקה מנסה לזהות גם **מספר חשבונית/קבלה** (`extractedInvoiceNumber`); כאשר `finalInvoiceNumber` ריק, הערך משוכפל אליו.
 
 **שגיאות `400` (אם עדיין `draft_uploading`)**
 
@@ -559,7 +559,9 @@
 
 ### 5.5 `GET /client/documents`
 
-**Query**: `clientId`, `status`, `from`/`to`, עימוד.
+**Query**: `clientId`, `status`, `limit`.
+
+`status`: כמו ב־`GET /accountants/me/documents` — ללא פרמטר / `active` ⇒ `uploaded`+`approved`; `processing` · `uploaded` · `approved` · `archived` · `all`.
 
 ---
 
@@ -575,7 +577,7 @@
 
 ### 5.7 `PATCH /client/documents/:documentId`
 
-**מטרה**: עריכת שדות לפני submit; רק כש־`status` מאפשר (למשל `needs_review`).
+**מטרה**: עריכת שדות במצב `uploaded` (לאחר סיום העיבוד).
 
 **Body**
 

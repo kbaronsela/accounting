@@ -281,7 +281,7 @@ export function AccountantReportsPanel() {
   const [clients, setClients] = useState<ClientOption[]>([]);
   const [clientIdFilter, setClientIdFilter] = useState("");
   /** ברירת מחדל: כל הסטטוסים (למעט טיוטות) — כמו API כשמשאירים ריק */
-  const [statusFilter, setStatusFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("approved");
   const [submittedFrom, setSubmittedFrom] = useState("");
   const [submittedTo, setSubmittedTo] = useState("");
   const [invoiceFrom, setInvoiceFrom] = useState("");
@@ -678,20 +678,14 @@ export function AccountantReportsPanel() {
                             onChange={(e) => setStatusFilter(e.target.value)}
                             className="w-full rounded-md border border-zinc-300 bg-white px-3 py-2 text-sm"
                           >
-                            <option value="">
-                              למעט טיוטות (ברירת מחדל)
-                            </option>
-                            <option value="uploaded">הועלה (לפני אישור רו״ח)</option>
-                            <option value="submitted">סטטוס ישן: submitted</option>
                             <option value="approved">
-                              אושר על ידי רואה החשבון
+                              אושר (ברירת מחדל)
                             </option>
-                            <option value="all">הכל כולל טיוטות</option>
-                            <option value="ready_to_submit">סטטוס ישן: ready_to_submit</option>
-                            <option value="needs_review">סטטוס ישן: needs_review</option>
-                            <option value="ocr_processing">בעיבוד (OCR)</option>
-                            <option value="ocr_failed">סטטוס ישן: ocr_failed</option>
+                            <option value="">הועלה או אושר</option>
+                            <option value="uploaded">הועלה בלבד</option>
+                            <option value="processing">בעיבוד</option>
                             <option value="archived">בארכיון</option>
+                            <option value="all">כל המסמכים</option>
                           </select>
                         </div>
                       <div className="border-t border-zinc-200 pt-3">

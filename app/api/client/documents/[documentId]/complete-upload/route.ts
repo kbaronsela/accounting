@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { getDocumentForClientMember } from "@/lib/client/document-access";
 import { documents } from "@/lib/db/schema";
 import { runDocumentOcr } from "@/lib/ocr/run-document-ocr";
+import { DOCUMENT_POST_DRAFT_UPLOAD_STATUSES } from "@/lib/document-status-display";
 import { uploadedDocumentFileExists } from "@/lib/uploads/document-storage";
 import { eq } from "drizzle-orm";
 
@@ -26,16 +27,8 @@ export async function POST(_request: Request, context: RouteContext) {
   }
 
   /** כבר עבר זרימת ההעלאה — אידומפוטנטיות (ניסוי חוזר / כפתור השלמה) */
-  const alreadyPastDraft = new Set([
-    "ocr_processing",
-    "needs_review",
-    "uploaded",
-    "ocr_failed",
-    "ready_to_submit",
-    "submitted",
-    "approved",
-    "rejected_quality",
-    "archived",
+  const alreadyPastDraft = new Set<string>([
+    ...DOCUMENT_POST_DRAFT_UPLOAD_STATUSES,
   ]);
   if (alreadyPastDraft.has(doc.status)) {
     return Response.json({ status: doc.status }, { status: 202 });

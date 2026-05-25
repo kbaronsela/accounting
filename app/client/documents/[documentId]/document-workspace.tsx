@@ -14,7 +14,10 @@ import {
   todayIsoLocal,
 } from "@/lib/client/date-input-helpers";
 import { finalInvoiceAmountInputValueFromStored } from "@/lib/invoice-final-amount";
-import { documentStatusLabelHebrew } from "@/lib/document-status-display";
+import {
+  documentStatusLabelHebrew,
+  isDocumentProcessingStatus,
+} from "@/lib/document-status-display";
 
 export type ClientDocumentDetailInitial = {
   id: string;
@@ -438,9 +441,11 @@ export function ClientDocumentWorkspace({
           <p className="text-sm text-zinc-600">
             {status === "approved"
               ? "המסמך אושר על ידי רואה החשבון — אין עריכה מתוך מסך זה."
+              : status === "archived"
+                ? "מסמך בארכיון — אין עריכה מתוך מסך זה."
               : status === "draft_uploading"
                 ? "השלימו את ההעלאה בהנחיות למעלה."
-              : status === "ocr_processing"
+              : isDocumentProcessingStatus(status)
                 ? "המסמך בעיבוד — חילוץ טקסט מהקובץ. בסיום ניתן יהיה לערוך ולשמור."
                 : "לא ניתן לערוך מסמך במצב זה."}
           </p>

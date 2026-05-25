@@ -5,11 +5,16 @@ import {
   and,
   desc,
   eq,
-  ne,
+  inArray,
   sql,
 } from "drizzle-orm";
 import type { ClientDocumentRow } from "@/lib/client/document-access";
 import { canonicalizeCurrency } from "@/lib/client/currency-canonical";
+import {
+  DOCUMENT_ACTIVE_LIST_STATUSES,
+  DOCUMENT_PROCESSING_STATUSES,
+  parseDocumentListStatusFilter,
+} from "@/lib/document-status-display";
 
 export type AccountantDocumentListItem = {
   id: string;
@@ -143,13 +148,15 @@ export async function listDocumentsForAccountant(
 
   const conditions = [eq(clients.accountantId, accountantUserId)];
 
-  const statusNorm = options.status?.trim().toLowerCase() ?? "";
-  if (statusNorm === "all") {
+  const listFilter = parseDocumentListStatusFilter(options.status);
+  if (listFilter === "active") {
+    conditions.push(inArray(documents.status, [...DOCUMENT_ACTIVE_LIST_STATUSES]));
+  } else if (listFilter === "all") {
     /* אין סינון סטטוס */
-  } else if (statusNorm.length > 0) {
-    conditions.push(eq(documents.status, statusNorm));
+  } else if (listFilter === "processing") {
+    conditions.push(inArray(documents.status, [...DOCUMENT_PROCESSING_STATUSES]));
   } else {
-    conditions.push(ne(documents.status, "draft_uploading"));
+    conditions.push(eq(documents.status, listFilter));
   }
 
   if (options.clientId) {
