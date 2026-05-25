@@ -445,11 +445,7 @@ export function AccountantUploadSection({
               נבחר:{" "}
               <span className="font-medium text-zinc-800">{file.name}</span>
             </p>
-          ) : (
-            <p className="text-xs text-zinc-500">
-              טרם נבחר קובץ — יש להשתמש באחד מהכפתורים למעלה.
-            </p>
-          )}
+          ) : null}
         </div>
         {error ? (
           <p className="text-sm text-red-700" role="alert">
