@@ -293,10 +293,6 @@ export function AccountantSubmittedInvoiceEditDialog({
                   {payload.clientDisplayName}
                 </span>
               </p>
-              <p className="mt-3 text-sm text-zinc-600">
-                כל השדות למטה אופציונליים — ניתן לשמור עם שדות ריקים או למלא
-                בהדרגה. אם משהו מוזן, יבוצע תיקון לפורמט לפני השמירה.
-              </p>
             </div>
 
             <form onSubmit={(e) => void handleSubmit(e)} className="mt-6 space-y-4">
@@ -306,7 +302,6 @@ export function AccountantSubmittedInvoiceEditDialog({
                   className="mb-1 inline-flex flex-wrap items-center gap-0 text-sm text-zinc-700"
                 >
                   סכום סופי
-                  <span className="ms-1 font-normal text-zinc-500">(אופציונלי)</span>
                 </label>
                 <input
                   id="acct-ed-amt"
@@ -324,17 +319,12 @@ export function AccountantSubmittedInvoiceEditDialog({
                 ) : null}
               </div>
 
-              <p className="rounded-lg border border-teal-100 bg-teal-50/70 px-3 py-2 text-sm text-teal-950">
-                המערכת מטפלת רק בשקלים — הסכום בשדה הבא מוצג ב־{SHEKEL_DISPLAY}.
-              </p>
-
               <div className="min-w-0">
                 <label
                   htmlFor="acct-ed-date-display"
                   className="mb-1 inline-flex flex-wrap items-center gap-0 text-sm text-zinc-700"
                 >
                   תאריך חשבונית (DD.MM.YYYY)
-                  <span className="ms-1 font-normal text-zinc-500">(אופציונלי)</span>
                 </label>
                 <div className="flex min-w-0 flex-row flex-nowrap items-stretch gap-0">
                   <input
@@ -401,7 +391,6 @@ export function AccountantSubmittedInvoiceEditDialog({
                   className="mb-1 inline-flex flex-wrap items-center gap-0 text-sm text-zinc-700"
                 >
                   ספק / שם העסק
-                  <span className="ms-1 font-normal text-zinc-500">(אופציונלי)</span>
                 </label>
                 <input
                   id="acct-ed-vendor"
@@ -424,9 +413,6 @@ export function AccountantSubmittedInvoiceEditDialog({
                   className="mb-1 block text-sm text-zinc-700"
                 >
                   מספר חשבונית / קבלה
-                  <span className="ms-1 font-normal text-zinc-500">
-                    (אופציונלי)
-                  </span>
                 </label>
                 <input
                   id="acct-ed-inv-no"
