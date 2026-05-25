@@ -13,6 +13,7 @@ import {
   parseStoredIsoDate,
   todayIsoLocal,
 } from "@/lib/client/date-input-helpers";
+import { finalInvoiceAmountInputValueFromStored } from "@/lib/invoice-final-amount";
 
 export type ClientDocumentDetailInitial = {
   id: string;
@@ -75,7 +76,9 @@ export function ClientDocumentWorkspace({
   const finalEditable =
     initial.editable && status !== "submitted" && status !== "approved";
 
-  const [finalAmount, setFinalAmount] = useState(initial.finalAmount ?? "");
+  const [finalAmount, setFinalAmount] = useState(() =>
+    finalInvoiceAmountInputValueFromStored(initial.finalAmount),
+  );
 
   const [invoiceDate, setInvoiceDate] = useState(() => {
     const iso = parseStoredIsoDate(initial.finalDate);

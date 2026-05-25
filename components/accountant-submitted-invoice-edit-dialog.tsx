@@ -8,6 +8,7 @@ import {
   parseStoredIsoDate,
   todayIsoLocal,
 } from "@/lib/client/date-input-helpers";
+import { finalInvoiceAmountInputValueFromStored } from "@/lib/invoice-final-amount";
 import {
   appModalCenteredPaperClass,
   appModalGhostButtonClass,
@@ -136,7 +137,7 @@ export function AccountantSubmittedInvoiceEditDialog({
         }
         if (!cancelled) {
           setPayload(row);
-          setFinalAmount(row.finalAmount ?? "");
+          setFinalAmount(finalInvoiceAmountInputValueFromStored(row.finalAmount));
           const iso = parseStoredIsoDate(row.finalDate);
           setInvoiceDate(
             iso

@@ -7,6 +7,7 @@ import { eq } from "drizzle-orm";
 import { canonicalizeCurrency } from "@/lib/client/currency-canonical";
 import { getDocumentForClientMember } from "@/lib/client/document-access";
 import { isClientDocumentEditable } from "@/lib/client/document-edit-policy";
+import { tryNormalizeFinalInvoiceAmountStored } from "@/lib/invoice-final-amount";
 import { getPublicAppOrigin } from "@/lib/invitations/public-invite-url";
 import { deleteUploadedDocumentAfterDbChange } from "@/lib/uploads/document-storage";
 import { z } from "zod";
@@ -119,10 +120,19 @@ export async function PATCH(request: Request, context: RouteContext) {
   const patch: Partial<typeof documents.$inferInsert> = { updatedAt: now };
 
   if (p.finalAmount !== undefined) {
-    patch.finalAmount =
-      p.finalAmount === null || p.finalAmount.trim().length === 0
-        ? null
-        : p.finalAmount.trim();
+    if (p.finalAmount === null || p.finalAmount.trim().length === 0) {
+      patch.finalAmount = null;
+    } else {
+      const norm = tryNormalizeFinalInvoiceAmountStored(p.finalAmount.trim());
+      if (!norm.ok) {
+        return jsonError(
+          400,
+          "VALIDATION_ERROR",
+          "סכום החשבונית אינו מספר תקין.",
+        );
+      }
+      patch.finalAmount = norm.value;
+    }
   }
   if (p.finalCurrency !== undefined) {
     patch.finalCurrency =

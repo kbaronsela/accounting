@@ -1,7 +1,5 @@
 import type { ClientDocumentRow } from "@/lib/client/document-access";
-
-/** סכום חיובי (עד שני עשרוניים) */
-const AMOUNT_RE = /^\d+(\.\d{1,2})?$/;
+import { tryNormalizeFinalInvoiceAmountStored } from "@/lib/invoice-final-amount";
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -21,7 +19,8 @@ export function validateDocumentForSubmit(
 
   const amount = doc.finalAmount?.trim() ?? "";
   if (amount) {
-    if (!AMOUNT_RE.test(amount) || Number.isNaN(Number.parseFloat(amount))) {
+    const norm = tryNormalizeFinalInvoiceAmountStored(amount);
+    if (!norm.ok) {
       fields.finalAmount = ["מספר תקין נדרש (למשל 123.45)"];
     }
   }

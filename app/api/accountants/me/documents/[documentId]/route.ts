@@ -12,6 +12,7 @@ import {
   hasSubmitFieldErrors,
   validateDocumentForSubmit,
 } from "@/lib/client/document-submit-validation";
+import { tryNormalizeFinalInvoiceAmountStored } from "@/lib/invoice-final-amount";
 import { db } from "@/lib/db";
 import { auditEvents, documents } from "@/lib/db/schema";
 import { getPublicAppOrigin } from "@/lib/invitations/public-invite-url";
@@ -114,10 +115,19 @@ export async function PATCH(request: Request, context: RouteContext) {
   const patch: Partial<typeof documents.$inferInsert> = { updatedAt: now };
 
   if (p.finalAmount !== undefined) {
-    patch.finalAmount =
-      p.finalAmount === null || p.finalAmount.trim().length === 0
-        ? null
-        : p.finalAmount.trim();
+    if (p.finalAmount === null || p.finalAmount.trim().length === 0) {
+      patch.finalAmount = null;
+    } else {
+      const norm = tryNormalizeFinalInvoiceAmountStored(p.finalAmount.trim());
+      if (!norm.ok) {
+        return jsonError(
+          400,
+          "VALIDATION_ERROR",
+          "סכום החשבונית אינו מספר תקין.",
+        );
+      }
+      patch.finalAmount = norm.value;
+    }
   }
   if (p.finalCurrency !== undefined) {
     patch.finalCurrency =

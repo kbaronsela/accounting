@@ -11,6 +11,7 @@ import {
 import { isoDateToDisplay } from "@/lib/client/date-input-helpers";
 import { SHEKEL_DISPLAY } from "@/lib/client/currency-canonical";
 import type { ClientDocumentListItem } from "@/lib/client/queries";
+import { formatFinalInvoiceAmountDisplay } from "@/lib/invoice-final-amount";
 import { documentStatusRowSurfaceClass } from "@/lib/ui/document-status-row-classes";
 import { DraftUploadResumeButton } from "./draft-upload-resume-button";
 
@@ -71,9 +72,9 @@ function amountNumeric(d: ClientDocumentListItem): number | null {
 }
 
 function formatAmount(d: ClientDocumentListItem): string {
-  const amt = d.finalAmount?.trim();
-  if (!amt) return "—";
-  return `${amt} ${SHEKEL_DISPLAY}`;
+  const core = formatFinalInvoiceAmountDisplay(d.finalAmount);
+  if (core === "—") return "—";
+  return `${core} ${SHEKEL_DISPLAY}`;
 }
 
 export type DocumentsListSortKey = "vendor" | "amount" | "date" | "status";

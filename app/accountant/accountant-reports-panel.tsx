@@ -11,6 +11,7 @@ import {
   type SetStateAction,
 } from "react";
 import { isoDateToDisplay } from "@/lib/client/date-input-helpers";
+import { formatFinalInvoiceAmountDisplay } from "@/lib/invoice-final-amount";
 import {
   appModalCloseButtonClass,
   appModalGhostButtonClass,
@@ -115,8 +116,12 @@ function vendorSortKey(row: ReportRow): string {
 }
 
 function formatAmount(row: ReportRow): string {
-  if (!row.finalAmount?.trim()) return "—";
-  return row.finalAmount.trim();
+  return formatFinalInvoiceAmountDisplay(row.finalAmount);
+}
+
+function reportCsvAmountCell(r: ReportRow): string {
+  const s = formatFinalInvoiceAmountDisplay(r.finalAmount);
+  return s === "—" ? "" : s;
 }
 
 function sortReportRows(rows: ReportRow[], sort: ReportSortState): ReportRow[] {
@@ -248,7 +253,7 @@ function buildReportCsv(sorted: ReportRow[]): string {
   const header = ["ספק", "סכום", "תאריך חשבונית", "מספר חשבונית"];
   const rows = sorted.map((r) => [
     (r.finalVendor ?? "").trim() || "",
-    (r.finalAmount ?? "").trim().replace(",", "."),
+    reportCsvAmountCell(r),
     effectiveInvoiceIso(r) ?? "",
     invoiceNumberRaw(r),
   ]);

@@ -25,6 +25,7 @@ import {
 } from "@/lib/ui/modal-classes";
 import { documentStatusRowSurfaceClass } from "@/lib/ui/document-status-row-classes";
 import { isoDateToDisplay } from "@/lib/client/date-input-helpers";
+import { formatFinalInvoiceAmountDisplay } from "@/lib/invoice-final-amount";
 
 type ClientOption = {
   id: string;
@@ -128,6 +129,12 @@ function amountNumeric(row: DocRow): number | null {
   if (!s) return null;
   const n = Number.parseFloat(s.replace(",", "."));
   return Number.isFinite(n) ? n : null;
+}
+
+function formatDocRowAmountCell(d: DocRow): string {
+  const core = formatFinalInvoiceAmountDisplay(d.finalAmount);
+  if (core === "—") return "—";
+  return `${core}${d.finalCurrency ? ` ${d.finalCurrency}` : ""}`;
 }
 
 function vendorSortKey(row: DocRow): string {
@@ -879,9 +886,7 @@ export function AccountantDocumentsPanel() {
                   <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5 text-sm text-zinc-600">
                     <span className="text-zinc-500">סכום</span>
                     <span className="font-medium text-zinc-800">
-                      {d.finalAmount
-                        ? `${d.finalAmount}${d.finalCurrency ? ` ${d.finalCurrency}` : ""}`
-                        : "—"}
+                      {formatDocRowAmountCell(d)}
                     </span>
                   </div>
                   <div className="mt-3 flex flex-wrap justify-between gap-x-3 gap-y-1 border-t border-zinc-100/90 pt-2 text-sm">
@@ -1169,9 +1174,7 @@ export function AccountantDocumentsPanel() {
                       {accountantInvoiceDateDisplay(d)}
                     </td>
                     <td className="py-2.5 text-zinc-600">
-                      {d.finalAmount
-                        ? `${d.finalAmount}${d.finalCurrency ? ` ${d.finalCurrency}` : ""}`
-                        : "—"}
+                      {formatDocRowAmountCell(d)}
                     </td>
                     <td className="py-2.5 text-zinc-600">
                       {statusLabel(d.status)}

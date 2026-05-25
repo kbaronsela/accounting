@@ -9,6 +9,7 @@ import {
   hasSubmitFieldErrors,
   validateDocumentForSubmit,
 } from "@/lib/client/document-submit-validation";
+import { tryNormalizeFinalInvoiceAmountStored } from "@/lib/invoice-final-amount";
 import { randomUUID } from "node:crypto";
 import { eq } from "drizzle-orm";
 
@@ -54,6 +55,13 @@ export async function POST(_request: Request, context: RouteContext) {
     );
   }
 
+  let persistedFinalAmount = doc.finalAmount;
+  if (doc.finalAmount?.trim()) {
+    const norm = tryNormalizeFinalInvoiceAmountStored(doc.finalAmount);
+    persistedFinalAmount =
+      norm.ok && norm.value !== null ? norm.value : doc.finalAmount;
+  }
+
   const now = new Date();
   const consumed = await db
     .update(documents)
@@ -61,6 +69,10 @@ export async function POST(_request: Request, context: RouteContext) {
       status: "submitted",
       submittedAt: now,
       updatedAt: now,
+      ...(doc.finalAmount?.trim() &&
+      persistedFinalAmount !== doc.finalAmount
+        ? { finalAmount: persistedFinalAmount }
+        : {}),
     })
     .where(
       eq(documents.id, doc.id),

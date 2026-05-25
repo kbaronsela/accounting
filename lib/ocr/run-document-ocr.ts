@@ -6,6 +6,7 @@ import { eq } from "drizzle-orm";
 import { readUploadedDocumentBuffer } from "@/lib/uploads/document-storage";
 import { extractDocumentPlainText } from "@/lib/ocr/document-text";
 import { SHEKEL_DISPLAY } from "@/lib/client/currency-canonical";
+import { canonicalFinalInvoiceAmountOrNull } from "@/lib/invoice-final-amount";
 import { extractHeuristicInvoiceFields } from "@/lib/ocr/heuristic-fields";
 import { recognizeWithTesseract } from "@/lib/ocr/tesseract-runner";
 
@@ -88,14 +89,18 @@ export async function runDocumentOcr(documentId: string): Promise<void> {
       updatedAt: now,
       ocrProvider: OCR_PROVIDER,
       extracted: extractedJson,
-      extractedAmount: fields.extractedAmount ?? null,
+      extractedAmount: canonicalFinalInvoiceAmountOrNull(fields.extractedAmount),
       extractedCurrency: fields.extractedCurrency ?? null,
       extractedDate: fields.extractedDate ?? null,
       extractedVendor: fields.extractedVendor ?? null,
       extractedInvoiceNumber: fields.extractedInvoiceNumber ?? null,
     };
 
-    if (!doc.finalAmount?.trim()) patch.finalAmount = fields.extractedAmount ?? null;
+    if (!doc.finalAmount?.trim()) {
+      patch.finalAmount = canonicalFinalInvoiceAmountOrNull(
+        fields.extractedAmount,
+      );
+    }
     if (!doc.finalCurrency?.trim()) {
       patch.finalCurrency = SHEKEL_DISPLAY;
     }
