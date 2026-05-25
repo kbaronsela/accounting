@@ -31,18 +31,84 @@ function sanitizeDownloadFileName(name: string): string {
   return t.length > 0 ? t : "document";
 }
 
-/** הדפסת תמונה מ־blob URL בחלון ייעודי (לא כל הממשק במודאל). */
+/**
+ * מדפיס תוכן דף מתוך iframe מוסתר (בלי טאב about:blank).
+ * ב־Chrome ובעוד דפדפנים, `window.open("…", "noopener")` לעיתים מחזיר `null` בעוד
+ * שטאב `about:blank` עדיין נפתח — והמסמך נשאר ריק בלי `document.write`.
+ */
+function printInHiddenIframe(writeHtmlDoc: () => string) {
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute(
+    "style",
+    "position:fixed;right:0;bottom:0;width:0;height:0;border:0;opacity:0;pointer-events:none",
+  );
+  iframe.setAttribute("aria-hidden", "true");
+  document.body.appendChild(iframe);
+
+  const win = iframe.contentWindow;
+  const doc = iframe.contentDocument ?? win?.document;
+  if (!win || !doc) {
+    iframe.remove();
+    return;
+  }
+
+  doc.open();
+  doc.write(writeHtmlDoc());
+  doc.close();
+
+  const teardown = () => {
+    iframe.removeEventListener("afterprint", teardown);
+    setTimeout(() => iframe.remove(), 300);
+  };
+  iframe.contentWindow?.addEventListener("afterprint", teardown);
+
+  const runPrint = () => {
+    try {
+      win.focus();
+      win.print();
+    } catch {
+      iframe.removeEventListener("afterprint", teardown);
+      iframe.remove();
+    }
+    setTimeout(() => {
+      if (iframe.parentNode) teardown();
+    }, 120_000);
+  };
+
+  const img = doc.body.querySelector("img") as HTMLImageElement | null;
+  if (img) {
+    if (img.complete && img.naturalHeight > 0) {
+      window.setTimeout(runPrint, 0);
+      return;
+    }
+    img.addEventListener(
+      "load",
+      () => window.setTimeout(runPrint, 0),
+      { once: true },
+    );
+    img.addEventListener(
+      "error",
+      () => {
+        iframe.removeEventListener("afterprint", teardown);
+        iframe.remove();
+      },
+      { once: true },
+    );
+    return;
+  }
+
+  window.setTimeout(runPrint, 0);
+}
+
+/** הדפסת תמונה מ־blob URL (לא מדפיסה את כל עמוד האפליקציה). */
 function printImageObjectUrl(src: string) {
-  const w = window.open("", "_blank", "noopener,noreferrer");
-  if (!w) return;
-  w.document.write(
-    `<!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8"/><title></title>` +
+  printInHiddenIframe(
+    () =>
+      `<!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8"/><title></title>` +
       `<style>@page{margin:10mm}body{margin:0;display:flex;justify-content:center;align-items:flex-start}` +
       `img{max-width:100%;height:auto}</style></head><body>` +
-      `<img src="${src}" alt="" onload="window.focus();window.print();"/>` +
-      `</body></html>`,
+      `<img src="${src.replaceAll('"', "%22")}" alt="" /></body></html>`,
   );
-  w.document.close();
 }
 
 /** Chrome/Android (ובדפדפנים ניידים) לעיתים מציגים PDF בתוך iframe עם כפתור "Open" שבור על blob: — במקום זה פותחים בלשונית חדשה מחוות משתמש. */
@@ -169,12 +235,12 @@ export function DocumentFileViewerOverlay({
           /* fallback */
         }
       }
-      const w = window.open(objectUrl, "_blank", "noopener,noreferrer");
+      const w = window.open(objectUrl, "_blank");
       w?.focus();
       return;
     }
 
-    const w = window.open(objectUrl, "_blank", "noopener,noreferrer");
+    const w = window.open(objectUrl, "_blank");
     w?.focus();
   }, [phase]);
 
