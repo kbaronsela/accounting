@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import {
   appModalBackdropClass,
   appModalGhostButtonClass,
@@ -10,6 +10,39 @@ import {
 function isPdfMime(mime: string): boolean {
   const m = mime.trim().toLowerCase();
   return m.startsWith("application/pdf");
+}
+
+/** סיומת קובץ לשמירה מקומית לפי סוג MIME (נופל ל־bin). */
+function extensionForMime(mime: string): string {
+  const m = mime.trim().toLowerCase();
+  if (m.startsWith("image/jpeg") || m.startsWith("image/jpg")) return "jpg";
+  if (m.startsWith("image/png")) return "png";
+  if (m.startsWith("image/webp")) return "webp";
+  if (m.startsWith("image/gif")) return "gif";
+  if (m.startsWith("image/heic")) return "heic";
+  if (m.startsWith("image/")) return "img";
+  if (m.startsWith("application/pdf")) return "pdf";
+  return "bin";
+}
+
+/** מסיר תווים שעלולים לשבור שם קובץ במערכות קבצים. */
+function sanitizeDownloadFileName(name: string): string {
+  const t = name.replace(/[/\\:*?"<>|\u0000-\u001F]/g, "_").trim();
+  return t.length > 0 ? t : "document";
+}
+
+/** הדפסת תמונה מ־blob URL בחלון ייעודי (לא כל הממשק במודאל). */
+function printImageObjectUrl(src: string) {
+  const w = window.open("", "_blank", "noopener,noreferrer");
+  if (!w) return;
+  w.document.write(
+    `<!DOCTYPE html><html dir="rtl"><head><meta charset="utf-8"/><title></title>` +
+      `<style>@page{margin:10mm}body{margin:0;display:flex;justify-content:center;align-items:flex-start}` +
+      `img{max-width:100%;height:auto}</style></head><body>` +
+      `<img src="${src}" alt="" onload="window.focus();window.print();"/>` +
+      `</body></html>`,
+  );
+  w.document.close();
 }
 
 /** Chrome/Android (ובדפדפנים ניידים) לעיתים מציגים PDF בתוך iframe עם כפתור "Open" שבור על blob: — במקום זה פותחים בלשונית חדשה מחוות משתמש. */
@@ -39,6 +72,8 @@ export type DocumentFileViewerOverlayProps = {
   viewerKey: string;
   /** מ־שורת המסמך — נופל לאחור אם ל־Blob אין `type` אחרי הורדה */
   mimeTypeHint: string;
+  /** שם קובץ מוצע לשמירה (למשל receipt.pdf). אם חסר — נבנה מ־viewerKey וסיומת לפי MIME. */
+  downloadFileName?: string;
   onClose: () => void;
   /** טעינת תגובת הקובץ מאותו מקור העלאה (כולל `credentials: same-origin`) */
   fetchFile: () => Promise<Response>;
@@ -76,6 +111,7 @@ async function loadIntoObjectUrl(fetchFile: () => Promise<Response>): Promise<{
 export function DocumentFileViewerOverlay({
   viewerKey,
   mimeTypeHint,
+  downloadFileName,
   onClose,
   fetchFile,
 }: DocumentFileViewerOverlayProps) {
@@ -90,10 +126,57 @@ export function DocumentFileViewerOverlay({
     | { kind: "error"; message: string };
 
   const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const pdfIframeRef = useRef<HTMLIFrameElement>(null);
   const fetchRef = useRef(fetchFile);
   fetchRef.current = fetchFile;
   const preferExternalPdf = usePreferOpeningPdfExternally();
   const [phase, setPhase] = useState<ViewerPhase>({ kind: "loading" });
+
+  const handleSaveLocal = useCallback(() => {
+    if (phase.kind !== "ready") return;
+    const ext = extensionForMime(phase.effectiveMime);
+    const rawName =
+      downloadFileName?.trim() ||
+      `document-${viewerKey}.${ext}`;
+    const name = sanitizeDownloadFileName(rawName);
+    const a = document.createElement("a");
+    a.href = phase.objectUrl;
+    a.download = name;
+    a.rel = "noopener";
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  }, [downloadFileName, phase, viewerKey]);
+
+  const handlePrint = useCallback(() => {
+    if (phase.kind !== "ready") return;
+    const { objectUrl, isImage, effectiveMime } = phase;
+
+    if (isImage) {
+      printImageObjectUrl(objectUrl);
+      return;
+    }
+
+    if (isPdfMime(effectiveMime)) {
+      const frame = pdfIframeRef.current;
+      const cw = frame?.contentWindow;
+      if (cw && frame?.src && frame.src.startsWith("blob:")) {
+        try {
+          cw.focus();
+          cw.print();
+          return;
+        } catch {
+          /* fallback */
+        }
+      }
+      const w = window.open(objectUrl, "_blank", "noopener,noreferrer");
+      w?.focus();
+      return;
+    }
+
+    const w = window.open(objectUrl, "_blank", "noopener,noreferrer");
+    w?.focus();
+  }, [phase]);
 
   useEffect(() => {
     setPhase({ kind: "loading" });
@@ -180,19 +263,39 @@ export function DocumentFileViewerOverlay({
         className="relative z-10 flex h-[92dvh] w-full max-w-4xl flex-col overflow-hidden rounded-t-[1.65rem] border border-teal-100/95 bg-white/95 shadow-[0_-16px_46px_-16px_rgb(13_148_136_/_0.28)] backdrop-blur-sm sm:my-4 sm:h-[min(90dvh,920px)] sm:rounded-2xl sm:shadow-[0_24px_60px_-28px_rgb(13_148_136_/_0.32)]"
       >
         <div
-          className={`${appModalHeaderClass} flex shrink-0 items-center justify-between gap-3 py-2.5`}
+          className={`${appModalHeaderClass} flex shrink-0 flex-wrap items-center justify-between gap-3 py-2.5`}
         >
           <h2 id="doc-file-viewer-title" className="text-sm font-semibold text-teal-950">
             תצוגת המסמך
           </h2>
-          <button
-            ref={closeBtnRef}
-            type="button"
-            onClick={onClose}
-            className="shrink-0 rounded-xl border border-teal-200/90 bg-white px-3 py-1.5 text-sm font-semibold text-teal-900 shadow-sm transition hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/50"
-          >
-            סגירה
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            {phase.kind === "ready" ? (
+              <>
+                <button
+                  type="button"
+                  onClick={handleSaveLocal}
+                  className="shrink-0 rounded-xl border border-teal-200/90 bg-white px-3 py-1.5 text-sm font-semibold text-teal-900 shadow-sm transition hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/50"
+                >
+                  שמירה במכשיר
+                </button>
+                <button
+                  type="button"
+                  onClick={handlePrint}
+                  className="shrink-0 rounded-xl border border-teal-200/90 bg-white px-3 py-1.5 text-sm font-semibold text-teal-900 shadow-sm transition hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/50"
+                >
+                  הדפסה
+                </button>
+              </>
+            ) : null}
+            <button
+              ref={closeBtnRef}
+              type="button"
+              onClick={onClose}
+              className="shrink-0 rounded-xl border border-teal-200/90 bg-white px-3 py-1.5 text-sm font-semibold text-teal-900 shadow-sm transition hover:bg-teal-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-400/50"
+            >
+              סגירה
+            </button>
+          </div>
         </div>
         <div className="relative min-h-0 flex-1 bg-gradient-to-b from-teal-50/50 to-zinc-50/95">
           {phase.kind === "loading" ? (
@@ -251,6 +354,7 @@ export function DocumentFileViewerOverlay({
           !phase.isImage &&
           !(preferExternalPdf && isPdfMime(phase.effectiveMime)) ? (
             <iframe
+              ref={pdfIframeRef}
               title="תוכן המסמך"
               src={phase.objectUrl}
               className="absolute inset-0 size-full bg-white"
