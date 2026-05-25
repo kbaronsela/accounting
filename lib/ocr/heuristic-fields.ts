@@ -112,54 +112,83 @@ function scanDate(text: string): string | null {
   return dates[dates.length - 1] ?? dates[0] ?? null;
 }
 
+/**
+ * מחפש תווית עם מספר באותה שורה.
+ * תומך בשתי סדרויות: "תווית: 86.00" וגם "86.00 תווית" (RTL).
+ * מחזיר את המספר הראשון שנמצא, null אם אין.
+ */
+function findAmountByLabel(text: string, labelRe: RegExp): number | null {
+  for (const line of text.split(/\r?\n/)) {
+    if (!labelRe.test(line)) continue;
+    labelRe.lastIndex = 0; // reset אחרי test
+    // שלוף את כל המספרים בשורה
+    const nums: number[] = [];
+    for (const m of line.matchAll(/[\d][0-9,.''\s]{0,14}/g)) {
+      const n = europeanFriendlyToDecimal(m[0]);
+      if (n !== null && n > 0 && n < 10_000_000) nums.push(n);
+    }
+    if (nums.length > 0) return Math.max(...nums);
+  }
+  return null;
+}
+
 function scanAmount(text: string): string | null {
-  /** עדיפות גבוהה: "לתשלום" / "שולם" — הסכום ששולם בפועל */
-  const highPriorityAmounts: number[] = [];
-  for (const m of text.matchAll(
-    /(?:לתשלום|שולם|סכום\s*לתשלום|סה[\"״']?כ\s*לתשלום)\s*[:\s]*([\d\s,.'']+)/gi,
-  )) {
-    const n = europeanFriendlyToDecimal(m[1] ?? "");
-    if (n !== null && n > 0 && n < 100_000_000) highPriorityAmounts.push(n);
-  }
-  /** כאשר הסכום מופיע לפני התווית (RTL: "1,650 לתשלום") */
-  for (const m of text.matchAll(
-    /([\d\s,.'']{1,20})\s*(?:לתשלום|שולם)\b/gi,
-  )) {
-    const n = europeanFriendlyToDecimal(m[1] ?? "");
-    if (n !== null && n > 0 && n < 100_000_000) highPriorityAmounts.push(n);
-  }
-  if (highPriorityAmounts.length > 0) {
-    return decimalToStoredAmount(Math.max(...highPriorityAmounts));
+  /**
+   * סדר עדיפויות:
+   * 1. "לתשלום" / "שולם" / "סכום לתשלום" — הסכום ששולם בפועל
+   * 2. "סה"כ" / TOTAL / "סכום כולל" ו-Balance due
+   * 3. מספר צמוד לסימן מטבע (₪ / ש"ח)
+   * 4. fallback כללי בשורות הסוף
+   * בכל שלב — נלקח המספר הגבוה מהשורה, לא מכלל המסמך.
+   */
+
+  // שלב 1 — תווית "לתשלום" / "שולם"
+  for (const labelRe of [
+    /(?:לתשלום|סכום\s*לתשלום|סה[\"״']?כ\s*לתשלום)/i,
+    /(?:^|\s)שולם(?:\s|$)/i,
+  ]) {
+    const n = findAmountByLabel(text, labelRe);
+    if (n !== null) return decimalToStoredAmount(n);
   }
 
-  /** עדיפות רגילה: תוויות סיכום אחרות */
-  const amounts: number[] = [];
-  for (const m of text.matchAll(
-    /(?:סה[\"״']?כ|סיכום|TOTAL|Amount\s*due|סכום\s*כולל|Balance\s*due)\s*[:\s]*([\d\s,.'']+)/gi,
-  )) {
-    const n = europeanFriendlyToDecimal(m[1] ?? "");
-    if (n !== null && n > 0 && n < 100_000_000) amounts.push(n);
+  // שלב 2 — תוויות סיכום אחרות
+  for (const labelRe of [
+    /(?:סה[\"״']?כ|סיכום|TOTAL|Amount\s*due|סכום\s*כולל|Balance\s*due)/i,
+  ]) {
+    const n = findAmountByLabel(text, labelRe);
+    if (n !== null) return decimalToStoredAmount(n);
   }
 
+  // שלב 3 — מספר צמוד לסימן מטבע (ש"ח / ₪)
+  const currencyAmounts: number[] = [];
   for (const m of text.matchAll(
-    /([\d\s,]{1,14}(?:[\.,]\d{1,4})?)\s*(?:₪|ILS\b|ש[\"״']?ח\b|USD\b|EUR\b|\€|\$)/gi,
+    /([\d][0-9,.''\s]{0,13})\s*(?:₪|ILS\b|ש[\"״']?ח\b|USD\b|EUR\b|€|\$)/gi,
   )) {
+    // מסנן: המספר חייב להיות על אותה שורה עם סימן המטבע
+    if (/\r?\n/.test(m[1] ?? "")) continue;
     const n = europeanFriendlyToDecimal(m[1] ?? "");
-    if (n !== null && n > 0 && n < 100_000_000) amounts.push(n);
+    if (n !== null && n > 0 && n < 10_000_000) currencyAmounts.push(n);
+  }
+  if (currencyAmounts.length > 0) {
+    return decimalToStoredAmount(Math.max(...currencyAmounts));
   }
 
-  /** לכידה כללית של צורות X.XX בשורות הבסוף של המסמך */
-  if (amounts.length === 0) {
-    const tail = text.slice(Math.max(0, text.length - Math.min(text.length, 1200)));
-    for (const m of tail.matchAll(/\b(\d[\d\s,]{0,12}[.,]\d{2})\b/g)) {
+  // שלב 4 — fallback: מספרים עם נקודה עשרונית בשורות הסוף
+  const tail = text.slice(Math.max(0, text.length - 1200));
+  const tailAmounts: number[] = [];
+  for (const line of tail.split(/\r?\n/)) {
+    for (const m of line.matchAll(/\b(\d{1,8}[.,]\d{2})\b/g)) {
       const n = europeanFriendlyToDecimal(m[1] ?? "");
-      if (n !== null && n > 0 && n < 100_000_000) amounts.push(n);
+      if (n !== null && n > 0 && n < 10_000_000) tailAmounts.push(n);
     }
   }
+  if (tailAmounts.length > 0) {
+    return decimalToStoredAmount(Math.max(...tailAmounts));
+  }
 
-  if (amounts.length === 0) return null;
-  return decimalToStoredAmount(Math.max(...amounts));
+  return null;
 }
+
 
 
 function clipInvoiceNumberFragment(raw: string): string {
