@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useState } from "react";
 import { createPortal } from "react-dom";
 import { DocumentFileViewerOverlay } from "@/components/document-file-viewer-overlay";
+import { DocumentFileViewerPanel } from "@/components/document-file-viewer-panel";
 import { DraftUploadResumeButton } from "@/app/client/draft-upload-resume-button";
 import { SHEKEL_DISPLAY } from "@/lib/client/currency-canonical";
 import {
@@ -100,6 +101,15 @@ export function ClientDocumentWorkspace({
 
   const closeFileViewer = useCallback(() => setFileViewerOpen(false), []);
 
+  const fetchFile = useCallback(
+    () =>
+      fetch(`/api/client/documents/${initial.id}/file`, {
+        credentials: "same-origin",
+        cache: "no-store",
+      }),
+    [initial.id],
+  );
+
   function flushInvoiceDateFromDisplay(): boolean {
     const d = invoiceDate.display.trim();
     if (!d) {
@@ -174,7 +184,9 @@ export function ClientDocumentWorkspace({
     initial.clientDisplayName ?? initial.clientId.slice(0, 8);
 
   return (
-    <div className="mx-auto w-full min-w-0 max-w-xl space-y-5 pb-10 sm:space-y-6">
+    <div className="mx-auto flex w-full min-w-0 max-w-xl flex-col pb-10 xl:max-w-none xl:flex-row xl:items-start xl:gap-8">
+      {/* עמודת תוכן */}
+      <div className="min-w-0 flex-1 space-y-5 sm:space-y-6 xl:max-w-xl">
       <div>
         <Link
           href="/client"
@@ -208,7 +220,7 @@ export function ClientDocumentWorkspace({
       ) : null}
 
       {showFileLink ? (
-        <div className="rounded-xl border border-teal-100/90 bg-white/95 p-4 shadow-[0_4px_20px_-8px_rgb(13_148_136_/_0.08)]">
+        <div className="rounded-xl border border-teal-100/90 bg-white/95 p-4 shadow-[0_4px_20px_-8px_rgb(13_148_136_/_0.08)] xl:hidden">
           <button
             type="button"
             onClick={() => setFileViewerOpen(true)}
@@ -222,12 +234,7 @@ export function ClientDocumentWorkspace({
                   viewerKey={initial.id}
                   mimeTypeHint={initial.mimeType}
                   onClose={closeFileViewer}
-                  fetchFile={() =>
-                    fetch(`/api/client/documents/${initial.id}/file`, {
-                      credentials: "same-origin",
-                      cache: "no-store",
-                    })
-                  }
+                  fetchFile={fetchFile}
                 />,
                 document.body,
               )
@@ -438,6 +445,24 @@ export function ClientDocumentWorkspace({
           </p>
         )}
       </form>
+      </div>{/* סוף עמודת תוכן */}
+
+      {/* עמודת נגן — xl+ בלבד, sticky לאורך הגלילה */}
+      {showFileLink ? (
+        <div className="hidden xl:sticky xl:top-6 xl:block xl:h-[calc(100dvh-4rem)] xl:w-[480px] xl:shrink-0 xl:overflow-hidden xl:rounded-2xl xl:border xl:border-teal-100/90 xl:shadow-[0_4px_24px_-8px_rgb(13_148_136_/_0.10)]">
+          <div className="flex h-full flex-col">
+            <div className="shrink-0 border-b border-teal-100/80 bg-gradient-to-l from-teal-50/60 to-transparent px-4 py-2.5">
+              <p className="text-xs font-medium text-zinc-500">תצוגת הקובץ</p>
+            </div>
+            <DocumentFileViewerPanel
+              viewerKey={initial.id}
+              mimeTypeHint={initial.mimeType}
+              fetchFile={fetchFile}
+              className="flex-1"
+            />
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
