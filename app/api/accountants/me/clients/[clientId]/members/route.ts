@@ -1,6 +1,8 @@
 import { auth } from "@/auth";
 import { jsonError } from "@/lib/api/errors";
 import { hasRole } from "@/lib/auth/roles";
+import { getUserDisplayLabelForEmail } from "@/lib/email/get-user-display-label";
+import { sendClientMemberInvitationEmail } from "@/lib/email/send-invitation-email";
 import { getPublicInviteUrl } from "@/lib/invitations/public-invite-url";
 import { inviteAdditionalClientMember } from "@/lib/invitations/service";
 import { z } from "zod";
@@ -74,7 +76,18 @@ export async function POST(request: Request, context: RouteContext) {
   }
 
   const inviteUrl = getPublicInviteUrl(created.rawToken);
-  console.info("[invite] חבר נוסף לתיק (קישור לפיתוח):", inviteUrl);
+  console.info("[invite] חבר נוסף לתיק — קישור:", inviteUrl);
+
+  const accountantDisplayName = await getUserDisplayLabelForEmail(
+    session.user.id,
+  );
+
+  await sendClientMemberInvitationEmail({
+    to: created.email,
+    inviteeDisplayName: parsed.data.inviteeDisplayName ?? null,
+    accountantDisplayName,
+    inviteUrl,
+  });
 
   return Response.json(
     {

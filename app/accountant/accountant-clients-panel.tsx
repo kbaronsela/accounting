@@ -124,6 +124,11 @@ export function AccountantClientsPanel() {
     | null
   >(null);
 
+  const [newClientInviteBanner, setNewClientInviteBanner] = useState<{
+    clientDisplayName: string;
+    items: { email: string; inviteUrl: string }[];
+  } | null>(null);
+
   const [detailOpen, setDetailOpen] = useState(false);
   const [detailLoading, setDetailLoading] = useState(false);
   const [detailId, setDetailId] = useState<string | null>(null);
@@ -487,6 +492,7 @@ export function AccountantClientsPanel() {
       });
       const data = (await res.json().catch(() => ({}))) as {
         error?: { message?: string };
+        invitations?: { email: string; inviteUrl: string }[];
       };
       if (!res.ok) {
         setNewModalErr(data.error?.message ?? "הבקשה נכשלה.");
@@ -494,6 +500,15 @@ export function AccountantClientsPanel() {
         return;
       }
       await refreshList();
+      if (data.invitations && data.invitations.length > 0) {
+        setNewClientInviteBanner({
+          clientDisplayName: name,
+          items: data.invitations.map((i) => ({
+            email: i.email,
+            inviteUrl: i.inviteUrl,
+          })),
+        });
+      }
       resetNewModal();
       setNewModalOpen(false);
     } catch {
@@ -1059,7 +1074,10 @@ export function AccountantClientsPanel() {
                     </div>
                     {addMemberInviteBanner ? (
                       <div className="mb-3 rounded-md border border-green-100 bg-green-50/90 p-3 text-sm text-green-950">
-                        <p>הוזמנה נוצרה. הקישור בפיתוח (ניתן גם מהלוג):</p>
+                        <p>
+                          הוזמנה נוצרה. אם הוגדר SMTP — נשלח מייל למוזמן. גם כאן ניתן להעתיק
+                          את הקישור:
+                        </p>
                         {addMemberInviteBanner.inviteUrl ? (
                           <p className="mt-2 break-all text-xs font-mono text-green-950">
                             {addMemberInviteBanner.inviteUrl}
@@ -1373,7 +1391,8 @@ export function AccountantClientsPanel() {
                     משתמש ללקוח «{detail.client.displayName}»
                   </h3>
                   <p className="mt-2 text-xs text-zinc-600">
-                    ההזמנה נוצרת לפי האימייל; בפיתוח מוצג הקישור כאן ובלוג השרת.
+                    ההזמנה נשלחת במייל למוזמן כשהשרת מוגדר עם SMTP; גם אחרי יצירת ההזמנה
+                    מוצג קישור למקרה שצריך להעביר ידנית.
                   </p>
                 </div>
                 <form
@@ -1435,6 +1454,34 @@ export function AccountantClientsPanel() {
             </div>
           ) : null}
         </>
+      ) : null}
+
+      {newClientInviteBanner ? (
+        <div
+          role="alert"
+          className="fixed bottom-4 start-4 end-4 z-[110] max-h-[min(70vh,28rem)] overflow-y-auto rounded-xl border border-teal-100/95 bg-white/95 p-4 shadow-[0_14px_40px_-22px_rgb(13_148_136_/_0.45)] backdrop-blur-sm sm:start-auto sm:end-4 sm:max-w-lg"
+          dir="rtl"
+        >
+          <p className="text-sm font-medium text-zinc-900">
+            הלקוח «{newClientInviteBanner.clientDisplayName}» נוצר. קישורי ההזמנה
+            (ניתן להעתיק; אם הוגדר SMTP — נשלח גם מייל לכל מוזמן):
+          </p>
+          <ul className="mt-3 space-y-3 text-xs text-zinc-800">
+            {newClientInviteBanner.items.map((row) => (
+              <li key={row.email} className="rounded-md border border-zinc-100 bg-zinc-50/80 p-2">
+                <p className="break-all font-medium text-zinc-900">{row.email}</p>
+                <p className="mt-1 break-all font-mono text-green-950">{row.inviteUrl}</p>
+              </li>
+            ))}
+          </ul>
+          <button
+            type="button"
+            className="mt-3 text-xs font-medium text-teal-800 underline underline-offset-2 hover:text-teal-950"
+            onClick={() => setNewClientInviteBanner(null)}
+          >
+            סגירה
+          </button>
+        </div>
       ) : null}
     </div>
   );

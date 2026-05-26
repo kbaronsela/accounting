@@ -8,6 +8,8 @@ import {
   invitations,
   users,
 } from "@/lib/db/schema";
+import { getUserDisplayLabelForEmail } from "@/lib/email/get-user-display-label";
+import { sendClientMemberInvitationEmail } from "@/lib/email/send-invitation-email";
 import { createClientWithInvitations } from "@/lib/invitations/service";
 import { getPublicInviteUrl } from "@/lib/invitations/public-invite-url";
 import {
@@ -241,10 +243,23 @@ export async function POST(request: Request) {
     return jsonError(400, "INVITATION_FAILED", "לא ניתן ליצור את הלקוח והזמנות.");
   }
 
-  for (const inv of created.invites) {
-    const inviteUrl = getPublicInviteUrl(inv.rawToken);
-    console.info("[invite] לקוח חדש + הזמנה (בפיתוח — קישור):", inviteUrl);
-  }
+  const accountantDisplayName = await getUserDisplayLabelForEmail(
+    session.user.id,
+  );
+
+  await Promise.all(
+    created.invites.map(async (inv, i) => {
+      const row = invitationsIn[i];
+      const inviteUrl = getPublicInviteUrl(inv.rawToken);
+      console.info("[invite] לקוח חדש + הזמנה — קישור:", inviteUrl);
+      await sendClientMemberInvitationEmail({
+        to: inv.email,
+        inviteeDisplayName: row?.inviteeDisplayName ?? null,
+        accountantDisplayName,
+        inviteUrl,
+      });
+    }),
+  );
 
   return Response.json(
     {

@@ -182,7 +182,7 @@ export function ManageAccountantsPanel({
         return;
       }
       setInviteUrlMsg(
-        "ההזמנה נוצרה. בשלב הפיתוח הקישור מופיע גם בלוג השרת; ניתן להעתיק מכאן:",
+        "ההזמנה נוצרה. אם הוגדר SMTP — נשלח מייל למוזמן. ניתן גם להעתיק את הקישור מכאן:",
       );
       setInviteUrl(data.inviteUrl ?? null);
       setNewName("");

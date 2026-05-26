@@ -21,8 +21,12 @@
 | `AUTH_URL` | כן בפרוד | כתובת בסיס ציבורית של האפליקציה לצורך callbacks |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | לפי OAuth | Auth.js — Google |
 | `FACEBOOK_CLIENT_ID` / `FACEBOOK_CLIENT_SECRET` | לפי OAuth | Auth.js — Facebook |
-| `EMAIL_PROVIDER_API_KEY` | כן (MVP) | מפתח ספק מייל (Resend / Postmark / וכו׳) |
-| `EMAIL_FROM` | כן | כתובת שולח (למשל `noreply@domain`) |
+| `EMAIL_FROM_ADDRESS` | לשליחת הזמנות בדוא״ל | כתובת שולח (חייבת להיות מורשית אצל ספק ה-SMTP) |
+| `EMAIL_SENDER_DISPLAY_NAME` | לא | שם תצוגה ב־From (ברירת מחדל: `מערכת שיתוף קבלות`) |
+| `SMTP_HOST` | לשליחת הזמנות | שרת SMTP |
+| `SMTP_PORT` | לא | ברירת מחדל `587` |
+| `SMTP_USER` / `SMTP_PASSWORD` | לפי ספק | אימות SMTP (אם אין — נשלח בלי auth, לפי מדיניות השרת) |
+| `SMTP_SECURE` | לא | `1` או `true` ל-TLS מיידי (לרוב פורט 465); אחרת STARTTLS |
 | `STORAGE_*` | בפרוד (או S3) | מפתחות S3/R2 — אזור, bucket, endpoint, credentials |
 | `STORAGE_PUBLIC_READ` | לא | ברירת מחדל **false** — גישה דרך presigned בלבד |
 | `LOCAL_UPLOAD_DIR` | לא (פיתוח) | תיקיית יעד לקבצים מקומיים ביחס ל־cwd; ברירת מחדל **`.data/uploads`** |

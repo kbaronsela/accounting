@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { hasRole } from "@/lib/auth/roles";
 import { jsonError } from "@/lib/api/errors";
 import { listAccountantsWithClientCounts } from "@/lib/admin/accountants-queries";
+import { sendAccountantInvitationEmail } from "@/lib/email/send-invitation-email";
 import { getPublicInviteUrl } from "@/lib/invitations/public-invite-url";
 import { createAccountantInvitation } from "@/lib/invitations/service";
 import { z } from "zod";
@@ -72,10 +73,12 @@ export async function POST(request: Request) {
   }
 
   const inviteUrl = getPublicInviteUrl(created.rawToken);
-  console.info(
-    "[invite] הזמנת רואה חשבון (מייל לא נשלח עדיין — קישור לפיתוח):",
+  console.info("[invite] הזמנת רואה חשבון — קישור:", inviteUrl);
+  await sendAccountantInvitationEmail({
+    to: created.email,
+    inviteeDisplayName: parsed.data.displayName ?? null,
     inviteUrl,
-  );
+  });
 
   return Response.json(
     {
