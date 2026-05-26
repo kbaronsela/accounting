@@ -43,7 +43,7 @@
 
 ### Progressive Web App (הוספה למסך הבית)
 
-- בפרודקשן עם **HTTPS** האתר משתמש ב־`/manifest.webmanifest` (מתוך `app/manifest.ts`) וב־`public/sw.js`, כדי שכרום יוכל להתקין/לפתוח ב־**standalone**. ב־manifest מוגדר **`share_target` עם URL מוחלט לפי `AUTH_URL`**, כדי שהשיתוף מהגלריה לא ייפתח ב־`localhost` על הטלפון. באירוח ב־Railway — ודאי ש־`AUTH_URL=https://<הדומיין>` זמין **גם בשלב הבילד**.
+- בפרודקשן עם **HTTPS** האתר משתמש ב־`/manifest.webmanifest` (route דינמי ב־`app/manifest.webmanifest/route.ts` — הבסיס נגזר מהבקשה / כותרות proxy, ובפרודקשן לא מאלצים localhost מ־`AUTH_URL`) וב־`public/sw.js`, כדי שכרום יוכל להתקין/לפתוח ב־**standalone**.
 - **אם הותקנה אפליקציה מהמסך הבית מתוך `http://localhost:...`** (כולל פורט 8080) ושיתוף מתמונה מתעקש על localhost — הסירי את האייקון, פתחי מחדש רק מהדומיין הפרודקטיבי, והוסיפי למסך הבית שוב.
 - **`http://<IP בתוך ה-LAN>`** (לא localhost ולא HTTPS) אינו *secure context*: **רישום Service Worker לא יעבוד**, וברוב המקרים **מוצג** קיצור דרך עם סמל קטן של כרום — התנהגות צפויה. לבדיקה מהטלפון: **Tunnel עם HTTPS** (למשל ngrok / Cloudflare Tunnel) או אירוח על דומיין עם TLS.
 - איקונים: `npm run icons:pwa` יוצר `public/icons/icon-*.png` (מסמך/חשבונית בסגנון משטח בצבע האפליקציה; ניתן לערוך ב־`scripts/generate-pwa-icons.ps1`).

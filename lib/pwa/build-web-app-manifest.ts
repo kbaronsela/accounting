@@ -1,14 +1,8 @@
-import type { MetadataRoute } from "next";
-import { getAuthPublicBaseUrl } from "@/lib/env/auth-public-base-url";
-
 /**
- * מניפסט PWA עם URLs מוחלטים מההגדרה הציבורית של השרת.
- * למה: share_target עם path יחסי נפרש מהמקור שממנו הותקנה האפליקציה — אם הותקנה מ-localhost,
- * השיתוף מהטלפון ינסה localhost במכשיר ונופל עם ERR_CONNECTION_REFUSED.
+ * גוף Web App Manifest (למסלול `/manifest.webmanifest`).
+ * `base` חייב להיות מוחלט (כולל סכימה), ללא סלאש בסוף.
  */
-export default function manifest(): MetadataRoute.Manifest {
-  const base = getAuthPublicBaseUrl();
-
+export function buildWebAppManifest(base: string) {
   return {
     id: `${base}/`,
     name: "שיתוף קבלות",
