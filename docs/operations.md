@@ -21,11 +21,12 @@
 | `AUTH_URL` | כן בפרוד | כתובת בסיס ציבורית של האפליקציה לצורך callbacks |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | לפי OAuth | Auth.js — Google |
 | `FACEBOOK_CLIENT_ID` / `FACEBOOK_CLIENT_SECRET` | לפי OAuth | Auth.js — Facebook |
-| `EMAIL_FROM_ADDRESS` | לשליחת הזמנות בדוא״ל | כתובת שולח (חייבת להיות מורשית אצל ספק ה-SMTP) |
+| `EMAIL_FROM_ADDRESS` | למיילי הזמנה | כתובת From (מאושרת אצל ספק המייל, למשל ב-Brevo) |
+| `BREVO_API_KEY` | **מומלץ ב-Railway** | מפתח API מ-Brevo (HTTPS) — Free/Hobby לא יכולים SMTP החוצה |
 | `EMAIL_SENDER_DISPLAY_NAME` | לא | שם תצוגה ב־From (ברירת מחדל: `מערכת שיתוף קבלות`) |
-| `SMTP_HOST` | לשליחת הזמנות | שרת SMTP |
+| `SMTP_HOST` וכו׳ | מקומי / Pro | SMTP — על **Railway Free/Hobby** פורט 587 חסום (timeout על `CONN`) |
 | `SMTP_PORT` | לא | ברירת מחדל `587` |
-| `SMTP_USER` / `SMTP_PASSWORD` | לפי ספק | אימות SMTP (אם אין — נשלח בלי auth, לפי מדיניות השרת) |
+| `SMTP_USER` / `SMTP_PASSWORD` | לפי ספק | אימות SMTP |
 | `SMTP_SECURE` | לא | `1` או `true` ל-TLS מיידי (לרוב פורט 465); אחרת STARTTLS |
 | `STORAGE_*` | בפרוד (או S3) | מפתחות S3/R2 — אזור, bucket, endpoint, credentials |
 | `STORAGE_PUBLIC_READ` | לא | ברירת מחדל **false** — גישה דרך presigned בלבד |
@@ -34,6 +35,9 @@
 | `REDIS_URL` / `QUEUE_*` | אופציונלי | לתור עיבוד OCR אם לא serverless מובנה |
 | `BOOTSTRAP_ADMIN_EMAIL` | פריסה ראשונה | מייל האדמין הראשון |
 | `BOOTSTRAP_ADMIN_PASSWORD` | פריסה ראשונה בלבד | סיסמה זמנית; **לסובב מיד** אחרי כניסה ראשונה |
+
+> **Railway:** בתוכניות Free/Trial/Hobby יציאה ל-SMTP (25 / 465 / 587 / 2525) חסומה — חיבור נתקע ב-`ETIMEDOUT`.
+> משתמשים ב-`BREVO_API_KEY` (או ספק אחר עם API על פורט 443). בתוכניות Pro+ אפשר SMTP — ראו [תיעוד Railway](https://docs.railway.com/networking/outbound-networking).
 
 > שמות המשתנים המדויקים ייתאמו לקוד בפועל; הרשימה היא **חוזה לוגי**.
 

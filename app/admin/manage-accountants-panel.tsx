@@ -182,7 +182,7 @@ export function ManageAccountantsPanel({
         return;
       }
       setInviteUrlMsg(
-        "ההזמנה נוצרה. אם הוגדר SMTP — נשלח מייל למוזמן. ניתן גם להעתיק את הקישור מכאן:",
+        "ההזמנה נוצרה. אם הוגדר Brevo API או SMTP — נשלח מייל למוזמן. ניתן גם להעתיק את הקישור מכאן:",
       );
       setInviteUrl(data.inviteUrl ?? null);
       setNewName("");

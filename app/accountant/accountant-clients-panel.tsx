@@ -1075,8 +1075,8 @@ export function AccountantClientsPanel() {
                     {addMemberInviteBanner ? (
                       <div className="mb-3 rounded-md border border-green-100 bg-green-50/90 p-3 text-sm text-green-950">
                         <p>
-                          הוזמנה נוצרה. אם הוגדר SMTP — נשלח מייל למוזמן. גם כאן ניתן להעתיק
-                          את הקישור:
+                          הוזמנה נוצרה. אם הוגדר מייל בשרת (מומלץ: Brevo API ב-Railway), נשלח הודעה
+                          למוזמן. גם כאן ניתן להעתיק את הקישור:
                         </p>
                         {addMemberInviteBanner.inviteUrl ? (
                           <p className="mt-2 break-all text-xs font-mono text-green-950">
@@ -1391,7 +1391,7 @@ export function AccountantClientsPanel() {
                     משתמש ללקוח «{detail.client.displayName}»
                   </h3>
                   <p className="mt-2 text-xs text-zinc-600">
-                    ההזמנה נשלחת במייל למוזמן כשהשרת מוגדר עם SMTP; גם אחרי יצירת ההזמנה
+                    ההזמנה נשלחת במייל כשבשרת מוגדר Brevo API או SMTP; גם אחרי יצירת ההזמנה
                     מוצג קישור למקרה שצריך להעביר ידנית.
                   </p>
                 </div>
@@ -1464,7 +1464,7 @@ export function AccountantClientsPanel() {
         >
           <p className="text-sm font-medium text-zinc-900">
             הלקוח «{newClientInviteBanner.clientDisplayName}» נוצר. קישורי ההזמנה
-            (ניתן להעתיק; אם הוגדר SMTP — נשלח גם מייל לכל מוזמן):
+            (ניתן להעתיק; כשמוגדר Brevo או SMTP בשרת — נשלח גם מייל לכל מוזמן):
           </p>
           <ul className="mt-3 space-y-3 text-xs text-zinc-800">
             {newClientInviteBanner.items.map((row) => (

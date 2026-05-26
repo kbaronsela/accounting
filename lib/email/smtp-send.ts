@@ -3,23 +3,23 @@ import "server-only";
 import nodemailer from "nodemailer";
 import { getEmailSenderDisplayName } from "@/lib/email/email-sender-display-name";
 
-export function isTransactionalEmailConfigured(): boolean {
+export function isSmtpTransactionalConfigured(): boolean {
   const addr = process.env.EMAIL_FROM_ADDRESS?.trim();
   const host = process.env.SMTP_HOST?.trim();
   return !!(addr && host);
 }
 
 /**
- * שליחת מייל טקסט דרך SMTP. אם אין הגדרה או שנכשלה השליחה — רושמים ללוג ולא זורקים.
+ * SMTP — ברילווייא Free/Hobby יציאה לפורט 587 חסומה (timeout). בשימוש VPS/מחשב מקומי.
  */
-export async function sendTransactionalTextEmailSafe(input: {
+export async function sendTransactionalTextEmailViaSmtpSafe(input: {
   to: string;
   subject: string;
   textBody: string;
 }): Promise<void> {
-  if (!isTransactionalEmailConfigured()) {
+  if (!isSmtpTransactionalConfigured()) {
     console.warn(
-      "[email] דוא״ל לא מוגדר: חסרים EMAIL_FROM_ADDRESS או SMTP_HOST — ההזמנה נוצרה בלי משלוח מייל.",
+      "[email] SMTP לא מוגדר: חסרים EMAIL_FROM_ADDRESS או SMTP_HOST.",
     );
     return;
   }
@@ -38,6 +38,9 @@ export async function sendTransactionalTextEmailSafe(input: {
       host,
       port,
       secure,
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 15_000,
       auth: user.length > 0 || pass.trim().length > 0 ? { user, pass } : undefined,
     });
     await transporter.sendMail({
@@ -50,9 +53,9 @@ export async function sendTransactionalTextEmailSafe(input: {
       text: input.textBody,
     });
     console.info(
-      `[email] נשלחה הזמנה ל-${input.to} (${input.subject.slice(0, 48)}…)`,
+      `[email] נשלח SMTP ל-${input.to} (${input.subject.slice(0, 48)}…)`,
     );
   } catch (err) {
-    console.error("[email] שליחת מייל הזמנה נכשלה:", err);
+    console.error("[email] שליחת מייל הזמנה (SMTP) נכשלה:", err);
   }
 }

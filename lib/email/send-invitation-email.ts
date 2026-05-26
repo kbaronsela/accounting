@@ -1,7 +1,7 @@
 import "server-only";
 
 import { getEmailSenderDisplayName } from "@/lib/email/email-sender-display-name";
-import { sendTransactionalTextEmailSafe } from "@/lib/email/smtp-send";
+import { sendTransactionalTextEmailSafe } from "@/lib/email/transactional-email";
 
 function greetingLine(inviteeDisplayName: string | null | undefined): string {
   const n = inviteeDisplayName?.trim();
