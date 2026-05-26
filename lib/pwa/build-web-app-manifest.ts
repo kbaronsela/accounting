@@ -1,6 +1,8 @@
 /**
  * גוף Web App Manifest (למסלול `/manifest.webmanifest`).
  * `base` חייב להיות מוחלט (כולל סכימה), ללא סלאש בסוף.
+ *
+ * ללא `share_target` — האפליקציה לא מוצעת בתור יעד «שיתוף» מהגלריה במובייל.
  */
 export function buildWebAppManifest(base: string) {
   return {
@@ -17,29 +19,6 @@ export function buildWebAppManifest(base: string) {
     lang: "he",
     dir: "rtl",
     prefer_related_applications: false,
-    share_target: {
-      action: `${base}/receive-share`,
-      method: "POST",
-      enctype: "multipart/form-data",
-      params: {
-        files: [
-          {
-            name: "shared_file",
-            accept: [
-              "application/pdf",
-              ".pdf",
-              "image/jpeg",
-              ".jpg",
-              ".jpeg",
-              "image/png",
-              ".png",
-              "image/webp",
-              ".webp",
-            ],
-          },
-        ],
-      },
-    },
     icons: [
       {
         src: `${base}/icons/icon-192.png`,

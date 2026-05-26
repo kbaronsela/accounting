@@ -37,7 +37,7 @@ export function inferPublicOriginFromProxyHeaders(headers: Headers): string | nu
 }
 
 /**
- * בסיס ציבורי למניפסט (share_target, start_url). חייב להתאים לדומיין שהמשתמש פותח בדפדפן.
+ * בסיס ציבורי למניפסט PWA (`start_url`, `id`, `scope`). חייב להתאים לדומיין שהמשתמש פותח בדפדפן.
  *
  * בפרודקשן: אם `AUTH_URL` בטעות localhost — לא משתמשים בו; מעדיפים את הכתובת מהבקשה.
  */

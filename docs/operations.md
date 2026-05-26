@@ -43,8 +43,8 @@
 
 ### Progressive Web App (הוספה למסך הבית)
 
-- בפרודקשן עם **HTTPS** האתר משתמש ב־`/manifest.webmanifest` (route דינמי ב־`app/manifest.webmanifest/route.ts` — הבסיס נגזר מהבקשה / כותרות proxy, ובפרודקשן לא מאלצים localhost מ־`AUTH_URL`) וב־`public/sw.js`, כדי שכרום יוכל להתקין/לפתוח ב־**standalone**.
-- **אם הותקנה אפליקציה מהמסך הבית מתוך `http://localhost:...`** (כולל פורט 8080) ושיתוף מתמונה מתעקש על localhost — הסירי את האייקון, פתחי מחדש רק מהדומיין הפרודקטיבי, והוסיפי למסך הבית שוב.
+- בפרודקשן עם **HTTPS** האתר משתמש ב־`/manifest.webmanifest` (route דינמי ב־`app/manifest.webmanifest/route.ts` — הבסיס נגזר מהבקשה / כותרות proxy, ובפרודקשן לא מאלצים localhost מ־`AUTH_URL`) וב־`public/sw.js`, כדי שכרום יוכל להתקין/לפתוח ב־**standalone**. **אין** `share_target` במניפסט — האפליקציה לא מופיעה כיעד «שיתוף» מהגלריה.
+- **אם הותקנה אפליקציה מהמסך הבית מתוך `http://localhost:...`**: הסירי את האייקון והתקינו שוב רק מהדומיין הציבורי ב־HTTPS.
 - **`http://<IP בתוך ה-LAN>`** (לא localhost ולא HTTPS) אינו *secure context*: **רישום Service Worker לא יעבוד**, וברוב המקרים **מוצג** קיצור דרך עם סמל קטן של כרום — התנהגות צפויה. לבדיקה מהטלפון: **Tunnel עם HTTPS** (למשל ngrok / Cloudflare Tunnel) או אירוח על דומיין עם TLS.
 - איקונים: `npm run icons:pwa` יוצר `public/icons/icon-*.png` (מסמך/חשבונית בסגנון משטח בצבע האפליקציה; ניתן לערוך ב־`scripts/generate-pwa-icons.ps1`).
 - אחרי שינוי איקון/manifest כדאי **למחוק את הקיצור הישן ממסך הבית ולהוסיף מחדש**.
